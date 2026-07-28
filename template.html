@@ -147,6 +147,26 @@ tr:last-child td{border-bottom:none;}
 .note{font-size:13.2px;color:var(--faint);margin-top:8px;}
 .ailist{margin:4px 0 8px;padding-left:20px;}
 .ailist li{margin:7px 0;line-height:1.68;font-size:14.6px;}
+/* period vs snapshot signalling (07.28) */
+details.sec>summary .cnt.rchip{background:var(--accent-soft);color:var(--accent);font-weight:600;}
+.snapdiv{display:flex;align-items:center;gap:12px;margin:30px 0 16px;color:var(--muted);font-size:13.6px;font-weight:600;letter-spacing:.01em;}
+.snapdiv::before,.snapdiv::after{content:"";flex:1;border-top:2px dashed var(--border);}
+.controls #f-range{transition:opacity .25s;}
+.controls.snapzone #f-range{opacity:.35;}
+/* movement-in-period section */
+.mvstats{display:flex;gap:26px;flex-wrap:wrap;margin:2px 0 4px;}
+.mvstat{display:flex;flex-direction:column;gap:1px;}
+.mvl{font-size:12.8px;color:var(--muted);}
+.mvv{font-size:23px;font-weight:800;}
+.mvp{font-size:12.4px;color:var(--faint);}
+.mvrow{display:flex;align-items:center;gap:10px;margin-bottom:7px;}
+.mvname{width:150px;font-size:14.3px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;}
+.mvbars{flex:1;display:flex;flex-direction:column;gap:2px;}
+.mvbar{display:flex;align-items:center;gap:6px;height:9px;}
+.mvbar i{display:block;height:100%;border-radius:3px;min-width:2px;}
+.mvbar b{font-size:11.8px;color:var(--muted);font-weight:600;line-height:1;}
+.mvfin{display:flex;gap:8px 20px;flex-wrap:wrap;font-size:14.4px;}
+.mvfin b{color:var(--accent);}
 svg{display:block;max-width:100%;}
 a.lnk{color:inherit;text-decoration:none;border-bottom:1px dashed var(--faint);transition:color .12s,border-color .12s;}
 a.lnk:hover{color:var(--accent);border-color:var(--accent);}
@@ -198,7 +218,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     <div class="cbar">
       <div class="cgroup">
         <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
-        <div class="ctl"><label id="l-range">Range</label>
+        <div class="ctl" id="f-range"><label id="l-range">Range</label>
           <div class="seg" id="seg-range"></div>
         </div>
       </div>
@@ -248,6 +268,8 @@ const DICT={
    ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
    area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",
+   snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
    sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
@@ -278,6 +300,8 @@ const DICT={
    ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
    area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   sec_move:"Movement in period",mv_bycat:"New vs closed by type/category",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",
+   snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
    sec_risk:"Risk & overdue",sec_status:"Status breakdown",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
@@ -308,6 +332,8 @@ const DICT={
    ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
    area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",
+   snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
    sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
@@ -454,18 +480,40 @@ function compute(){
     C[k].st[bkt(i)]++;C[k].total++;});
   const cats=Object.entries(C).map(([n,v])=>({name:n,st:v.st,total:v.total,done:v.st.Closed}))
     .sort((a,b)=>b.total-a.total).slice(0,12);
-  // weekly (12 wk)
-  const weeks=[];for(let w=11;w>=0;w--){const m=monday(TODAY);m.setUTCDate(m.getUTCDate()-w*7);weeks.push(m);}
-  const wd=weeks.map(wk=>{const end=new Date(wk);end.setUTCDate(end.getUTCDate()+6);
-    const cr=scoped.filter(i=>D(i.created)&&+monday(D(i.created))===+wk).length;
-    const cl=closedAll.filter(i=>D(i.updated)&&+monday(D(i.updated))===+wk).length;
-    const base=open.filter(i=>D(i.created)&&D(i.created)<=end);
+  // flow buckets follow RANGE (07.28): 7d/30d → daily bars, 90d → 13 weekly.
+  // lx = draw an x-axis label for this bucket (sparse on the 30-day view: Mondays only)
+  let wd;
+  const bucketStat=(from,to,label,lx)=>{
+    const cr=scoped.filter(i=>D(i.created)&&D(i.created)>=from&&D(i.created)<=to).length;
+    const cl=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=from&&D(i.updated)<=to).length;
+    const base=open.filter(i=>D(i.created)&&D(i.created)<=to);
     const st=base.filter(i=>D(i.updated)&&days(D(i.updated),TODAY)>CFG.staleDays);
-    return{wk,label:`${wk.getUTCMonth()+1}/${wk.getUTCDate()}`,cr,cl,net:cr-cl,stale:base.length?Math.round(st.length/base.length*100):0};});
+    return{label,lx,cr,cl,net:cr-cl,stale:base.length?Math.round(st.length/base.length*100):0};};
+  if(RANGE<=30){
+    wd=[];for(let k=RANGE-1;k>=0;k--){const d0=new Date(TODAY);d0.setUTCDate(d0.getUTCDate()-k);
+      wd.push(bucketStat(d0,d0,`${d0.getUTCMonth()+1}/${d0.getUTCDate()}`,RANGE===7||d0.getUTCDay()===1));}
+  }else{
+    wd=[];for(let w=12;w>=0;w--){const wk=monday(TODAY);wk.setUTCDate(wk.getUTCDate()-w*7);
+      const end=new Date(wk);end.setUTCDate(end.getUTCDate()+6);
+      wd.push(bucketStat(wk,end,`${wk.getUTCMonth()+1}/${wk.getUTCDate()}`,true));}
+  }
+  // in-period movement (07.28): what actually happened inside RANGE — created vs
+  // closed per type/category, top finishers, median cycle time (vs previous window)
+  const pstart=new Date(TODAY);pstart.setUTCDate(pstart.getUTCDate()-RANGE*2);
+  const createdP=scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start);
+  const closedP=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start);
+  const cycOf=list=>median(list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null));
+  const MV={};
+  createdR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cr++;});
+  closedR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cl++;});
+  const FIN={};closedR.forEach(i=>{const a=i.assignee;if(a)FIN[a]=(FIN[a]||0)+1;});
+  const move={cats:Object.entries(MV).map(([n,v])=>({name:n,...v})).sort((a,b)=>(b.cr+b.cl)-(a.cr+a.cl)).slice(0,8),
+    fin:Object.entries(FIN).map(([n,c])=>({name:n,n:c})).sort((a,b)=>b.n-a.n).slice(0,5),
+    cyc:cycOf(closedR),cycP:cycOf(closedP),crP:createdP.length,clP:closedP.length};
   // delayed list
   const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
     .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,areas,members,cats,wd,delayed};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,areas,members,cats,wd,move,delayed};
 }
 
 /* ============ render ============ */
@@ -544,10 +592,10 @@ function trendSVG(wd){
   const g='var(--grid)',mut='var(--muted)';
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="trend">`;
   for(let k=0;k<=4;k++){const gy=pt+ih*(k/4),vv=Math.round(maxB*(1-k/4));s+=`<line x1="${pl}" y1="${gy}" x2="${W-pr}" y2="${gy}" stroke="${g}"/><text x="${pl-6}" y="${gy+3}" font-size="9" fill="${mut}" text-anchor="end">${vv}</text>`;}
-  wd.forEach((w,i)=>{const cx=x(i)+bw*0.5;const bwid=Math.min(9,bw*0.32);
+  wd.forEach((w,i)=>{const cx=x(i)+bw*0.5;const bwid=Math.min(14,bw*0.32);
     s+=`<rect x="${cx-bwid-1}" y="${y(w.cr)}" width="${bwid}" height="${pt+ih-y(w.cr)}" rx="1.5" fill="var(--faint)" opacity=".85"/>`;
     s+=`<rect x="${cx+1}" y="${y(w.cl)}" width="${bwid}" height="${pt+ih-y(w.cl)}" rx="1.5" fill="var(--st-closed)"/>`;
-    s+=`<text x="${cx}" y="${H-9}" font-size="9" fill="${mut}" text-anchor="middle">${w.label}</text>`;});
+    if(w.lx!==false)s+=`<text x="${cx}" y="${H-9}" font-size="9" fill="${mut}" text-anchor="middle">${w.label}</text>`;});
   const ry=v=>pt+ih-(v/100)*ih;
   let pts=wd.map((w,i)=>`${x(i)+bw*0.5},${ry(w.stale)}`).join(' ');
   s+=`<polyline points="${pts}" fill="none" stroke="var(--amber)" stroke-width="1.6" stroke-dasharray="4 3"/>`;
@@ -558,6 +606,10 @@ function trendSVG(wd){
 function renderSections(m){
   const t=T();let H='';
   const SH=id=>`<button class="share" type="button" data-sec="${id}" title="copy link">🔗</button>`;
+  /* period-scoped sections wear the accent range chip; snapshot sections wear a
+     grey 現時点 chip — so the reader always knows which knob moves which box */
+  const RCHIP=`<span class="cnt rchip">${t['r'+RANGE]||RANGE+'d'}</span>`;
+  const NCHIP=`<span class="cnt nchip">${t.now_}</span>`;
   /* AI insight — weekly narrative (operator-reviewed, embedded at build time).
      Optional by design: no insight in the build → the whole section is absent.
      Cross-project block renders only on the multi page (/all — operator+CEO). */
@@ -586,7 +638,7 @@ function renderSections(m){
         return `<div class="arow${x.hid?' hid':''}" style="margin-bottom:${big?6:11}px"><div style="display:flex;justify-content:space-between;font-size:${big?15.5:14.9}px;margin-bottom:4px"><span style="font-weight:${big?800:600}">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
         <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div></div>`;};
     const STEP=10, mem=m.areas.members;
-    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${t['r'+RANGE]||RANGE+'d'}</span><span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
+    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
       <div class="secbody">
       ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by},true)}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
@@ -596,30 +648,55 @@ function renderSections(m){
       ${mem.length>STEP?`<button class="morebtn" id="areamore">${t.area_more(mem.length-STEP)}</button>`:''}
       </div></details>`;
   }
-  /* flow */
-  H+=`<details class="sec" id="sec-flow" open><summary><span class="si">📈</span>${t.sec_flow}${SH('sec-flow')}<span class="chev">▶</span></summary>
+  /* in-period movement — what happened inside the selected RANGE (07.28):
+     created vs closed per type/category, top finishers, median cycle time */
+  const mv=m.move;
+  if(mv&&(m.createdR.length||m.closedR.length)){
+    const mmax=Math.max(1,...mv.cats.map(c=>Math.max(c.cr,c.cl)));
+    H+=`<details class="sec" id="sec-move" open><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${SH('sec-move')}<span class="chev">▶</span></summary>
+      <div class="secbody">
+      <div class="mvstats">
+        <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${t.mv_prev(mv.crP)}</span></div>
+        <div class="mvstat"><span class="mvl">${t.closed}</span><span class="mvv mono g">${m.closedR.length}</span><span class="mvp mono">${t.mv_prev(mv.clP)}</span></div>
+        <div class="mvstat"><span class="mvl">${t.mv_cyc}</span><span class="mvv mono">${mv.cyc!=null?mv.cyc+'d':'·'}</span><span class="mvp mono">${mv.cycP!=null?t.mv_prev(mv.cycP+'d'):''}</span></div>
+      </div>
+      ${mv.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.mv_bycat}</div>
+      ${mv.cats.map(c=>`<div class="mvrow"><span class="mvname">${c.name}</span>
+        <span class="mvbars"><span class="mvbar"><i style="width:${c.cr/mmax*100}%;background:var(--faint);opacity:.85"></i><b class="mono">${c.cr||''}</b></span>
+        <span class="mvbar"><i style="width:${c.cl/mmax*100}%;background:var(--st-closed)"></i><b class="mono">${c.cl||''}</b></span></span></div>`).join('')}
+      <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span></div>`:''}
+      ${mv.fin.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 6px">${t.mv_fin}</div>
+      <div class="mvfin">${mv.fin.map(f=>`<span>${assigneeLink(f.name)} <b class="mono">${f.n}</b></span>`).join('')}</div>`:''}
+      </div></details>`;
+  }
+  /* flow — buckets follow the range since 07.28 (7d/30d daily, 90d weekly) */
+  const tblB=RANGE===30?m.wd.slice(-14):m.wd;
+  H+=`<details class="sec" id="sec-flow" open><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${SH('sec-flow')}<span class="chev">▶</span></summary>
     <div class="secbody">${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
-    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
-    ${[...m.wd].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
-    </tbody></table></div></div></details>`;
+    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
+    ${[...tblB].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
+    </tbody></table></div>${tblB.length<m.wd.length?`<div class="note">${t.flow_tbl(tblB.length)}</div>`:''}</div></details>`;
+  /* ---- everything below is a snapshot of NOW — visibly fenced off from the
+     period filter (07.28): labeled divider + grey 現時点 chips ---- */
+  H+=`<div class="snapdiv" id="snapdiv"><span>📌 ${t.snap_div}</span></div>`;
   /* members */
   const topN=8;
   const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
-  H+=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span></summary>
     <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* categories (hidden when the project yields none) */
-  if(m.cats.length)H+=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span></summary>
+  if(m.cats.length)H+=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span></summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
       ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
-  H+=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span></summary>
     <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
@@ -633,7 +710,7 @@ function renderSections(m){
   const stLeg=m.sfull.length
     ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
     :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
-  H+=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span></summary>
     <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
     <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
@@ -773,9 +850,15 @@ $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h
 (()=>{const c=$('#controls');if(!c)return;const s=document.createElement('div');
   c.parentNode.insertBefore(s,c);
   new IntersectionObserver(([e])=>c.classList.toggle('stuck',!e.isIntersecting)).observe(s);})();
-/* back to top */
+/* back to top + snapshot-zone signal: once the reader scrolls past the snapshot
+   divider, the period control dims (those sections ignore it) */
 (()=>{const b=$('#totop');if(!b)return;
-  window.addEventListener('scroll',()=>b.classList.toggle('show',window.scrollY>500),{passive:true});
+  const c=$('#controls');
+  window.addEventListener('scroll',()=>{
+    b.classList.toggle('show',window.scrollY>500);
+    const sd=document.getElementById('snapdiv');
+    if(c)c.classList.toggle('snapzone',!!sd&&sd.getBoundingClientRect().top<110);
+  },{passive:true});
   b.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});})();
 
 /* Unified bootstrap. Data contract (injected at /*__DATA__* / by build.py):
