@@ -59,6 +59,11 @@ select:hover,.btn:hover{border-color:var(--accent);}
 .seg{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--panel);}
 .seg button{font:inherit;font-size:14.4px;padding:7px 11px;background:transparent;border:0;color:var(--muted);cursor:pointer;}
 .seg button.on{background:var(--accent);color:#fff;}
+/* flag buttons: active = soft accent well + ring, not a solid fill over the art */
+#seg-lang button{display:flex;align-items:center;padding:5px 8px;opacity:.55;transition:opacity .15s;}
+#seg-lang button svg{display:block;}
+#seg-lang button:hover{opacity:.85;}
+#seg-lang button.on{background:var(--accent-soft);opacity:1;}
 .iconbtn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18.4px;}
 /* hero */
 .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:12px;margin:18px 0;}
@@ -137,11 +142,19 @@ tr:last-child td{border-bottom:none;}
   padding:7px 18px;box-shadow:0 8px 24px rgba(15,23,42,.16);gap:26px;justify-content:center;align-items:center;}
 .controls.stuck .cgroup{align-items:center;}
 .controls.stuck .ctl>label{display:none;}
-/* narrow screens: the centered pill wraps into an odd balloon — go full-width
-   compact bar instead (07.28 mobile fix) */
+/* narrow screens (07.28 mobile rework): two columns — filters stacked left,
+   lang+theme stacked right — instead of an odd wrapping pill */
 @media (max-width:680px){
-  .controls.stuck .cbar{width:100%;border-radius:16px;padding:8px 12px;gap:8px 14px;justify-content:space-between;}
-  .controls.stuck #sel-scope{max-width:150px;}
+  .controls .cbar{flex-wrap:nowrap;justify-content:space-between;align-items:flex-start;}
+  .controls .cgroup{flex-direction:column;gap:8px;flex-wrap:nowrap;}
+  .controls .cgroup:first-child{align-items:flex-start;}
+  .controls .cgroup:last-child{align-items:flex-end;}
+  .controls .cgroup:last-child .ctl label{display:none;}
+  .controls.stuck .cbar{width:100%;border-radius:16px;padding:10px 12px;}
+  .controls #sel-scope{max-width:160px;font-size:13.4px;}
+  .controls .seg button{padding:6px 8px;font-size:13.4px;}
+  .controls #seg-lang button{padding:4px 6px;}
+  .controls .cgroup:first-child{min-width:0;}
 }
 /* back to top */
 #totop{position:fixed;right:18px;bottom:18px;z-index:70;width:42px;height:42px;border-radius:50%;
@@ -234,8 +247,10 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
       </div>
       <div class="cgroup">
         <div class="ctl"><label id="l-lang">言語</label>
-          <div class="seg" id="seg-lang">
-            <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
+          <div class="seg" id="seg-lang"><!-- inline-SVG round flags: self-contained, render everywhere (emoji flags don't on Windows) -->
+            <button data-lang="ja" title="日本語"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#fff" stroke="var(--border)" stroke-width="1"/><circle cx="12" cy="12" r="4.8" fill="#bc002d"/></svg></button>
+            <button data-lang="en" title="English"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><defs><clipPath id="ckuk"><circle cx="12" cy="12" r="11"/></clipPath></defs><g clip-path="url(#ckuk)"><rect width="24" height="24" fill="#012169"/><path d="M0,0 24,24 M24,0 0,24" stroke="#fff" stroke-width="4.6"/><path d="M0,0 24,24 M24,0 0,24" stroke="#C8102E" stroke-width="1.8"/><path d="M12,0 V24 M0,12 H24" stroke="#fff" stroke-width="7.4"/><path d="M12,0 V24 M0,12 H24" stroke="#C8102E" stroke-width="4.2"/></g><circle cx="12" cy="12" r="11" fill="none" stroke="var(--border)" stroke-width="1"/></svg></button>
+            <button data-lang="vi" title="Tiếng Việt"><svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#da251d" stroke="var(--border)" stroke-width="1"/><path d="M12,6.2 13.5,10.6 18.2,10.6 14.4,13.4 15.8,17.8 12,15.1 8.2,17.8 9.6,13.4 5.8,10.6 10.5,10.6 Z" fill="#ffce00"/></svg></button>
           </div>
         </div>
         <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
