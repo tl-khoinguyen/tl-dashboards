@@ -120,6 +120,16 @@ tr:last-child td{border-bottom:none;}
 .fresh.g{background:var(--green-soft);color:var(--green);} .fresh.g::before{background:var(--green);}
 .fresh.a{background:var(--amber-soft);color:var(--amber);} .fresh.a::before{background:var(--amber);}
 .fresh.r{background:var(--red-soft);color:var(--red);} .fresh.r::before{background:var(--red);}
+/* sticky filter bar (07.28): sticks to top past the header; labels collapse when stuck */
+.controls{position:sticky;top:0;z-index:60;background:var(--bg);padding:12px 0 10px;}
+.controls.stuck{border-bottom:1px solid var(--border);box-shadow:0 6px 16px rgba(15,23,42,.10);}
+.controls.stuck .ctl>label{display:none;}
+/* back to top */
+#totop{position:fixed;right:18px;bottom:18px;z-index:70;width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--border);background:var(--panel);color:var(--muted);font-size:17px;cursor:pointer;
+  box-shadow:var(--shadow);opacity:0;pointer-events:none;transition:opacity .2s,color .12s,border-color .12s;}
+#totop.show{opacity:1;pointer-events:auto;}
+#totop:hover{color:var(--text);border-color:var(--accent);}
 .stalebar{display:none;border-radius:var(--radius);padding:11px 16px;margin:14px 0 0;font-size:14.9px;font-weight:500;box-shadow:var(--shadow);}
 .stalebar.a{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);}
 .stalebar.r{background:var(--red-soft);color:var(--red);border:1px solid var(--red);}
@@ -169,24 +179,28 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
       <span class="sub" id="t-sub"></span>
       <span class="fresh g" id="fresh"></span>
     </div>
-    <div class="controls">
-      <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
-      <div class="ctl"><label id="l-range">Range</label>
-        <div class="seg" id="seg-range"></div>
-      </div>
-      <div class="ctl"><label id="l-lang">言語</label>
-        <div class="seg" id="seg-lang">
-          <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
-        </div>
-      </div>
-      <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
+  </div>
+
+  <!-- sticky while scrolling: filters stay reachable next to any section -->
+  <div class="controls" id="controls">
+    <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
+    <div class="ctl"><label id="l-range">Range</label>
+      <div class="seg" id="seg-range"></div>
     </div>
+    <div class="ctl"><label id="l-lang">言語</label>
+      <div class="seg" id="seg-lang">
+        <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
+      </div>
+    </div>
+    <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
   </div>
 
   <div class="stalebar" id="stalebar"></div>
   <div class="hero" id="hero"></div>
   <div class="insight" id="insight"></div>
   <div id="sections"></div>
+
+  <button id="totop" title="top" aria-label="back to top">↑</button>
 
   <div class="foot">
     <span id="f-left"></span>
@@ -307,6 +321,9 @@ function mergeCFG(o){
    shared links — each viewer sees their own choice (default ja on first visit) */
 let LANG=(()=>{try{const v=localStorage.getItem('tl_dash_lang');if(v&&DICT[v])return v;}catch(e){}return 'ja';})();
 let SCOPE='all', RANGE=30, A2ID={}, PI=0;
+/* tab title carries the page/project slug so multiple open tabs are tellable apart */
+const PAGESLUG=(()=>{try{const seg=location.pathname.split('/').filter(s=>s&&!/^index\.html?$/i.test(s));return seg[seg.length-1]||'';}catch(e){return '';}})();
+if(PAGESLUG)document.title=PAGESLUG+' · Backlog Dashboard';
 let RAW=null, CONF=null, PCFG={}, SFULL=[];   // active project's data / deep-link conf / rules / real Backlog statuses
 const T=()=>DICT[LANG];
 const TODAY=new Date(META.today+'T00:00:00Z');
@@ -656,6 +673,8 @@ function renderAll(){
   A2ID={}; RAW.forEach(i=>{ if(i.assignee&&i.aId&&!A2ID[i.assignee]) A2ID[i.assignee]=i.aId; });
   const m=compute();
   renderFresh();
+  const _slug=(PROJECTS&&PROJECTS[PI]&&PROJECTS[PI].slug)||PAGESLUG;
+  document.title=(_slug?_slug+' · ':'')+'Backlog Dashboard';
   $('#t-title').textContent=t.title;
   const _ey=$('#t-ey'); if(_ey){
     const nm=(((PROJECTS&&PROJECTS[PI])?PROJECTS[PI].name:(CONF&&CONF.pk))||'')+' · Backlog';
@@ -688,6 +707,14 @@ $('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');
 $('#seg-lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LANG=b.dataset.lang;
   try{localStorage.setItem('tl_dash_lang',LANG);}catch(e){} renderAll();});
 $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';});
+/* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
+(()=>{const c=$('#controls');if(!c)return;const s=document.createElement('div');
+  c.parentNode.insertBefore(s,c);
+  new IntersectionObserver(([e])=>c.classList.toggle('stuck',!e.isIntersecting)).observe(s);})();
+/* back to top */
+(()=>{const b=$('#totop');if(!b)return;
+  window.addEventListener('scroll',()=>b.classList.toggle('show',window.scrollY>500),{passive:true});
+  b.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});})();
 
 /* Unified bootstrap. Data contract (injected at /*__DATA__* / by build.py):
      const META={today,generated}; const BUILD={updateUrl};
