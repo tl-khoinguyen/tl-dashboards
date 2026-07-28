@@ -14,6 +14,8 @@
   /* Backlog standard status palette (operator decision 07.28) — per-project real
      status colors from the API override these at runtime (loadProject) */
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
+  /* categorical palette for the AREA dimension (validated, distinct from status) */
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4;
   --shadow:0 1px 2px rgba(20,30,50,.05),0 2px 8px rgba(20,30,50,.05);
   --radius:14px;
 }
@@ -24,6 +26,7 @@ html[data-theme="dark"]{
   --green:#3DD3A0; --green-soft:#123528; --amber:#F5B463; --amber-soft:#3A2A12;
   --red:#F87171; --red-soft:#3A1B1E; --grid:#1B2A45;
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -101,6 +104,8 @@ tr:last-child td{border-bottom:none;}
 .chip{display:inline-block;font-size:12.6px;font-weight:600;padding:1px 8px;border-radius:6px;}
 .sbar{display:inline-flex;height:7px;width:76px;border-radius:4px;overflow:hidden;background:var(--grid);vertical-align:middle;}
 .sbar i{height:100%;display:block;box-shadow:inset -1.5px 0 0 0 var(--panel);}
+.abar i{font-style:normal;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;}
+.abar i b{font-size:10.5px;color:#fff;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.4);}
 .bar{display:flex;align-items:center;gap:8px;}
 .bar .tk{flex:1;height:8px;border-radius:5px;background:var(--grid);overflow:hidden;}
 .bar .tk i{display:block;height:100%;border-radius:5px;}
@@ -205,7 +210,8 @@ const DICT={
    m_health:s=>s.forecast?`現ペースで残${s.open}件を消化 → 約${s.forecast}`:`現ペースでは収束見込みなし`,
    up:"増加",down:"減少",flat:"横ばい",good:"良好",warn:"注意",crit:"危険",
    ins_title:"サマリー・インサイト",
-   sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_cat:"種別/カテゴリ別 進捗",
+   sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
+   area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
    sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
@@ -232,7 +238,8 @@ const DICT={
    m_health:s=>s.forecast?`At current pace, ${s.open} open → ~${s.forecast}`:`Does not converge at current pace`,
    up:"up",down:"down",flat:"flat",good:"Good",warn:"Warning",crit:"Critical",
    ins_title:"Summary insight",
-   sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_cat:"Progress by type/category",
+   sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
+   area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
    sec_risk:"Risk & overdue",sec_status:"Status breakdown",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
@@ -259,7 +266,8 @@ const DICT={
    m_health:s=>s.forecast?`Tốc độ hiện tại, ${s.open} mở → ~${s.forecast}`:`Không hội tụ ở tốc độ hiện tại`,
    up:"tăng",down:"giảm",flat:"đi ngang",good:"Tốt",warn:"Cảnh báo",crit:"Nguy hiểm",
    ins_title:"Nhận định tổng quan",
-   sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_cat:"Tiến độ theo loại/nhóm",
+   sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
+   area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
    sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
@@ -368,6 +376,18 @@ function compute(){
   // real per-project statuses (names/colors straight from Backlog)
   const byId={}; scoped.forEach(i=>{byId[i.stId]=(byId[i.stId]||0)+1;});
   const sfull=(SFULL||[]).map(s=>({...s,n:byId[s.id]||0})).filter(s=>s.n>0);
+  // areas (per-project config: category → business area) — engagement share per
+  // assignee ≈ tickets ACTIVE (updated) within the selected range, any status
+  let areas=null;
+  if(PCFG.areas&&PCFG.areas.rules){
+    const rules=PCFG.areas.rules;
+    const areaOf=i=>{const cs=i.category||[];const r=rules.find(r=>cs.some(c=>r.match.includes(c)));return r?r.id:'_other';};
+    const act=scoped.filter(i=>i.assignee&&D(i.updated)&&D(i.updated)>=start);
+    const AM={};
+    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};a.total++;const k=areaOf(i);a.by[k]=(a.by[k]||0)+1;});
+    areas={ids:[...rules.map(r=>r.id),'_other'],
+      members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by})).sort((a,b)=>b.total-a.total)};
+  }
   // members
   const M={};
   open.forEach(i=>{const a=i.assignee||'—';(M[a]=M[a]||{open:0,over:0,stale:0,ages:[],st:{Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0}});
@@ -392,7 +412,7 @@ function compute(){
   // delayed list
   const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
     .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,members,cats,wd,delayed};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,areas,members,cats,wd,delayed};
 }
 
 /* ============ render ============ */
@@ -492,6 +512,21 @@ function renderSections(m){
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
+  /* areas — engagement share per assignee (only when the project config defines areas) */
+  if(m.areas&&m.areas.members.length){
+    const rules=PCFG.areas.rules;
+    const aColor=id=>{const ix=rules.findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,5)})`:'var(--faint)';};
+    const aLabel=id=>{if(id==='_other')return (PCFG.areas.other||{})[LANG]||(PCFG.areas.other||{}).en||'—';
+      const r=rules.find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
+    H+=`<details class="sec" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${m.areas.members.length}</span><span class="chev">▶</span></summary>
+      <div class="secbody">${m.areas.members.map(x=>{
+        const segs=m.areas.ids.filter(id=>x.by[id]).map(id=>{const p=x.by[id]/x.total*100;
+          return `<i style="width:${p}%;background:${aColor(id)}" title="${aLabel(id)} ${Math.round(p)}% (${x.by[id]})">${p>=14?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
+        return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${assigneeLink(x.name)}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
+        <div class="sbar abar" style="width:100%;height:16px;border-radius:6px">${segs}</div></div>`;}).join('')}
+      <div class="legend">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
+      <div class="note">${t.area_note(RANGE)}</div></div></details>`;
+  }
   /* categories (hidden when the project yields none) */
   if(m.cats.length)H+=`<details class="sec"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span><span class="chev">▶</span></summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>

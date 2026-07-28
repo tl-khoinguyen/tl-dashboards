@@ -63,6 +63,7 @@ def payload(pc):
         "SMAP": p["SMAP"], "RAW": p["RAW"],
         "statuses": p.get("statuses", []), "colors": p.get("colors", {}),
         "cfg": {"defaultScope": pc.get("defaultScope", "all"),
+                "areas": pc.get("areas"),
                 "tagScopes": pc.get("tagScopes", []),
                 "categoryMode": pc.get("categoryMode", "issueType"),
                 "catNormalize": pc.get("catNormalize", {}),

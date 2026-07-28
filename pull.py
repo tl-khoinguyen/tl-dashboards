@@ -67,7 +67,8 @@ def slim(i):
         "assignee": (i.get("assignee") or {}).get("name"), "aId": (i.get("assignee") or {}).get("id"),
         "created": (i.get("created") or "")[:10], "updated": (i.get("updated") or "")[:10],
         "dueDate": (i.get("dueDate") or "")[:10] or None,
-        "milestone": [m["name"] for m in i.get("milestone", [])], "parentId": i.get("parentIssueId")}
+        "milestone": [m["name"] for m in i.get("milestone", [])],
+        "category": [c["name"] for c in i.get("category", [])], "parentId": i.get("parentIssueId")}
 
 pulls = {}
 for pc in CFG["projects"]:
