@@ -385,8 +385,12 @@ function compute(){
   // assignee ≈ tickets ACTIVE (updated) within the selected range, any status
   let areas=null;
   if(PCFG.areas&&PCFG.areas.rules){
-    const rules=PCFG.areas.rules;
-    const areaOf=i=>{const cs=i.category||[];const r=rules.find(r=>cs.some(c=>r.match.includes(c)));return r?r.id:'_other';};
+    const rules=PCFG.areas.rules.map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
+    /* an issue's area = first rule hit by category OR title pattern (title supplements
+       category — some projects tag only a generic category, the title carries the area) */
+    const areaOf=i=>{const cs=i.category||[];const s=i.summary||'';
+      const r=rules.find(r=>((r.match||[]).length&&cs.some(c=>r.match.includes(c)))||r._re.some(re=>re.test(s)));
+      return r?r.id:'_other';};
     const act=scoped.filter(i=>i.assignee&&D(i.updated)&&D(i.updated)>=start);
     const AM={};
     act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};a.total++;const k=areaOf(i);a.by[k]=(a.by[k]||0)+1;});
