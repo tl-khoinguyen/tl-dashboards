@@ -400,7 +400,8 @@ function riskChip(med){const t=T();if(med>=CFG.riskMed.high)return `<span class=
 function assigneeLink(name){
   if(!name||!CONF||!CONF.space) return name||'—';
   const id=A2ID[name]; if(!id) return name;
-  return `<a class="lnk" href="https://${CONF.space}/find/${CONF.pk}?assigneeId[]=${id}" target="_blank" rel="noopener">${name}</a>`;
+  /* Backlog issue-search URL takes condition.-prefixed params (assigneeId[]= is ignored — verified 07.28) */
+  return `<a class="lnk" href="https://${CONF.space}/find/${CONF.pk}?condition.assigneeId=${id}" target="_blank" rel="noopener">${name}</a>`;
 }
 function ticketLink(key,label){
   const s=(label||'').replace(/</g,'&lt;');
