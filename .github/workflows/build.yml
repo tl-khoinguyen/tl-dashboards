@@ -31,6 +31,12 @@ jobs:
         env:
           BACKLOG_API_KEY: ${{ secrets.BACKLOG_API_KEY }}
         run: python pull.py --config config.json --out cache/data.json
+      - name: materialize insight (optional — absent secret = section hidden)
+        env:
+          DASH_INSIGHT_B64: ${{ secrets.DASH_INSIGHT_B64 }}
+        run: |
+          mkdir -p cache
+          if [ -n "$DASH_INSIGHT_B64" ]; then echo "$DASH_INSIGHT_B64" | base64 -d > cache/insight.json; fi
       - name: build (encrypted)
         env:
           DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}

@@ -145,6 +145,8 @@ tr:last-child td{border-bottom:none;}
 .stalebar a{color:inherit;font-weight:700;text-decoration:underline;}
 .foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
 .note{font-size:13.2px;color:var(--faint);margin-top:8px;}
+.ailist{margin:4px 0 8px;padding-left:20px;}
+.ailist li{margin:7px 0;line-height:1.68;font-size:14.6px;}
 svg{display:block;max-width:100%;}
 a.lnk{color:inherit;text-decoration:none;border-bottom:1px dashed var(--faint);transition:color .12s,border-color .12s;}
 a.lnk:hover{color:var(--accent);border-color:var(--accent);}
@@ -242,6 +244,8 @@ const DICT={
    m_health:s=>s.forecast?`現ペースで残${s.open}件を消化 → 約${s.forecast}`:`現ペースでは収束見込みなし`,
    up:"増加",down:"減少",flat:"横ばい",good:"良好",warn:"注意",crit:"危険",
    ins_title:"サマリー・インサイト",
+   ins_ai:"AIインサイト",ins_asof:d=>`${d}時点`,ins_cross:"横断メモ",
+   ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
    area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
    sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
@@ -270,6 +274,8 @@ const DICT={
    m_health:s=>s.forecast?`At current pace, ${s.open} open → ~${s.forecast}`:`Does not converge at current pace`,
    up:"up",down:"down",flat:"flat",good:"Good",warn:"Warning",crit:"Critical",
    ins_title:"Summary insight",
+   ins_ai:"AI Insight",ins_asof:d=>`as of ${d}`,ins_cross:"Cross-project",
+   ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
    area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
    sec_risk:"Risk & overdue",sec_status:"Status breakdown",
@@ -298,6 +304,8 @@ const DICT={
    m_health:s=>s.forecast?`Tốc độ hiện tại, ${s.open} mở → ~${s.forecast}`:`Không hội tụ ở tốc độ hiện tại`,
    up:"tăng",down:"giảm",flat:"đi ngang",good:"Tốt",warn:"Cảnh báo",crit:"Nguy hiểm",
    ins_title:"Nhận định tổng quan",
+   ins_ai:"Nhận định AI",ins_asof:d=>`tại ${d}`,ins_cross:"Liên dự án",
+   ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
    area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
    sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
@@ -340,7 +348,7 @@ let SCOPE='all', RANGE=30, A2ID={}, PI=0;
 /* tab title carries the page/project slug so multiple open tabs are tellable apart */
 const PAGESLUG=(()=>{try{const seg=location.pathname.split('/').filter(s=>s&&!/^index\.html?$/i.test(s));return seg[seg.length-1]||'';}catch(e){return '';}})();
 if(PAGESLUG)document.title=PAGESLUG+' · Backlog Dashboard';
-let RAW=null, CONF=null, PCFG={}, SFULL=[];   // active project's data / deep-link conf / rules / real Backlog statuses
+let RAW=null, CONF=null, PCFG={}, SFULL=[], INSW=null;   // active project's data / deep-link conf / rules / real Backlog statuses / weekly AI insight
 const T=()=>DICT[LANG];
 const TODAY=new Date(META.today+'T00:00:00Z');
 const $=s=>document.querySelector(s);
@@ -480,6 +488,13 @@ function ticketLink(key,label){
   if(!key||!CONF||!CONF.space) return s;
   return `<a class="lnk" href="https://${CONF.space}/view/${key}" target="_blank" rel="noopener">${s}</a>`;
 }
+/* AI-insight bullet: plain text in, escaped; **bold** and ticket keys (ABC-123 → Backlog link) */
+function mdIns(s){
+  let h=String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  h=h.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  h=h.replace(/\b([A-Z][A-Z0-9_]{2,}-\d+)\b/g,(m,k)=>CONF&&CONF.space?`<a class="lnk" href="https://${CONF.space}/view/${k}" target="_blank" rel="noopener">${k}</a>`:k);
+  return h;
+}
 function renderHero(m){
   const t=T();const r=RANGE;
   const s={r,created:m.createdR.length,closed:m.closedR.length,net:m.net,open:m.open.length,
@@ -543,6 +558,19 @@ function trendSVG(wd){
 function renderSections(m){
   const t=T();let H='';
   const SH=id=>`<button class="share" type="button" data-sec="${id}" title="copy link">🔗</button>`;
+  /* AI insight — weekly narrative (operator-reviewed, embedded at build time).
+     Optional by design: no insight in the build → the whole section is absent.
+     Cross-project block renders only on the multi page (/all — operator+CEO). */
+  const insItems=INSW&&INSW.items&&(INSW.items[LANG]||INSW.items.ja||INSW.items.en);
+  if(insItems&&insItems.length){
+    const crossItems=(PROJECTS&&PROJECTS.length>1&&typeof CROSS!=='undefined'&&CROSS)?(CROSS[LANG]||CROSS.ja||CROSS.en):null;
+    H+=`<details class="sec" id="sec-ai" open><summary><span class="si">🤖</span>${t.ins_ai}<span class="cnt">${t.ins_asof(INSW.date)}</span>${SH('sec-ai')}<span class="chev">▶</span></summary>
+      <div class="secbody">
+      <ul class="ailist">${insItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>
+      ${crossItems&&crossItems.length?`<div class="asep" style="margin:12px 0 10px"></div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px">🧭 ${t.ins_cross}</div><ul class="ailist">${crossItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>`:''}
+      <div class="note">${t.ins_ai_note}</div>
+      </div></details>`;
+  }
   /* areas — RANGE-scoped section, so it sits first, right under the filter bar.
      Layout: prominent aggregate row + legend + note → strong separator → members
      (paginated, +10 per click). */
@@ -692,7 +720,7 @@ const slugIndex=s=>PROJECTS?PROJECTS.findIndex(p=>p.slug===s):-1;
 const CVAR={Open:'--st-open',InProgress:'--st-inprog',Resolved:'--st-resolved',Pending:'--st-pending',Closed:'--st-closed'};
 function loadProject(i){
   PI=i; const p=PROJECTS[i];
-  RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{}; SFULL=p.statuses||[];
+  RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{}; SFULL=p.statuses||[]; INSW=p.insight||null;
   /* bucket colors = the project's real Backlog status colors (API); fallback = Backlog standard palette */
   const cols=p.colors||{}; for(const k in CVAR) document.documentElement.style.setProperty(CVAR[k],cols[k]||'');
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
@@ -782,7 +810,7 @@ function storedPasses(){
 function rememberPass(p){try{const l=storedPasses().filter(x=>x!==p);l.unshift(p);
   localStorage.setItem(LSKEY,JSON.stringify(l.slice(0,4)));}catch(e){}}
 async function doUnlock(pass,fromStore){            // throws on wrong pass
-  const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects;
+  const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects; CROSS=_o.cross||null;
   /* remember automatically (07.28): ask only on a new device or after rotation */
   rememberPass(pass);
   $('#lock').style.display='none'; initProjects();

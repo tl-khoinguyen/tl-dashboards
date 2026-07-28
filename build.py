@@ -35,6 +35,9 @@ ap.add_argument("--enc", default=None, help="passphrase -> encrypt payload")
 ap.add_argument("--enc-env", default=None, help="read passphrase from this env var")
 ap.add_argument("--snapshot", nargs="?", const="", default=None,
                 help="quick all-in-one single-file snapshot (always plaintext)")
+ap.add_argument("--insight", default=None,
+                help="weekly AI-insight JSON; default: cache/insight.json (CI secret channel) "
+                     "else newest ../insights/*.json — absent = section hidden")
 a = ap.parse_args()
 if a.snapshot is not None and (a.enc or a.enc_env):
     sys.exit("--snapshot is always plaintext — drop --enc/--enc-env")
@@ -45,6 +48,25 @@ TPL = open(a.tpl, encoding="utf-8").read()
 PASS = a.enc or (os.environ.get(a.enc_env, "") if a.enc_env else None)
 if a.enc_env and not PASS:
     sys.exit(f"--enc-env {a.enc_env}: env var empty/unset")
+
+def load_insight():
+    """Weekly AI insight (optional — dashboard hides the section when absent).
+    Operator-reviewed before publish; travels to CI as Secret DASH_INSIGHT_B64
+    materialized to cache/insight.json. Locally: newest file in ../insights/."""
+    import glob
+    cands = [a.insight] if a.insight else [os.path.join(HERE, "cache", "insight.json")]
+    if not a.insight:
+        files = sorted(glob.glob(os.path.join(HERE, "..", "insights", "*.json")))
+        if files: cands.append(files[-1])
+    for c in cands:
+        if c and os.path.exists(c):
+            ins = json.load(open(c, encoding="utf-8"))
+            print(f"INSIGHT {c} (dated {ins.get('date')})")
+            return ins
+    print("INSIGHT none — section hidden")
+    return None
+
+INS = load_insight()
 
 META = {"today": D["today"], "generated": a.built or D["generated"]}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
@@ -58,9 +80,13 @@ def payload(pc):
     if slug not in D["pulls"]:
         sys.exit(f"no pulled data for slug '{slug}' — run pull.py")
     p = D["pulls"][slug]
+    ins = None
+    if INS and slug in INS.get("pages", {}):
+        ins = {"date": INS.get("date"), "week": INS.get("week"),
+               "items": INS["pages"][slug]}
     return {"slug": slug, "name": pc.get("name", pc["key"]),
         "conf": {"space": SPACE, "pk": pc["key"], "pid": p.get("pid")},
-        "SMAP": p["SMAP"], "RAW": p["RAW"],
+        "SMAP": p["SMAP"], "RAW": p["RAW"], "insight": ins,
         "statuses": p.get("statuses", []), "colors": p.get("colors", {}),
         "cfg": {"defaultScope": pc.get("defaultScope", "all"),
                 "areas": pc.get("areas"),
@@ -87,16 +113,18 @@ def encrypt(obj, passes):
                       "wk": b64(AESGCM(kek).encrypt(iv2, dek, None))})
     return {"v": 2, "iv": b64(iv), "ct": b64(ct), "slots": slots}
 
-def emit(page_slug, projs, pw=None):
+def emit(page_slug, projs, pw=None, cross=None):
     # master passphrase always unlocks; a per-project one adds a second key slot
+    # cross = /all-only cross-project insight block (operator+CEO audience)
     passes = [p for p in dict.fromkeys([PASS, pw]) if p]
     if passes:
-        enc = encrypt({"projects": projs}, passes)
+        enc = encrypt({"projects": projs, "cross": cross}, passes)
         data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
-                f"const ENC={json.dumps(enc)};\nlet PROJECTS=null;")
+                f"const ENC={json.dumps(enc)};\nlet PROJECTS=null;\nlet CROSS=null;")
     else:
         data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
-                f"let PROJECTS={json.dumps(projs, ensure_ascii=False)};")
+                f"let PROJECTS={json.dumps(projs, ensure_ascii=False)};\n"
+                f"let CROSS={json.dumps(cross, ensure_ascii=False)};")
     html = TPL.replace("/*__DATA__*/", data)
     d = os.path.join(a.outdir, page_slug); os.makedirs(d, exist_ok=True)
     out = os.path.join(d, "index.html")
@@ -107,7 +135,8 @@ if a.snapshot is not None:
     # quick CEO snapshot — one self-contained file, all projects, plaintext
     projs = [payload(pc) for pc in CFG["projects"]]
     data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
-            f"let PROJECTS={json.dumps(projs, ensure_ascii=False)};")
+            f"let PROJECTS={json.dumps(projs, ensure_ascii=False)};\n"
+            f"let CROSS={json.dumps(INS.get('cross') if INS else None, ensure_ascii=False)};")
     html = TPL.replace("/*__DATA__*/", data)
     out = a.snapshot or os.path.join(HERE, "..", "snapshots", f"{META['generated'].replace('-', '.')}-snapshot.html")
     os.makedirs(os.path.dirname(out), exist_ok=True)
@@ -128,5 +157,6 @@ for pc in CFG["projects"]:
     # standalone page, optionally under its own passphrase (stakeholder scope)
     emit(pc["slug"], [payload(pc)], pw=pc.get("passphrase"))
 if not only or "all" in only:
-    emit("all", [payload(pc) for pc in CFG["projects"]])
+    emit("all", [payload(pc) for pc in CFG["projects"]],
+         cross=INS.get("cross") if INS else None)
     stub(os.path.join(a.outdir, "index.html"), "all/")
