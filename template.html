@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backlog Dashboard</title>
+<style>
+:root{
+  --bg:#F5F7FA; --panel:#FFFFFF; --panel2:#F0F3F7; --border:#E4E8EF;
+  --text:#161D2B; --muted:#4C5666; --faint:#6A7688;
+  --accent:#2563EB; --accent-soft:#E8EFFE;
+  --green:#12805C; --green-soft:#E1F3EC; --amber:#B45309; --amber-soft:#FBEFDD;
+  --red:#DC2626; --red-soft:#FBE6E6; --grid:#EEF1F5;
+  --st-inprog:#2a78d6; --st-open:#eb6834; --st-resolved:#1baf7a; --st-pending:#eda100; --st-closed:#e87ba4;
+  --shadow:0 1px 2px rgba(20,30,50,.05),0 2px 8px rgba(20,30,50,.05);
+  --radius:14px;
+}
+html[data-theme="dark"]{
+  --bg:#0A1120; --panel:#101B30; --panel2:#16233B; --border:#243452;
+  --text:#E7EEF9; --muted:#93A4C0; --faint:#61728F;
+  --accent:#5B9BFF; --accent-soft:#16294A;
+  --green:#3DD3A0; --green-soft:#123528; --amber:#F5B463; --amber-soft:#3A2A12;
+  --red:#F87171; --red-soft:#3A1B1E; --grid:#1B2A45;
+  --st-inprog:#3987e5; --st-open:#d95926; --st-resolved:#199e70; --st-pending:#c98500; --st-closed:#d55181;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;font-size:16.7px;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s;}
+.wrap{max-width:1060px;margin:0 auto;padding:20px 18px 64px;}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+/* top bar */
+.projnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid var(--border);}
+.projnav:empty{display:none;}
+.projnav button{font:inherit;font-size:15px;font-weight:700;padding:9px 18px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:10px;cursor:pointer;transition:all .12s;}
+.projnav button:hover{border-color:var(--accent);color:var(--text);}
+.projnav button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:var(--shadow);}
+.top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
+.controls{padding-top:12px;border-top:1px solid var(--border);}
+.brand{display:flex;flex-direction:column;gap:2px;}
+.brand .ey{font-size:12.6px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;}
+.brand h1{font-size:23px;font-weight:700;letter-spacing:-.01em;}
+.brand .sub{font-size:13.8px;color:var(--muted);}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+.ctl{display:flex;flex-direction:column;gap:3px;}
+.ctl label{font-size:11.5px;color:var(--faint);letter-spacing:.03em;padding-left:2px;}
+select,.btn{font:inherit;font-size:14.9px;color:var(--text);background:var(--panel);border:1px solid var(--border);
+  border-radius:9px;padding:7px 10px;cursor:pointer;transition:border .15s;}
+select:hover,.btn:hover{border-color:var(--accent);}
+.seg{display:flex;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--panel);}
+.seg button{font:inherit;font-size:14.4px;padding:7px 11px;background:transparent;border:0;color:var(--muted);cursor:pointer;}
+.seg button.on{background:var(--accent);color:#fff;}
+.iconbtn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18.4px;}
+/* hero */
+.hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:12px;margin:18px 0;}
+.kcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.kcard .top-dot{position:absolute;top:0;left:0;width:100%;height:3px;}
+.kcard .klbl{font-size:13.8px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.kcard .kval{font-size:34.5px;font-weight:700;letter-spacing:-.02em;line-height:1;display:flex;align-items:baseline;gap:6px;}
+.kcard .kunit{font-size:16.1px;font-weight:600;color:var(--muted);}
+.kcard .kmean{font-size:13.8px;color:var(--muted);margin-top:8px;line-height:1.45;}
+.kcard .kbadge{display:inline-block;font-size:12.6px;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:9px;}
+.g{color:var(--green);} .a{color:var(--amber);} .r{color:var(--red);} .b{color:var(--accent);}
+.bg-g{background:var(--green-soft);color:var(--green);} .bg-a{background:var(--amber-soft);color:var(--amber);}
+.bg-r{background:var(--red-soft);color:var(--red);} .bg-b{background:var(--accent-soft);color:var(--accent);}
+.dot-g{background:var(--green);} .dot-a{background:var(--amber);} .dot-r{background:var(--red);} .dot-b{background:var(--accent);}
+.kcard.tone-r{background:linear-gradient(180deg,var(--red-soft),var(--panel) 52%);}
+.kcard.tone-a{background:linear-gradient(180deg,var(--amber-soft),var(--panel) 52%);}
+.kcard.tone-g{background:linear-gradient(180deg,var(--green-soft),var(--panel) 55%);}
+.kcard .kem{font-size:15px;line-height:1;}
+.ktag{margin-left:auto;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.kpill{margin:2px 0 1px;}
+.hpill{display:inline-flex;align-items:center;gap:7px;font-size:19px;font-weight:800;padding:6px 14px;border-radius:12px;letter-spacing:.01em;}
+/* insight */
+.insight{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px;}
+.insight h2{font-size:14.9px;font-weight:700;display:flex;align-items:center;gap:7px;margin-bottom:8px;}
+.insight p{font-size:15.5px;color:var(--text);margin-bottom:7px;}
+.insight .hl{font-weight:700;}
+.insight ul{margin:4px 0 0 2px;list-style:none;}
+.insight li{font-size:14.9px;color:var(--muted);padding-left:16px;position:relative;margin-bottom:4px;}
+.insight li::before{content:'';position:absolute;left:2px;top:9px;width:5px;height:5px;border-radius:50%;background:var(--accent);}
+/* sections (accordion) */
+details.sec{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden;}
+details.sec>summary{list-style:none;cursor:pointer;padding:15px 18px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:16.1px;user-select:none;}
+details.sec>summary::-webkit-details-marker{display:none;}
+details.sec>summary .chev{margin-left:auto;color:var(--faint);transition:transform .2s;font-size:13.8px;}
+details.sec[open]>summary .chev{transform:rotate(90deg);}
+details.sec>summary .si{width:26px;height:26px;border-radius:7px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:16.1px;}
+details.sec>summary .cnt{font-size:13.8px;font-weight:500;color:var(--muted);background:var(--panel2);padding:2px 9px;border-radius:20px;}
+.secbody{padding:4px 18px 18px;}
+/* table */
+table{width:100%;border-collapse:collapse;}
+th{font-size:12.6px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:8px 8px;border-bottom:1px solid var(--border);white-space:nowrap;}
+th:not(:first-child),td:not(:first-child){text-align:right;}
+td{padding:9px 8px;font-size:15.5px;border-bottom:1px solid var(--grid);}
+tr:last-child td{border-bottom:none;}
+.name{font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.chip{display:inline-block;font-size:12.6px;font-weight:600;padding:1px 8px;border-radius:6px;}
+.sbar{display:inline-flex;height:7px;width:76px;border-radius:4px;overflow:hidden;background:var(--grid);vertical-align:middle;}
+.sbar i{height:100%;display:block;box-shadow:inset -1.5px 0 0 0 var(--panel);}
+.bar{display:flex;align-items:center;gap:8px;}
+.bar .tk{flex:1;height:8px;border-radius:5px;background:var(--grid);overflow:hidden;}
+.bar .tk i{display:block;height:100%;border-radius:5px;}
+.morebtn{margin-top:10px;font-size:14.4px;color:var(--accent);background:none;border:none;cursor:pointer;padding:4px;}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;}
+.legend span{display:flex;align-items:center;gap:5px;font-size:13.8px;color:var(--muted);}
+.legend i{width:9px;height:9px;border-radius:2px;}
+.fresh{display:inline-flex;align-items:center;gap:6px;font-size:13.2px;font-weight:600;padding:3px 10px;border-radius:20px;margin-top:7px;width:fit-content;}
+.fresh::before{content:'';width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.fresh.g{background:var(--green-soft);color:var(--green);} .fresh.g::before{background:var(--green);}
+.fresh.a{background:var(--amber-soft);color:var(--amber);} .fresh.a::before{background:var(--amber);}
+.fresh.r{background:var(--red-soft);color:var(--red);} .fresh.r::before{background:var(--red);}
+.stalebar{display:none;border-radius:var(--radius);padding:11px 16px;margin:14px 0 0;font-size:14.9px;font-weight:500;box-shadow:var(--shadow);}
+.stalebar.a{background:var(--amber-soft);color:var(--amber);border:1px solid var(--amber);}
+.stalebar.r{background:var(--red-soft);color:var(--red);border:1px solid var(--red);}
+.stalebar a{color:inherit;font-weight:700;text-decoration:underline;}
+.foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
+.note{font-size:13.2px;color:var(--faint);margin-top:8px;}
+svg{display:block;max-width:100%;}
+a.lnk{color:inherit;text-decoration:none;border-bottom:1px dashed var(--faint);transition:color .12s,border-color .12s;}
+a.lnk:hover{color:var(--accent);border-color:var(--accent);}
+.lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
+.lockcard{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:30px 28px;width:100%;max-width:380px;text-align:center;}
+.lockcard .lockey{font-size:12.6px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;}
+.lockcard h2{font-size:23px;font-weight:700;margin:4px 0 14px;}
+.lockcard .fresh{margin:0 auto 16px;}
+.lockmsg{font-size:14.9px;color:var(--muted);margin-bottom:14px;}
+.pw{width:100%;font:inherit;font-size:17.2px;padding:11px 13px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--text);text-align:center;letter-spacing:.05em;}
+.pw:focus{outline:none;border-color:var(--accent);}
+.unlock{width:100%;margin-top:12px;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:11px;font-size:16.1px;font-weight:600;cursor:pointer;}
+.pwerr{color:var(--red);font-size:14.4px;margin-top:10px;min-height:16px;display:none;}
+.remember{display:flex;align-items:center;gap:7px;justify-content:center;font-size:13px;color:var(--muted);margin-top:12px;cursor:pointer;}
+.remember input{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);}
+@media(max-width:560px){
+  .kcard .kval{font-size:29.9px;} .wrap{padding:14px 12px 48px;}
+  .brand h1{font-size:20.7px;}
+}
+</style>
+</head>
+<body>
+<form id="lock" class="lock" style="display:none" autocomplete="on">
+  <div class="lockcard">
+    <div class="lockey">tl-dashboards</div>
+    <h2 id="lockttl">Dashboard</h2>
+    <span class="fresh g" id="lockfresh"></span>
+    <p class="lockmsg" id="lockmsg"></p>
+    <input type="text" name="username" value="dashboard" autocomplete="username" hidden readonly>
+    <input type="password" id="pw" name="password" autocomplete="current-password" class="pw">
+    <button type="submit" class="unlock" id="unlockbtn"></button>
+    <div class="pwerr" id="pwerr"></div>
+  </div>
+</form>
+<div class="wrap">
+  <div class="projnav" id="projnav"></div>
+  <div class="top">
+    <div class="brand">
+      <span class="ey" id="t-ey">Backlog</span>
+      <h1 id="t-title">Backlog Dashboard</h1>
+      <span class="sub" id="t-sub"></span>
+      <span class="fresh g" id="fresh"></span>
+    </div>
+    <div class="controls">
+      <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
+      <div class="ctl"><label id="l-range">Range</label>
+        <div class="seg" id="seg-range"></div>
+      </div>
+      <div class="ctl"><label id="l-lang">言語</label>
+        <div class="seg" id="seg-lang">
+          <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
+        </div>
+      </div>
+      <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
+    </div>
+  </div>
+
+  <div class="stalebar" id="stalebar"></div>
+  <div class="hero" id="hero"></div>
+  <div class="insight" id="insight"></div>
+  <div id="sections"></div>
+
+  <div class="foot">
+    <span id="f-left"></span>
+    <span id="f-right"></span>
+  </div>
+</div>
+
+<script>
+/*__DATA__*/
+
+/* ============ i18n ============ */
+const DICT={
+ ja:{title:"バックログ・ダッシュボード",scope:"スコープ",range:"期間",lang:"言語",
+   sub:s=>`スコープ: ${s.scopeName} ／ 未完了 ${s.open}件 ／ 抽出 ${s.date}`,
+   r7:"直近7日",r30:"直近30日",r90:"直近90日",
+   allopen:"全未完了",highp:"優先度：高",overdueScope:"期限超過のみ",
+   ms:n=>`マイルストーン: ${n}`,
+   k_open:"未完了チケット",k_trend:"バックログ増減",k_over:"期限超過",k_stale:"停滞(30日+)",k_health:"健全度",
+   m_open:s=>`現在オープン中。直近${s.r}日で 新規${s.created}・完了${s.closed}`,
+   m_trend:s=>s.net>0?`増加中：${s.r}日で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.r}日で ${s.net}（消化が進行）`:`横ばい`,
+   m_over:s=>`${s.overdue}件が期限超過（オープンの${s.overduePct}%）`,
+   m_stale:s=>`${s.stale}件が30日以上未更新（${s.stalePct}%）`,
+   m_health:s=>s.forecast?`現ペースで残${s.open}件を消化 → 約${s.forecast}`:`現ペースでは収束見込みなし`,
+   up:"増加",down:"減少",flat:"横ばい",good:"良好",warn:"注意",crit:"危険",
+   ins_title:"サマリー・インサイト",
+   sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_cat:"種別/カテゴリ別 進捗",
+   sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
+   th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
+   th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
+   th_ticket:"件名",th_due:"期限",th_days:"超過日数",
+   more:"すべて表示",less:"折りたたむ",showing:n=>`上位 ${n} 件`,
+   created:"新規",closed:"完了",net:"純増減",week:"週",stalep:"停滞%",
+   risk_h:"高",risk_m:"中",risk_l:"低",
+   st:{Open:"未着手",InProgress:"進行中",Resolved:"処理済/QA",Pending:"保留",Closed:"完了"},
+   foot_l:"Backlog ダッシュボード · クライアント集計（オフライン可）",
+   foot_r:s=>`データ抽出 ${s.date} · Backlog API · Scope=${s.scopeName}`,
+   noconv:"収束見込みなし",
+   updated:"更新",today_:"本日",daysAgo:n=>`${n}日前`,staleMsg:n=>`データが ${n}日前 と古くなっています。`,updateNow:"今すぐ更新",
+   lockMsg:"パスワードを入力して表示",unlock:"開く",wrongPass:"パスワードが違います"},
+ en:{title:"Backlog Dashboard",scope:"Scope",range:"Range",lang:"Lang",
+   sub:s=>`Scope: ${s.scopeName} · ${s.open} open · as of ${s.date}`,
+   r7:"Last 7d",r30:"Last 30d",r90:"Last 90d",
+   allopen:"All open",highp:"Priority: High",overdueScope:"Overdue only",
+   ms:n=>`Milestone: ${n}`,
+   k_open:"Open tickets",k_trend:"Backlog change",k_over:"Overdue",k_stale:"Stale (30d+)",k_health:"Health",
+   m_open:s=>`Currently open. Last ${s.r}d: ${s.created} new / ${s.closed} closed`,
+   m_trend:s=>s.net>0?`Growing: +${s.net} over ${s.r}d (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} over ${s.r}d`:`Flat`,
+   m_over:s=>`${s.overdue} past due (${s.overduePct}% of open)`,
+   m_stale:s=>`${s.stale} untouched 30d+ (${s.stalePct}%)`,
+   m_health:s=>s.forecast?`At current pace, ${s.open} open → ~${s.forecast}`:`Does not converge at current pace`,
+   up:"up",down:"down",flat:"flat",good:"Good",warn:"Warning",crit:"Critical",
+   ins_title:"Summary insight",
+   sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_cat:"Progress by type/category",
+   sec_risk:"Risk & overdue",sec_status:"Status breakdown",
+   th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
+   th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
+   th_ticket:"Title",th_due:"Due",th_days:"Days over",
+   more:"Show all",less:"Collapse",showing:n=>`Top ${n}`,
+   created:"New",closed:"Closed",net:"Net",week:"Week",stalep:"Stale%",
+   risk_h:"High",risk_m:"Mid",risk_l:"Low",
+   st:{Open:"To-do",InProgress:"In progress",Resolved:"Resolved/QA",Pending:"Pending",Closed:"Closed"},
+   foot_l:"Backlog Dashboard · client-side (works offline)",
+   foot_r:s=>`Extracted ${s.date} · Backlog API · Scope=${s.scopeName}`,
+   noconv:"no convergence",
+   updated:"Updated",today_:"today",daysAgo:n=>`${n}d ago`,staleMsg:n=>`Data is ${n} days old.`,updateNow:"Update now",
+   lockMsg:"Enter password to view",unlock:"Unlock",wrongPass:"Wrong password"},
+ vi:{title:"Bảng điều khiển Backlog",scope:"Phạm vi",range:"Khoảng",lang:"Ngôn ngữ",
+   sub:s=>`Phạm vi: ${s.scopeName} · ${s.open} đang mở · tính đến ${s.date}`,
+   r7:"7 ngày",r30:"30 ngày",r90:"90 ngày",
+   allopen:"Tất cả đang mở",highp:"Ưu tiên: Cao",overdueScope:"Chỉ quá hạn",
+   ms:n=>`Milestone: ${n}`,
+   k_open:"Ticket đang mở",k_trend:"Biến động backlog",k_over:"Quá hạn",k_stale:"Đình trệ (30d+)",k_health:"Sức khỏe",
+   m_open:s=>`Đang mở. ${s.r} ngày qua: ${s.created} mới / ${s.closed} đóng`,
+   m_trend:s=>s.net>0?`Đang phình: +${s.net} trong ${s.r}d (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} trong ${s.r}d`:`Đi ngang`,
+   m_over:s=>`${s.overdue} quá hạn (${s.overduePct}% số mở)`,
+   m_stale:s=>`${s.stale} không đụng 30d+ (${s.stalePct}%)`,
+   m_health:s=>s.forecast?`Tốc độ hiện tại, ${s.open} mở → ~${s.forecast}`:`Không hội tụ ở tốc độ hiện tại`,
+   up:"tăng",down:"giảm",flat:"đi ngang",good:"Tốt",warn:"Cảnh báo",crit:"Nguy hiểm",
+   ins_title:"Nhận định tổng quan",
+   sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_cat:"Tiến độ theo loại/nhóm",
+   sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
+   th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
+   th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
+   th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
+   more:"Xem tất cả",less:"Thu gọn",showing:n=>`Top ${n}`,
+   created:"Mới",closed:"Đóng",net:"Ròng",week:"Tuần",stalep:"Đình trệ%",
+   risk_h:"Cao",risk_m:"TB",risk_l:"Thấp",
+   st:{Open:"Chưa làm",InProgress:"Đang làm",Resolved:"Đã xử lý/QA",Pending:"Treo",Closed:"Đóng"},
+   foot_l:"Backlog Dashboard · tính client-side (chạy offline)",
+   foot_r:s=>`Trích ${s.date} · Backlog API · Scope=${s.scopeName}`,
+   noconv:"không hội tụ",
+   updated:"Cập nhật",today_:"hôm nay",daysAgo:n=>`${n} ngày trước`,staleMsg:n=>`Dữ liệu đã cũ ${n} ngày.`,updateNow:"Cập nhật ngay",
+   lockMsg:"Nhập mật khẩu để xem",unlock:"Mở",wrongPass:"Sai mật khẩu"},
+};
+
+/* ============ CONFIG — tunable thresholds & indicators (single place) ============ */
+const BASECFG={
+  staleDays:30,                 // "stale" = open & untouched more than N days
+  overdue:{warn:20,crit:40},    // % of open past-due → amber / red
+  stale:{warn:30,crit:50},      // % of open stale → amber / red
+  fresh:{warn:3,crit:7},        // freshness badge: amber if >warn days old, red if >crit
+  riskMed:{mid:45,high:90},     // member median open-age (days) → 中 / 高 risk chip
+  health:{ staleCrit:50, overdueCrit:40, staleWarn:30, overdueWarn:25 }, // health rollup
+};
+let CFG=BASECFG;                // effective = base + per-project overrides (applyProject)
+function mergeCFG(o){
+  if(!o||!Object.keys(o).length)return BASECFG;
+  const c=JSON.parse(JSON.stringify(BASECFG));
+  for(const k in o){ if(o[k]&&typeof o[k]==='object')Object.assign(c[k]=c[k]||{},o[k]); else c[k]=o[k]; }
+  return c;
+}
+
+/* ============ state ============ */
+let LANG='ja', SCOPE='all', RANGE=30, A2ID={}, PI=0;
+let RAW=null, CONF=null, PCFG={};   // active project's data / deep-link conf / per-project rules
+const T=()=>DICT[LANG];
+const TODAY=new Date(META.today+'T00:00:00Z');
+const $=s=>document.querySelector(s);
+
+/* ============ helpers ============ */
+const D=s=>s?new Date(s.slice(0,10)+'T00:00:00Z'):null;
+const days=(a,b)=>Math.round((b-a)/864e5);
+const median=xs=>{if(!xs.length)return 0;const s=[...xs].sort((a,b)=>a-b);const m=s.length>>1;return s.length%2?s[m]:Math.round((s[m-1]+s[m])/2);};
+const isDone=i=>i.stId===4;   // status id 4 = Closed/完了 (names are localized — never match by name)
+const age=i=>{const c=D(i.created);const e=isDone(i)?D(i.updated):TODAY;return c?days(c,e):null;};
+const monday=d=>{const x=new Date(d);const w=(x.getUTCDay()+6)%7;x.setUTCDate(x.getUTCDate()-w);return x;};
+const fmtDate=d=>`${d.getUTCFullYear()}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${String(d.getUTCDate()).padStart(2,'0')}`;
+
+/* status → 5-bucket map, keyed by status ID (localization-proof).
+   SMAP is injected per project (pull.py heuristic + config overrides). */
+let SMAP={};
+const bkt=i=>SMAP[i.stId]||'Open';
+const BORDER={Open:'var(--st-open)',InProgress:'var(--st-inprog)',Resolved:'var(--st-resolved)',Pending:'var(--st-pending)',Closed:'var(--st-closed)'};
+/* category of an issue — mode from per-project config:
+   'issueType' = Backlog issue type; 'bracket2' = 2nd 【…】 tag in the title; 'none' */
+function normCat(n){n=n.trim();const M=PCFG.catNormalize||{};return M[n]||n;}
+function sub(i){
+  const mode=PCFG.categoryMode||'issueType';
+  if(mode==='bracket2'){const m=[...(i.summary||'').matchAll(/【([^】]+)】/g)].map(x=>x[1]);return m.length>1?normCat(m[1]):'—';}
+  if(mode==='issueType')return i.type||'—';
+  return '—';
+}
+
+/* ============ scopes ============ */
+function scopeFilter(id){
+  if(id==='all')return()=>true;
+  if(id.startsWith('tag:')){const tags=id.slice(4).split('|');return i=>i.summary&&tags.some(tg=>i.summary.includes(tg));}
+  if(id==='highp')return i=>i.prId===2;
+  if(id==='overdue')return i=>i.dueDate&&D(i.dueDate)<TODAY&&!isDone(i);
+  if(id.startsWith('ms:')){const n=id.slice(3);return i=>(i.milestone||[]).includes(n);}
+  return()=>true;
+}
+function scopeName(id){
+  const t=T();
+  if(id==='all')return t.allopen;
+  if(id.startsWith('tag:')){const s=(PCFG.tagScopes||[]).find(x=>x.id===id);return s?(s[LANG]||s.en||id):id.slice(4);}
+  if(id==='highp')return t.highp;if(id==='overdue')return t.overdueScope;
+  if(id.startsWith('ms:'))return id.slice(3);
+  return id;
+}
+
+/* ============ compute ============ */
+function compute(){
+  const f=scopeFilter(SCOPE);
+  const scoped=RAW.filter(f);
+  const open=scoped.filter(i=>!isDone(i));
+  const closedAll=scoped.filter(isDone);
+  const start=new Date(TODAY);start.setUTCDate(start.getUTCDate()-RANGE);
+  const createdR=scoped.filter(i=>D(i.created)&&D(i.created)>=start);
+  const closedR=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=start);
+  const overdue=open.filter(i=>i.dueDate&&D(i.dueDate)<TODAY);
+  const stale=open.filter(i=>D(i.updated)&&days(D(i.updated),TODAY)>CFG.staleDays);
+  const net=createdR.length-closedR.length;
+  const perDay=closedR.length/RANGE;
+  const forecast=(perDay>0&&net<0)?(()=>{const d=new Date(TODAY);d.setUTCDate(d.getUTCDate()+Math.round(open.length/perDay));return fmtDate(d);})():null;
+  const overduePct=open.length?Math.round(overdue.length/open.length*100):0;
+  const stalePct=open.length?Math.round(stale.length/open.length*100):0;
+  const medAge=median(open.map(age).filter(x=>x!=null));
+  // health
+  let health='good';
+  if(stalePct>=CFG.health.staleCrit||overduePct>=CFG.health.overdueCrit||(net>0&&net>=createdR.length*0.5))health='crit';
+  else if(stalePct>=CFG.health.staleWarn||overduePct>=CFG.health.overdueWarn||net>0)health='warn';
+  // status buckets (incl closed)
+  const status={Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0};
+  scoped.forEach(i=>status[bkt(i)]++);
+  // members
+  const M={};
+  open.forEach(i=>{const a=i.assignee||'—';(M[a]=M[a]||{open:0,over:0,stale:0,ages:[],st:{Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0}});
+    M[a].open++;M[a].st[bkt(i)]++;const ag=age(i);if(ag!=null)M[a].ages.push(ag);
+    if(i.dueDate&&D(i.dueDate)<TODAY)M[a].over++; if(D(i.updated)&&days(D(i.updated),TODAY)>CFG.staleDays)M[a].stale++;});
+  const members=Object.entries(M).map(([n,v])=>({name:n,open:v.open,over:v.over,stale:v.stale,med:median(v.ages),st:v.st}))
+    .sort((a,b)=>b.open-a.open);
+  // categories (種別)
+  const C={};
+  scoped.forEach(i=>{const k=sub(i);if(k==='—')return;(C[k]=C[k]||{done:0,prog:0,todo:0,pend:0});const b=bkt(i);
+    if(b==='Closed')C[k].done++;else if(b==='InProgress'||b==='Resolved')C[k].prog++;else if(b==='Pending')C[k].pend++;else C[k].todo++;});
+  const cats=Object.entries(C).map(([n,v])=>({name:n,...v,total:v.done+v.prog+v.todo+v.pend}))
+    .sort((a,b)=>b.total-a.total).slice(0,12);
+  // weekly (12 wk)
+  const weeks=[];for(let w=11;w>=0;w--){const m=monday(TODAY);m.setUTCDate(m.getUTCDate()-w*7);weeks.push(m);}
+  const wd=weeks.map(wk=>{const end=new Date(wk);end.setUTCDate(end.getUTCDate()+6);
+    const cr=scoped.filter(i=>D(i.created)&&+monday(D(i.created))===+wk).length;
+    const cl=closedAll.filter(i=>D(i.updated)&&+monday(D(i.updated))===+wk).length;
+    const base=open.filter(i=>D(i.created)&&D(i.created)<=end);
+    const st=base.filter(i=>D(i.updated)&&days(D(i.updated),TODAY)>CFG.staleDays);
+    return{wk,label:`${wk.getUTCMonth()+1}/${wk.getUTCDate()}`,cr,cl,net:cr-cl,stale:base.length?Math.round(st.length/base.length*100):0};});
+  // delayed list
+  const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
+    .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,members,cats,wd,delayed};
+}
+
+/* ============ render ============ */
+function statusMix(st,w=76){
+  const tot=Object.values(st).reduce((a,b)=>a+b,0)||1;const order=['InProgress','Open','Resolved','Pending','Closed'];
+  return `<span class="sbar" style="width:${w}px">`+order.map(k=>`<i style="width:${st[k]/tot*100}%;background:${BORDER[k]}"></i>`).join('')+`</span>`;
+}
+function riskChip(med){const t=T();if(med>=CFG.riskMed.high)return `<span class="chip bg-r">${t.risk_h}</span>`;if(med>=CFG.riskMed.mid)return `<span class="chip bg-a">${t.risk_m}</span>`;return `<span class="chip bg-g">${t.risk_l}</span>`;}
+
+function assigneeLink(name){
+  if(!name||!CONF||!CONF.space) return name||'—';
+  const id=A2ID[name]; if(!id) return name;
+  return `<a class="lnk" href="https://${CONF.space}/find/${CONF.pk}?assigneeId[]=${id}" target="_blank" rel="noopener">${name}</a>`;
+}
+function ticketLink(key,label){
+  const s=(label||'').replace(/</g,'&lt;');
+  if(!key||!CONF||!CONF.space) return s;
+  return `<a class="lnk" href="https://${CONF.space}/view/${key}" target="_blank" rel="noopener">${s}</a>`;
+}
+function renderHero(m){
+  const t=T();const r=RANGE;
+  const s={r,created:m.createdR.length,closed:m.closedR.length,net:m.net,open:m.open.length,
+    overdue:m.overdue.length,overduePct:m.overduePct,stale:m.stale.length,stalePct:m.stalePct,forecast:m.forecast};
+  const lvl=c=>c==='r'?t.crit:c==='a'?t.warn:t.good;
+  const trendCls=m.net>0?'r':m.net<0?'g':'b';
+  const overCls=m.overduePct>=CFG.overdue.crit?'r':m.overduePct>=CFG.overdue.warn?'a':'g';
+  const staleCls=m.stalePct>=CFG.stale.crit?'r':m.stalePct>=CFG.stale.warn?'a':'g';
+  const hCls=m.health==='crit'?'r':m.health==='warn'?'a':'g';
+  const hEmoji=hCls==='r'?'🔴':hCls==='a'?'🟡':'🟢';
+  const hTxt=m.health==='crit'?t.crit:m.health==='warn'?t.warn:t.good;
+  const cards=[
+    {tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
+    {tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
+    {tone:overCls,emoji:'⏰',lbl:t.k_over,val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
+    {tone:staleCls,emoji:'🕒',lbl:t.k_stale,val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
+    {tone:hCls,emoji:'🩺',lbl:t.k_health,pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
+  ];
+  $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}"><div class="top-dot dot-${c.tone}"></div>
+    <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
+    ${c.pill?`<div class="kpill">${c.pill}</div>`:`<div class="kval mono ${c.tone}">${c.val}${c.unit?`<span class="kunit">${c.unit}</span>`:''}</div>`}
+    <div class="kmean">${c.mean}</div></div>`).join('');
+}
+
+function renderInsight(m){
+  const t=T();const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
+  const topRisk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med)[0];
+  const worstCat=m.cats[0];
+  const p1=`<span class="hl">${scopeName(SCOPE)}</span>: ${m.open.length}${LANG==='ja'?'件オープン':LANG==='vi'?' đang mở':' open'}, `+
+    (LANG==='ja'?`直近${RANGE}日で新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
+    :LANG==='vi'?`${RANGE} ngày qua tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
+    :`last ${RANGE}d: ${m.createdR.length} new / ${m.closedR.length} closed (backlog <span class="hl">${dir}</span>).`);
+  const p2=m.forecast?(LANG==='ja'?`現ペースなら約 <span class="hl">${m.forecast}</span> で消化。`:LANG==='vi'?`Tốc độ hiện tại ước hoàn tất ~<span class="hl">${m.forecast}</span>.`:`At current pace, clears ~<span class="hl">${m.forecast}</span>.`)
+    :(LANG==='ja'?`現ペースでは<span class="hl">${t.noconv}</span>（完了が滞留）。`:LANG==='vi'?`Ở tốc độ hiện tại <span class="hl">${t.noconv}</span>.`:`<span class="hl">${t.noconv}</span> at current pace.`);
+  const bullets=[
+    (LANG==='ja'?`期限超過 ${m.overdue.length}件（${m.overduePct}%）・停滞 ${m.stale.length}件（${m.stalePct}%）`:LANG==='vi'?`Quá hạn ${m.overdue.length} (${m.overduePct}%) · đình trệ ${m.stale.length} (${m.stalePct}%)`:`Overdue ${m.overdue.length} (${m.overduePct}%) · stale ${m.stale.length} (${m.stalePct}%)`),
+  ];
+  if(topRisk)bullets.push(LANG==='ja'?`最長経過: ${topRisk.name}（中央値 ${topRisk.med}日）`:LANG==='vi'?`Tồn lâu nhất: ${topRisk.name} (trung vị ${topRisk.med}d)`:`Oldest load: ${topRisk.name} (median ${topRisk.med}d)`);
+  if(worstCat)bullets.push(LANG==='ja'?`最大カテゴリ: ${worstCat.name}（${worstCat.total}件）`:LANG==='vi'?`Nhóm lớn nhất: ${worstCat.name} (${worstCat.total})`:`Largest category: ${worstCat.name} (${worstCat.total})`);
+  $('#insight').innerHTML=`<h2>💡 ${t.ins_title}</h2><p>${p1} ${p2}</p><ul>${bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;
+}
+
+function trendSVG(wd){
+  const W=920,H=200,pl=34,pr=34,pt=14,pb=26;const iw=W-pl-pr,ih=H-pt-pb;
+  const maxB=Math.max(1,...wd.map(w=>Math.max(w.cr,w.cl)));const bw=iw/wd.length;
+  const x=i=>pl+i*bw, y=v=>pt+ih-(v/maxB)*ih;
+  const g='var(--grid)',mut='var(--muted)';
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="trend">`;
+  for(let k=0;k<=4;k++){const gy=pt+ih*(k/4),vv=Math.round(maxB*(1-k/4));s+=`<line x1="${pl}" y1="${gy}" x2="${W-pr}" y2="${gy}" stroke="${g}"/><text x="${pl-6}" y="${gy+3}" font-size="9" fill="${mut}" text-anchor="end">${vv}</text>`;}
+  wd.forEach((w,i)=>{const cx=x(i)+bw*0.5;const bwid=Math.min(9,bw*0.32);
+    s+=`<rect x="${cx-bwid-1}" y="${y(w.cr)}" width="${bwid}" height="${pt+ih-y(w.cr)}" rx="1.5" fill="var(--accent)" opacity=".55"/>`;
+    s+=`<rect x="${cx+1}" y="${y(w.cl)}" width="${bwid}" height="${pt+ih-y(w.cl)}" rx="1.5" fill="var(--green)"/>`;
+    s+=`<text x="${cx}" y="${H-9}" font-size="9" fill="${mut}" text-anchor="middle">${w.label}</text>`;});
+  const ry=v=>pt+ih-(v/100)*ih;
+  let pts=wd.map((w,i)=>`${x(i)+bw*0.5},${ry(w.stale)}`).join(' ');
+  s+=`<polyline points="${pts}" fill="none" stroke="var(--amber)" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  wd.forEach((w,i)=>{s+=`<circle cx="${x(i)+bw*0.5}" cy="${ry(w.stale)}" r="2" fill="var(--amber)"/>`;});
+  s+=`</svg>`;return s;
+}
+
+function renderSections(m){
+  const t=T();let H='';
+  /* flow */
+  H+=`<details class="sec" open><summary><span class="si">📈</span>${t.sec_flow}<span class="chev">▶</span></summary>
+    <div class="secbody">${trendSVG(m.wd)}
+    <div class="legend"><span><i style="background:var(--accent);opacity:.55"></i>${t.created}</span><span><i style="background:var(--green)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
+    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
+    ${[...m.wd].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono g">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
+    </tbody></table></div></div></details>`;
+  /* members */
+  const topN=8;
+  const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
+  H+=`<details class="sec"><summary><span class="si">👥</span>${t.sec_mem}<span class="cnt">${m.members.length}</span><span class="chev">▶</span></summary>
+    <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
+    <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
+    ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
+    <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
+  /* categories (hidden when the project yields none) */
+  if(m.cats.length)H+=`<details class="sec"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span><span class="chev">▶</span></summary>
+    <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
+      <div class="sbar" style="width:100%;height:9px"><i style="width:${c.done/c.total*100}%;background:var(--green)"></i><i style="width:${c.prog/c.total*100}%;background:var(--accent)"></i><i style="width:${c.todo/c.total*100}%;background:var(--faint)"></i><i style="width:${c.pend/c.total*100}%;background:var(--amber)"></i></div></div>`;}).join('')}
+    <div class="legend"><span><i style="background:var(--green)"></i>${t.th_done}</span><span><i style="background:var(--accent)"></i>${t.th_prog}</span><span><i style="background:var(--faint)"></i>${t.th_todo}</span><span><i style="background:var(--amber)"></i>${t.st.Pending}</span></div></div></details>`;
+  /* risk & delayed */
+  const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
+  const rmax=Math.max(1,...risk.map(x=>x.med));
+  H+=`<details class="sec"><summary><span class="si">⚠</span>${t.sec_risk}<span class="cnt">${m.overdue.length}</span><span class="chev">▶</span></summary>
+    <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
+    <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
+    ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
+    </tbody></table></div></div></details>`;
+  /* status */
+  const tot=Object.values(m.status).reduce((a,b)=>a+b,0)||1;
+  H+=`<details class="sec"><summary><span class="si">◔</span>${t.sec_status}<span class="cnt">${tot}</span><span class="chev">▶</span></summary>
+    <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<i style="width:${m.status[k]/tot*100}%;background:${BORDER[k]}" title="${t.st[k]} ${m.status[k]}"></i>`).join('')}</div>
+    <div class="legend" style="margin-top:14px">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('')}</div>
+    ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
+  $('#sections').innerHTML=H;
+  const mb=$('#memmore');
+  if(mb)mb.onclick=()=>{const o=mb.dataset.open==='1';document.querySelector('#memtb').innerHTML=memRows(o?m.members.slice(0,topN):m.members);mb.dataset.open=o?'0':'1';mb.textContent=o?`${t.more} (${m.members.length-topN}+)`:t.less;};
+}
+
+/* ============ controls ============ */
+function buildControls(){
+  const t=T();
+  // scope select
+  const msCounts={};RAW.forEach(i=>(i.milestone||[]).forEach(n=>{if(!isDone(i))msCounts[n]=(msCounts[n]||0)+1;}));
+  const topMs=Object.entries(msCounts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(x=>x[0]);
+  const tagOpts=(PCFG.tagScopes||[]).map(s=>[s.id,s[LANG]||s.en||s.id]);
+  const opts=[['all',t.allopen],...tagOpts,['highp',t.highp],['overdue',t.overdueScope],...topMs.map(n=>['ms:'+n,t.ms(n)])];
+  $('#sel-scope').innerHTML=opts.map(([v,l])=>`<option value="${v}"${v===SCOPE?' selected':''}>${l}</option>`).join('');
+  // range seg
+  $('#seg-range').innerHTML=[[7,t.r7],[30,t.r30],[90,t.r90]].map(([v,l])=>`<button data-range="${v}" class="${v===RANGE?'on':''}">${l}</button>`).join('');
+  // labels
+  $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;$('#l-lang').textContent=t.lang;
+  document.querySelectorAll('#seg-lang button').forEach(b=>b.classList.toggle('on',b.dataset.lang===LANG));
+}
+
+const UPDATE_URL=(typeof BUILD!=='undefined'&&BUILD.updateUrl)||"";  // Actions workflow_dispatch page (from build config)
+function freshInfo(){
+  const t=T();const built=new Date((META.generated||META.today)+'T00:00:00Z');
+  let d=Math.floor((new Date()-built)/864e5); if(d<0)d=0;
+  return {d,cls:d>CFG.fresh.crit?'r':d>CFG.fresh.warn?'a':'g',text:`${t.updated}: ${META.generated} · ${d===0?t.today_:t.daysAgo(d)}`};
+}
+function renderFresh(){
+  const t=T(),f=freshInfo();
+  const fr=$('#fresh'); fr.className='fresh '+f.cls; fr.textContent=f.text;
+  const sb=$('#stalebar');
+  if(f.d>CFG.fresh.warn){sb.style.display='block';sb.className='stalebar '+(f.d>CFG.fresh.crit?'r':'a');
+    sb.innerHTML=`⚠ ${t.staleMsg(f.d)} <a href="${UPDATE_URL||'#'}"${UPDATE_URL?' target="_blank"':''}>${t.updateNow} ↗</a>`;}
+  else{sb.style.display='none';sb.innerHTML='';}
+}
+async function decryptData(pass){
+  const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  const salt=b(ENC.salt),iv=b(ENC.iv),ct=b(ENC.ct);
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ENC.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  return new TextDecoder().decode(pt);
+}
+function renderProjNav(){
+  const nav=$('#projnav');
+  if(!PROJECTS||PROJECTS.length<2){nav.style.display='none';return;}
+  nav.style.display='';
+  nav.innerHTML=PROJECTS.map((p,i)=>`<button data-pi="${i}" class="${i===PI?'on':''}">${p.name}</button>`).join('');
+}
+function loadProject(i){
+  PI=i; const p=PROJECTS[i];
+  RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{};
+  CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
+  renderProjNav(); renderAll();
+}
+function renderAll(){
+  const t=T();document.documentElement.lang=LANG;
+  A2ID={}; RAW.forEach(i=>{ if(i.assignee&&i.aId&&!A2ID[i.assignee]) A2ID[i.assignee]=i.aId; });
+  const m=compute();
+  renderFresh();
+  $('#t-title').textContent=t.title;
+  const _ey=$('#t-ey'); if(_ey) _ey.textContent=(((PROJECTS&&PROJECTS[PI])?PROJECTS[PI].name:(CONF&&CONF.pk))||'')+' · Backlog';
+  $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
+  $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
+  buildControls();renderHero(m);renderInsight(m);renderSections(m);
+}
+
+$('#sel-scope').addEventListener('change',e=>{SCOPE=e.target.value;renderAll();});
+$('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RANGE=+b.dataset.range;renderAll();});
+$('#seg-lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LANG=b.dataset.lang;renderAll();});
+$('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';});
+
+/* Unified bootstrap. Data contract (injected at /*__DATA__* / by build.py):
+     const META={today,generated}; const BUILD={updateUrl};
+     let PROJECTS=[{slug,name,conf,SMAP,RAW,cfg}, …]          — plaintext build
+   or
+     const ENC={v,salt,iv,iter,ct}; let PROJECTS=null;        — encrypted build
+   where ENC.ct decrypts to {projects:[…]} (same shape). 1 project → nav hidden. */
+function initProjects(){
+  $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) loadProject(+b.dataset.pi);});
+  loadProject(0);
+}
+const LSKEY='tl_dash_pw';
+async function doUnlock(pass,fromStore){            // throws on wrong pass
+  const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects;
+  /* remember automatically (operator decision 07.28): ask only on a new device
+     or after a passphrase rotation (stored value fails → cleared → prompt). */
+  if(!fromStore){ try{localStorage.setItem(LSKEY,pass);}catch(e){} }
+  $('#lock').style.display='none'; initProjects();
+}
+if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unless remembered)
+  const t=T(),lk=$('#lock');
+  $('#lockttl').textContent=t.title;
+  const f=freshInfo(),lf=$('#lockfresh'); lf.className='fresh '+f.cls; lf.textContent=f.text;
+  $('#lockmsg').textContent=t.lockMsg; $('#unlockbtn').textContent=t.unlock;
+  lk.addEventListener('submit',async e=>{ e.preventDefault(); $('#pwerr').style.display='none';
+    try{ await doUnlock($('#pw').value,false); }
+    catch(err){ $('#pwerr').textContent=t.wrongPass; $('#pwerr').style.display='block'; } });
+  let stored=null; try{stored=localStorage.getItem(LSKEY);}catch(e){}
+  if(stored){ doUnlock(stored,true).catch(()=>{ try{localStorage.removeItem(LSKEY);}catch(e){} lk.style.display='flex'; $('#pw').focus(); }); }
+  else { lk.style.display='flex'; $('#pw').focus(); }
+} else if(PROJECTS){ initProjects(); }
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+# -> goes to .github/workflows/build.yml in the public repo
+name: build
+on:
+  schedule:
+    - cron: "30 22 * * *"   # daily 05:30 VN / 07:30 JP — fresh before the workday
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install cryptography
+      - name: materialize config
+        env:
+          DASH_CONFIG_B64: ${{ secrets.DASH_CONFIG_B64 }}
+        run: echo "$DASH_CONFIG_B64" | base64 -d > config.json
+      - name: pull
+        env:
+          BACKLOG_API_KEY: ${{ secrets.BACKLOG_API_KEY }}
+        run: python pull.py --config config.json --out cache/data.json
+      - name: build (encrypted)
+        env:
+          DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}
+        run: python build.py --config config.json --data cache/data.json --outdir dist --enc-env DASH_PASSPHRASE
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
