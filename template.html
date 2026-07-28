@@ -148,7 +148,6 @@ tr:last-child td{border-bottom:none;}
   .controls .cgroup{flex-direction:column;gap:8px;flex-wrap:nowrap;}
   .controls .cgroup:first-child{align-items:flex-start;}
   .controls .cgroup:last-child{flex-direction:row;align-items:flex-end;}
-  .controls .cgroup:last-child .ctl label{display:none;}
   .controls.stuck .cbar{width:100%;border-radius:16px;padding:10px 12px;}
   .controls #sel-scope{max-width:160px;font-size:13.4px;}
   .controls .seg button{padding:6px 8px;font-size:13.4px;}
@@ -244,8 +243,9 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
         </div>
       </div>
       <div class="cgroup">
-        <div class="ctl"><label id="l-lang">言語</label>
+        <div class="ctl">
           <!-- one-box language toggle: shows the CURRENT flag, click cycles ja→en→vi.
+               No label — the flag explains itself (operator call 07.28).
                Inline-SVG round flags — self-contained, render everywhere (emoji flags don't on Windows) -->
           <button class="btn iconbtn langbtn" id="btn-lang" title="日本語 / English / Tiếng Việt">
             <svg data-l="ja" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#fff" stroke="var(--border)" stroke-width="1"/><circle cx="12" cy="12" r="4.8" fill="#bc002d"/></svg>
@@ -253,7 +253,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
             <svg data-l="vi" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#da251d" stroke="var(--border)" stroke-width="1"/><path d="M12,6.2 13.5,10.6 18.2,10.6 14.4,13.4 15.8,17.8 12,15.1 8.2,17.8 9.6,13.4 5.8,10.6 10.5,10.6 Z" fill="#ffce00"/></svg>
           </button>
         </div>
-        <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
+        <div class="ctl"><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
       </div>
     </div>
   </div>
@@ -770,7 +770,7 @@ function buildControls(){
   // range seg
   $('#seg-range').innerHTML=[[7,t.r7],[30,t.r30],[90,t.r90]].map(([v,l])=>`<button data-range="${v}" class="${v===RANGE?'on':''}">${l}</button>`).join('');
   // labels
-  $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;$('#l-lang').textContent=t.lang;
+  $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;
   document.querySelectorAll('#btn-lang svg').forEach(s=>s.classList.toggle('on',s.dataset.l===LANG));
 }
 
