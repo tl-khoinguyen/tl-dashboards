@@ -241,7 +241,7 @@ const DICT={
    up:"増加",down:"減少",flat:"横ばい",good:"良好",warn:"注意",crit:"危険",
    ins_title:"サマリー・インサイト",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
-   area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   area_all:"全体",area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
    sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
@@ -269,7 +269,7 @@ const DICT={
    up:"up",down:"down",flat:"flat",good:"Good",warn:"Warning",crit:"Critical",
    ins_title:"Summary insight",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
-   area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   area_all:"All",area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
    sec_risk:"Risk & overdue",sec_status:"Status breakdown",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
@@ -297,7 +297,7 @@ const DICT={
    up:"tăng",down:"giảm",flat:"đi ngang",good:"Tốt",warn:"Cảnh báo",crit:"Nguy hiểm",
    ins_title:"Nhận định tổng quan",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
-   area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   area_all:"Tổng",area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
    sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
@@ -417,15 +417,18 @@ function compute(){
   let areas=null;
   if(PCFG.areas&&PCFG.areas.rules){
     const rules=PCFG.areas.rules.map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
-    /* an issue's area = first rule hit by category OR title pattern (title supplements
-       category — some projects tag only a generic category, the title carries the area) */
-    const areaOf=i=>{const cs=i.category||[];const s=i.summary||'';
-      const r=rules.find(r=>((r.match||[]).length&&cs.some(c=>r.match.includes(c)))||r._re.some(re=>re.test(s)));
+    /* an issue's area — two passes: ① exact signals (category / issue type),
+       ② title patterns as fallback. So a typed issue never gets stolen by a
+       title keyword belonging to a later rule. */
+    const areaOf=i=>{const cs=i.category||[];const ty=i.type||'';const s=i.summary||'';
+      let r=rules.find(r=>((r.match||[]).length&&cs.some(c=>r.match.includes(c)))||(r.typeMatch||[]).includes(ty));
+      if(!r)r=rules.find(r=>r._re.some(re=>re.test(s)));
       return r?r.id:'_other';};
     const act=scoped.filter(i=>i.assignee&&D(i.updated)&&D(i.updated)>=start);
-    const AM={};
-    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};a.total++;const k=areaOf(i);a.by[k]=(a.by[k]||0)+1;});
-    areas={ids:[...rules.map(r=>r.id),'_other'],
+    const AM={},ALL={total:0,by:{}};
+    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};const k=areaOf(i);
+      a.total++;a.by[k]=(a.by[k]||0)+1;ALL.total++;ALL.by[k]=(ALL.by[k]||0)+1;});
+    areas={ids:[...rules.map(r=>r.id),'_other'],all:ALL,
       members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by})).sort((a,b)=>b.total-a.total)};
   }
   // members
@@ -559,12 +562,16 @@ function renderSections(m){
     const aColor=id=>{const ix=rules.findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,5)})`:'var(--faint)';};
     const aLabel=id=>{if(id==='_other')return (PCFG.areas.other||{})[LANG]||(PCFG.areas.other||{}).en||'—';
       const r=rules.find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
-    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${m.areas.members.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
-      <div class="secbody">${m.areas.members.map(x=>{
+    const rowHTML=x=>{
         const segs=m.areas.ids.filter(id=>x.by[id]).map(id=>{const p=x.by[id]/x.total*100;
           return `<i style="width:${p}%;background:${aColor(id)}" title="${aLabel(id)} ${Math.round(p)}% (${x.by[id]})">${p>=14?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
-        return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${assigneeLink(x.name)}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
-        <div class="sbar abar" style="width:100%;height:16px;border-radius:6px">${segs}</div></div>`;}).join('')}
+        return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
+        <div class="sbar abar" style="width:100%;height:16px;border-radius:6px">${segs}</div></div>`;};
+    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${m.areas.members.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
+      <div class="secbody">
+      ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by})}
+      <div style="border-top:1px dashed var(--border);margin:14px 0"></div>
+      ${m.areas.members.map(x=>rowHTML({...x,link:assigneeLink(x.name)})).join('')}
       <div class="legend">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
       <div class="note">${t.area_note(RANGE)}</div></div></details>`;
   }
