@@ -36,7 +36,9 @@ html[data-theme="dark"]{
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic ProN','Yu Gothic',Meiryo,sans-serif;
   background:var(--bg);color:var(--text);line-height:1.6;font-size:16.7px;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s;}
-.wrap{max-width:1060px;margin:0 auto;padding:20px 18px 64px;}
+.wrap{max-width:1060px;margin:0 auto;padding:20px 18px 64px;position:relative;}
+/* utility cluster (lang/theme, future settings) — top-right, outside the filter bar */
+.util{position:absolute;top:20px;right:18px;display:flex;gap:8px;z-index:20;}
 .mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
 /* top bar */
 .projnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:2px solid var(--border);}
@@ -141,17 +143,16 @@ tr:last-child td{border-bottom:none;}
   padding:7px 18px;box-shadow:0 8px 24px rgba(15,23,42,.16);gap:26px;justify-content:center;align-items:center;}
 .controls.stuck .cgroup{align-items:center;}
 .controls.stuck .ctl>label{display:none;}
-/* narrow screens (07.28 mobile rework): two columns — filters stacked left,
-   lang+theme stacked right — instead of an odd wrapping pill */
+/* narrow screens (07.28 mobile rework): utility cluster becomes its own
+   right-aligned row (no absolute overlap with tabs/title); filter bar stays
+   a compact full-width card when stuck */
 @media (max-width:680px){
-  .controls .cbar{flex-wrap:nowrap;justify-content:space-between;align-items:flex-start;}
-  .controls .cgroup{flex-direction:column;gap:8px;flex-wrap:nowrap;}
-  .controls .cgroup:first-child{align-items:flex-start;}
-  .controls .cgroup:last-child{flex-direction:row;align-items:flex-end;}
-  .controls.stuck .cbar{width:100%;border-radius:16px;padding:10px 12px;}
-  .controls #sel-scope{max-width:160px;font-size:13.4px;}
-  .controls .seg button{padding:6px 8px;font-size:13.4px;}
-  .controls .cgroup:first-child{min-width:0;}
+  .util{position:static;justify-content:flex-end;margin-bottom:6px;}
+  .controls .cbar{align-items:flex-start;}
+  .controls .cgroup{gap:8px;flex-wrap:wrap;min-width:0;}
+  .controls.stuck .cbar{width:100%;max-width:100%;border-radius:16px;padding:9px 10px;}
+  .controls #sel-scope{max-width:150px;font-size:13.2px;}
+  .controls .seg button{padding:5px 7px;font-size:13px;white-space:nowrap;}
 }
 /* back to top */
 #totop{position:fixed;right:18px;bottom:18px;z-index:70;width:42px;height:42px;border-radius:50%;
@@ -222,6 +223,19 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   </div>
 </form>
 <div class="wrap">
+  <!-- utility cluster (07.28): page-level prefs live top-right, NOT in the filter
+       bar — different semantics. Works on both page types: /all = same row as the
+       project tabs; standalone = beside the eyebrow. Future: gear/settings here. -->
+  <div class="util" id="util">
+    <!-- one-box language toggle: shows the CURRENT flag, click cycles ja→en→vi.
+         Inline-SVG round flags — self-contained, render everywhere (emoji flags don't on Windows) -->
+    <button class="btn iconbtn langbtn" id="btn-lang" title="日本語 / English / Tiếng Việt">
+      <svg data-l="ja" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#fff" stroke="var(--border)" stroke-width="1"/><circle cx="12" cy="12" r="4.8" fill="#bc002d"/></svg>
+      <svg data-l="en" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><defs><clipPath id="ckus"><circle cx="12" cy="12" r="11"/></clipPath></defs><g clip-path="url(#ckus)"><rect width="24" height="24" fill="#fff"/><g fill="#B22234"><rect y="0" width="24" height="1.85"/><rect y="3.69" width="24" height="1.85"/><rect y="7.38" width="24" height="1.85"/><rect y="11.08" width="24" height="1.85"/><rect y="14.77" width="24" height="1.85"/><rect y="18.46" width="24" height="1.85"/><rect y="22.15" width="24" height="1.85"/></g><rect width="11.5" height="12.9" fill="#3C3B6E"/><g fill="#fff"><circle cx="2.6" cy="2.8" r=".75"/><circle cx="5.8" cy="2.8" r=".75"/><circle cx="9" cy="2.8" r=".75"/><circle cx="4.2" cy="5.4" r=".75"/><circle cx="7.4" cy="5.4" r=".75"/><circle cx="2.6" cy="8" r=".75"/><circle cx="5.8" cy="8" r=".75"/><circle cx="9" cy="8" r=".75"/><circle cx="4.2" cy="10.6" r=".75"/><circle cx="7.4" cy="10.6" r=".75"/></g></g><circle cx="12" cy="12" r="11" fill="none" stroke="var(--border)" stroke-width="1"/></svg>
+      <svg data-l="vi" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#da251d" stroke="var(--border)" stroke-width="1"/><path d="M12,6.2 13.5,10.6 18.2,10.6 14.4,13.4 15.8,17.8 12,15.1 8.2,17.8 9.6,13.4 5.8,10.6 10.5,10.6 Z" fill="#ffce00"/></svg>
+    </button>
+    <button class="btn iconbtn" id="btn-theme" title="theme">◐</button>
+  </div>
   <div class="projnav" id="projnav"></div>
   <div class="top">
     <div class="brand">
@@ -232,8 +246,8 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     </div>
   </div>
 
-  <!-- sticky while scrolling: filters stay reachable next to any section.
-       Normal = full row, filters left / lang+theme right; stuck = centered capsule. -->
+  <!-- sticky while scrolling: DATA filters only (scope + period) — page prefs
+       live in the top-right utility cluster. Stuck = centered capsule. -->
   <div class="controls" id="controls">
     <div class="cbar">
       <div class="cgroup">
@@ -241,19 +255,6 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
         <div class="ctl" id="f-range"><label id="l-range">Range</label>
           <div class="seg" id="seg-range"></div>
         </div>
-      </div>
-      <div class="cgroup">
-        <div class="ctl">
-          <!-- one-box language toggle: shows the CURRENT flag, click cycles ja→en→vi.
-               No label — the flag explains itself (operator call 07.28).
-               Inline-SVG round flags — self-contained, render everywhere (emoji flags don't on Windows) -->
-          <button class="btn iconbtn langbtn" id="btn-lang" title="日本語 / English / Tiếng Việt">
-            <svg data-l="ja" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#fff" stroke="var(--border)" stroke-width="1"/><circle cx="12" cy="12" r="4.8" fill="#bc002d"/></svg>
-            <svg data-l="en" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><defs><clipPath id="ckus"><circle cx="12" cy="12" r="11"/></clipPath></defs><g clip-path="url(#ckus)"><rect width="24" height="24" fill="#fff"/><g fill="#B22234"><rect y="0" width="24" height="1.85"/><rect y="3.69" width="24" height="1.85"/><rect y="7.38" width="24" height="1.85"/><rect y="11.08" width="24" height="1.85"/><rect y="14.77" width="24" height="1.85"/><rect y="18.46" width="24" height="1.85"/><rect y="22.15" width="24" height="1.85"/></g><rect width="11.5" height="12.9" fill="#3C3B6E"/><g fill="#fff"><circle cx="2.6" cy="2.8" r=".75"/><circle cx="5.8" cy="2.8" r=".75"/><circle cx="9" cy="2.8" r=".75"/><circle cx="4.2" cy="5.4" r=".75"/><circle cx="7.4" cy="5.4" r=".75"/><circle cx="2.6" cy="8" r=".75"/><circle cx="5.8" cy="8" r=".75"/><circle cx="9" cy="8" r=".75"/><circle cx="4.2" cy="10.6" r=".75"/><circle cx="7.4" cy="10.6" r=".75"/></g></g><circle cx="12" cy="12" r="11" fill="none" stroke="var(--border)" stroke-width="1"/></svg>
-            <svg data-l="vi" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#da251d" stroke="var(--border)" stroke-width="1"/><path d="M12,6.2 13.5,10.6 18.2,10.6 14.4,13.4 15.8,17.8 12,15.1 8.2,17.8 9.6,13.4 5.8,10.6 10.5,10.6 Z" fill="#ffce00"/></svg>
-          </button>
-        </div>
-        <div class="ctl"><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
       </div>
     </div>
   </div>
