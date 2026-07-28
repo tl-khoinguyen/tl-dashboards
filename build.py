@@ -45,6 +45,9 @@ if a.snapshot is not None and (a.enc or a.enc_env):
 CFG = json.load(open(a.config, encoding="utf-8"))
 D = json.load(open(a.data, encoding="utf-8"))
 TPL = open(a.tpl, encoding="utf-8").read()
+# og:image needs an absolute URL for link previews; siteUrl comes from config
+TPL = TPL.replace("__OGIMG__",
+    (CFG["siteUrl"].rstrip("/") + "/icon.png") if CFG.get("siteUrl") else "icon.png")
 PASS = a.enc or (os.environ.get(a.enc_env, "") if a.enc_env else None)
 if a.enc_env and not PASS:
     sys.exit(f"--enc-env {a.enc_env}: env var empty/unset")
@@ -160,3 +163,8 @@ if not only or "all" in only:
     emit("all", [payload(pc) for pc in CFG["projects"]],
          cross=INS.get("cross") if INS else None)
     stub(os.path.join(a.outdir, "index.html"), "all/")
+icon = os.path.join(HERE, "assets", "icon.png")
+if os.path.exists(icon):
+    import shutil
+    shutil.copy(icon, os.path.join(a.outdir, "icon.png"))
+    print(f"WROTE {os.path.join(a.outdir, 'icon.png')} (og image)")
