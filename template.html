@@ -303,7 +303,10 @@ function mergeCFG(o){
 }
 
 /* ============ state ============ */
-let LANG='ja', SCOPE='all', RANGE=30, A2ID={}, PI=0;
+/* language is a VIEWER preference: persisted per device (07.28), never carried in
+   shared links — each viewer sees their own choice (default ja on first visit) */
+let LANG=(()=>{try{const v=localStorage.getItem('tl_dash_lang');if(v&&DICT[v])return v;}catch(e){}return 'ja';})();
+let SCOPE='all', RANGE=30, A2ID={}, PI=0;
 let RAW=null, CONF=null, PCFG={}, SFULL=[];   // active project's data / deep-link conf / rules / real Backlog statuses
 const T=()=>DICT[LANG];
 const TODAY=new Date(META.today+'T00:00:00Z');
@@ -678,7 +681,8 @@ function parseHash(){
 
 $('#sel-scope').addEventListener('change',e=>{SCOPE=e.target.value;renderAll();});
 $('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RANGE=+b.dataset.range;renderAll();});
-$('#seg-lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LANG=b.dataset.lang;renderAll();});
+$('#seg-lang').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;LANG=b.dataset.lang;
+  try{localStorage.setItem('tl_dash_lang',LANG);}catch(e){} renderAll();});
 $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h.dataset.theme=h.dataset.theme==='dark'?'light':'dark';});
 
 /* Unified bootstrap. Data contract (injected at /*__DATA__* / by build.py):
