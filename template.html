@@ -909,20 +909,55 @@ function initProjects(){
 }
 /* Remembered passphrases are SITE-WIDE (07.28): unlock once anywhere → every page
    this browser can decrypt opens without asking (master passphrase = all pages).
-   A pass that fails on a page is simply skipped — stakeholder scoping stays intact. */
-const LSKEY='tl_dash_pws';
-function storedPasses(){
-  let l=[]; try{l=JSON.parse(localStorage.getItem(LSKEY))||[];}catch(e){}
-  try{const old=localStorage.getItem('tl_dash_pw:'+location.pathname)||localStorage.getItem('tl_dash_pw');
-    if(old&&!l.includes(old))l.push(old);}catch(e){}   // migrate legacy per-page entries
+   A pass that fails on a page is simply skipped — stakeholder scoping stays intact.
+   HARDENED (07.28 rev2): never stored in the clear — the list is AES-GCM-encrypted
+   under a NON-EXTRACTABLE CryptoKey kept in IndexedDB, so profile copies / DevTools
+   inspection see only ciphertext; unwrapping requires code running in this origin.
+   Legacy plaintext entries are migrated once, then deleted. */
+const MKEY='tl_meta';
+/* if IndexedDB is unavailable/hangs (odd embedders), remembering is skipped —
+   never fall back to storing anything in the clear */
+const _idbTO=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('idb timeout')),ms))]);
+function idbKey(){return _idbTO(new Promise((res,rej)=>{
+  const r=indexedDB.open('tlk',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('k');
+  r.onerror=()=>rej(r.error);
+  r.onsuccess=()=>{const db=r.result;
+    const g=db.transaction('k').objectStore('k').get(1);
+    g.onerror=()=>{db.close();rej(g.error);};
+    g.onsuccess=async()=>{
+      if(g.result){res(g.result);db.close();return;}
+      const k=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+      const tx=db.transaction('k','readwrite');tx.objectStore('k').put(k,1);
+      tx.oncomplete=()=>{res(k);db.close();};tx.onerror=()=>{db.close();rej(tx.error);};
+    };};}),1500);}
+async function savePasses(l){
+  try{const k=await idbKey();const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(l)));
+    const b64=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
+    localStorage.setItem(MKEY,JSON.stringify({iv:b64(iv),ct:b64(ct)}));}catch(e){}}
+async function storedPasses(){
+  let l=[];
+  try{const raw=localStorage.getItem(MKEY);
+    if(raw){const o=JSON.parse(raw);const k=await idbKey();
+      const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+      l=JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:b(o.iv)},k,b(o.ct))));}
+  }catch(e){l=[];}
+  try{/* one-time migration of pre-hardening plaintext entries */
+    let old=[]; try{old=JSON.parse(localStorage.getItem('tl_dash_pws'))||[];}catch(e){}
+    const oldP=localStorage.getItem('tl_dash_pw:'+location.pathname)||localStorage.getItem('tl_dash_pw');
+    if(oldP)old.push(oldP);
+    const fresh=old.filter(p=>p&&!l.includes(p));
+    if(fresh.length){l=[...fresh,...l].slice(0,4);await savePasses(l);}
+    ['tl_dash_pws','tl_dash_pw','tl_dash_pw:'+location.pathname].forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
   return l;
 }
-function rememberPass(p){try{const l=storedPasses().filter(x=>x!==p);l.unshift(p);
-  localStorage.setItem(LSKEY,JSON.stringify(l.slice(0,4)));}catch(e){}}
+async function rememberPass(p){const l=(await storedPasses()).filter(x=>x!==p);l.unshift(p);await savePasses(l.slice(0,4));}
 async function doUnlock(pass,fromStore){            // throws on wrong pass
   const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects; CROSS=_o.cross||null;
   /* remember automatically (07.28): ask only on a new device or after rotation */
-  rememberPass(pass);
+  await rememberPass(pass);
   $('#lock').style.display='none'; initProjects();
 }
 if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unless remembered)
@@ -934,7 +969,7 @@ if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unl
     try{ await doUnlock($('#pw').value,false); }
     catch(err){ $('#pwerr').textContent=t.wrongPass; $('#pwerr').style.display='block'; } });
   (async()=>{ /* try every remembered passphrase; first that decrypts wins */
-    for(const p of storedPasses()){ try{ await doUnlock(p,true); return; }catch(e){} }
+    for(const p of await storedPasses()){ try{ await doUnlock(p,true); return; }catch(e){} }
     lk.style.display='flex'; $('#pw').focus();
   })();
 } else if(PROJECTS){ initProjects(); }
