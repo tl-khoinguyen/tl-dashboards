@@ -585,7 +585,13 @@ function renderAll(){
   const m=compute();
   renderFresh();
   $('#t-title').textContent=t.title;
-  const _ey=$('#t-ey'); if(_ey) _ey.textContent=(((PROJECTS&&PROJECTS[PI])?PROJECTS[PI].name:(CONF&&CONF.pk))||'')+' · Backlog';
+  const _ey=$('#t-ey'); if(_ey){
+    const nm=(((PROJECTS&&PROJECTS[PI])?PROJECTS[PI].name:(CONF&&CONF.pk))||'')+' · Backlog';
+    /* eyebrow links to the project's Backlog home (07.28) */
+    _ey.innerHTML=(CONF&&CONF.space&&CONF.pk)
+      ?`<a class="lnk" href="https://${CONF.space}/projects/${CONF.pk}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${nm} ↗</a>`
+      :nm;
+  }
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
   $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
