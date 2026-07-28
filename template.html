@@ -553,12 +553,28 @@ function renderFresh(){
     sb.innerHTML=`⚠ ${t.staleMsg(f.d)} <a href="${UPDATE_URL||'#'}"${UPDATE_URL?' target="_blank"':''}>${t.updateNow} ↗</a>`;}
   else{sb.style.display='none';sb.innerHTML='';}
 }
+async function deriveKek(pass,salt,iter,usages){
+  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,usages);
+}
 async function decryptData(pass){
   const b=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
-  const salt=b(ENC.salt),iv=b(ENC.iv),ct=b(ENC.ct);
-  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pass),'PBKDF2',false,['deriveKey']);
-  const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:ENC.iter,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
-  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,ct);
+  if(ENC.slots){ /* v2 envelope: try each key slot — master pass opens every page,
+                    a per-project pass only its own (07.28) */
+    for(const sl of ENC.slots){
+      try{
+        const kek=await deriveKek(pass,b(sl.salt),sl.iter,['decrypt']);
+        const dekRaw=await crypto.subtle.decrypt({name:'AES-GCM',iv:b(sl.iv)},kek,b(sl.wk));
+        const dek=await crypto.subtle.importKey('raw',dekRaw,'AES-GCM',false,['decrypt']);
+        const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b(ENC.iv)},dek,b(ENC.ct));
+        return new TextDecoder().decode(pt);
+      }catch(e){}
+    }
+    throw new Error('wrong passphrase');
+  }
+  /* v1 direct (legacy pages) */
+  const key=await deriveKek(pass,b(ENC.salt),ENC.iter,['decrypt']);
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b(ENC.iv)},key,b(ENC.ct));
   return new TextDecoder().decode(pt);
 }
 function renderProjNav(){
@@ -613,12 +629,22 @@ function initProjects(){
   window.addEventListener('hashchange',()=>{const i=slugIndex(location.hash.slice(1)); if(i>=0&&i!==PI) loadProject(i);});
   const i=slugIndex(location.hash.slice(1)); loadProject(i>=0?i:0);
 }
-const LSKEY='tl_dash_pw:'+location.pathname;   // per-page: pages may have different passphrases
+/* Remembered passphrases are SITE-WIDE (07.28): unlock once anywhere → every page
+   this browser can decrypt opens without asking (master passphrase = all pages).
+   A pass that fails on a page is simply skipped — stakeholder scoping stays intact. */
+const LSKEY='tl_dash_pws';
+function storedPasses(){
+  let l=[]; try{l=JSON.parse(localStorage.getItem(LSKEY))||[];}catch(e){}
+  try{const old=localStorage.getItem('tl_dash_pw:'+location.pathname)||localStorage.getItem('tl_dash_pw');
+    if(old&&!l.includes(old))l.push(old);}catch(e){}   // migrate legacy per-page entries
+  return l;
+}
+function rememberPass(p){try{const l=storedPasses().filter(x=>x!==p);l.unshift(p);
+  localStorage.setItem(LSKEY,JSON.stringify(l.slice(0,4)));}catch(e){}}
 async function doUnlock(pass,fromStore){            // throws on wrong pass
   const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects;
-  /* remember automatically (operator decision 07.28): ask only on a new device
-     or after a passphrase rotation (stored value fails → cleared → prompt). */
-  if(!fromStore){ try{localStorage.setItem(LSKEY,pass);}catch(e){} }
+  /* remember automatically (07.28): ask only on a new device or after rotation */
+  rememberPass(pass);
   $('#lock').style.display='none'; initProjects();
 }
 if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unless remembered)
@@ -629,9 +655,10 @@ if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unl
   lk.addEventListener('submit',async e=>{ e.preventDefault(); $('#pwerr').style.display='none';
     try{ await doUnlock($('#pw').value,false); }
     catch(err){ $('#pwerr').textContent=t.wrongPass; $('#pwerr').style.display='block'; } });
-  let stored=null; try{stored=localStorage.getItem(LSKEY);}catch(e){}
-  if(stored){ doUnlock(stored,true).catch(()=>{ try{localStorage.removeItem(LSKEY);}catch(e){} lk.style.display='flex'; $('#pw').focus(); }); }
-  else { lk.style.display='flex'; $('#pw').focus(); }
+  (async()=>{ /* try every remembered passphrase; first that decrypts wins */
+    for(const p of storedPasses()){ try{ await doUnlock(p,true); return; }catch(e){} }
+    lk.style.display='flex'; $('#pw').focus();
+  })();
 } else if(PROJECTS){ initProjects(); }
 </script>
 </body>

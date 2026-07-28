@@ -69,19 +69,28 @@ def payload(pc):
                 "thresholds": pc.get("thresholds", {}),
                 "note": pc.get("note", None)}}
 
-def encrypt(obj, passphrase):
+def encrypt(obj, passes):
+    """Envelope (v2, 07.28): payload under a random DEK; the DEK wrapped once per
+    passphrase ('key slots'). Master passphrase opens every page; a per-project
+    passphrase opens only its page. Any listed passphrase decrypts client-side."""
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     import hashlib
-    salt = os.urandom(16); iv = os.urandom(12); iters = 200000
-    key = hashlib.pbkdf2_hmac("sha256", passphrase.encode(), salt, iters, 32)
-    ct = AESGCM(key).encrypt(iv, json.dumps(obj, ensure_ascii=False).encode("utf-8"), None)
     b64 = lambda x: base64.b64encode(x).decode()
-    return {"v": 1, "salt": b64(salt), "iv": b64(iv), "iter": iters, "ct": b64(ct)}
+    dek = os.urandom(32); iv = os.urandom(12)
+    ct = AESGCM(dek).encrypt(iv, json.dumps(obj, ensure_ascii=False).encode("utf-8"), None)
+    slots = []
+    for pw in passes:
+        salt = os.urandom(16); iv2 = os.urandom(12); iters = 200000
+        kek = hashlib.pbkdf2_hmac("sha256", pw.encode(), salt, iters, 32)
+        slots.append({"salt": b64(salt), "iv": b64(iv2), "iter": iters,
+                      "wk": b64(AESGCM(kek).encrypt(iv2, dek, None))})
+    return {"v": 2, "iv": b64(iv), "ct": b64(ct), "slots": slots}
 
 def emit(page_slug, projs, pw=None):
-    pw = pw or PASS
-    if pw:
-        enc = encrypt({"projects": projs}, pw)
+    # master passphrase always unlocks; a per-project one adds a second key slot
+    passes = [p for p in dict.fromkeys([PASS, pw]) if p]
+    if passes:
+        enc = encrypt({"projects": projs}, passes)
         data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
                 f"const ENC={json.dumps(enc)};\nlet PROJECTS=null;")
     else:
@@ -91,7 +100,7 @@ def emit(page_slug, projs, pw=None):
     d = os.path.join(a.outdir, page_slug); os.makedirs(d, exist_ok=True)
     out = os.path.join(d, "index.html")
     open(out, "w", encoding="utf-8").write(html)
-    print(f"WROTE {out} {round(len(html)/1024)}KB enc={'yes' if pw else 'NO(plaintext)'}")
+    print(f"WROTE {out} {round(len(html)/1024)}KB enc={f'yes({len(passes)} slot)' if passes else 'NO(plaintext)'}")
 
 if a.snapshot is not None:
     # quick CEO snapshot — one self-contained file, all projects, plaintext
