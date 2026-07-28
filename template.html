@@ -93,6 +93,8 @@ details.sec>summary .chev{margin-left:auto;color:var(--faint);transition:transfo
 details.sec[open]>summary .chev{transform:rotate(90deg);}
 details.sec>summary .si{width:26px;height:26px;border-radius:7px;background:var(--panel2);display:flex;align-items:center;justify-content:center;font-size:16.1px;}
 details.sec>summary .cnt{font-size:13.8px;font-weight:500;color:var(--muted);background:var(--panel2);padding:2px 9px;border-radius:20px;}
+details.sec>summary .share{border:none;background:none;cursor:pointer;font-size:13.8px;color:var(--faint);padding:2px 6px;border-radius:6px;line-height:1;}
+details.sec>summary .share:hover{background:var(--panel2);color:var(--text);}
 .secbody{padding:4px 18px 18px;}
 /* table */
 table{width:100%;border-collapse:collapse;}
@@ -497,8 +499,9 @@ function trendSVG(wd){
 
 function renderSections(m){
   const t=T();let H='';
+  const SH=id=>`<button class="share" type="button" data-sec="${id}" title="copy link">🔗</button>`;
   /* flow */
-  H+=`<details class="sec" open><summary><span class="si">📈</span>${t.sec_flow}<span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-flow" open><summary><span class="si">📈</span>${t.sec_flow}${SH('sec-flow')}<span class="chev">▶</span></summary>
     <div class="secbody">${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
     <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
@@ -507,7 +510,7 @@ function renderSections(m){
   /* members */
   const topN=8;
   const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
-  H+=`<details class="sec"><summary><span class="si">👥</span>${t.sec_mem}<span class="cnt">${m.members.length}</span><span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span></summary>
     <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
@@ -518,7 +521,7 @@ function renderSections(m){
     const aColor=id=>{const ix=rules.findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,5)})`:'var(--faint)';};
     const aLabel=id=>{if(id==='_other')return (PCFG.areas.other||{})[LANG]||(PCFG.areas.other||{}).en||'—';
       const r=rules.find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
-    H+=`<details class="sec" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${m.areas.members.length}</span><span class="chev">▶</span></summary>
+    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}<span class="cnt">${m.areas.members.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
       <div class="secbody">${m.areas.members.map(x=>{
         const segs=m.areas.ids.filter(id=>x.by[id]).map(id=>{const p=x.by[id]/x.total*100;
           return `<i style="width:${p}%;background:${aColor(id)}" title="${aLabel(id)} ${Math.round(p)}% (${x.by[id]})">${p>=14?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
@@ -528,14 +531,14 @@ function renderSections(m){
       <div class="note">${t.area_note(RANGE)}</div></div></details>`;
   }
   /* categories (hidden when the project yields none) */
-  if(m.cats.length)H+=`<details class="sec"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span><span class="chev">▶</span></summary>
+  if(m.cats.length)H+=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span></summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
       ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
-  H+=`<details class="sec"><summary><span class="si">⚠</span>${t.sec_risk}<span class="cnt">${m.overdue.length}</span><span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span></summary>
     <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
@@ -549,11 +552,20 @@ function renderSections(m){
   const stLeg=m.sfull.length
     ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
     :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
-  H+=`<details class="sec"><summary><span class="si">◔</span>${t.sec_status}<span class="cnt">${tot}</span><span class="chev">▶</span></summary>
+  H+=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span></summary>
     <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
     <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
   $('#sections').innerHTML=H;
+  /* share buttons — copy a deep link to this section (#<slug>/<sec> on multi, #<sec> on single) */
+  document.querySelectorAll('.sec .share').forEach(b=>b.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    const slug=(PROJECTS&&PROJECTS.length>1&&PROJECTS[PI].slug)?PROJECTS[PI].slug+'/':'';
+    const url=location.origin+location.pathname+'#'+slug+b.dataset.sec;
+    const done=()=>{b.textContent='✓';setTimeout(()=>{b.textContent='🔗';},1200);};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done,()=>prompt('URL',url));
+    else prompt('URL',url);
+  });
   const mb=$('#memmore');
   if(mb)mb.onclick=()=>{const o=mb.dataset.open==='1';document.querySelector('#memtb').innerHTML=memRows(o?m.members.slice(0,topN):m.members);mb.dataset.open=o?'0':'1';mb.textContent=o?`${t.more} (${m.members.length-topN}+)`:t.less;};
 }
@@ -627,8 +639,10 @@ function loadProject(i){
   const cols=p.colors||{}; for(const k in CVAR) document.documentElement.style.setProperty(CVAR[k],cols[k]||'');
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
   renderProjNav(); renderAll();
-  /* single-app UX (07.28): URL hash mirrors the active project tab (bookmarkable) */
-  if(PROJECTS.length>1&&p.slug&&location.hash.slice(1)!==p.slug) history.replaceState(null,'','#'+p.slug);
+  /* URL hash mirrors the active project tab (07.28); keep a section part if it
+     belongs to this project's current hash (deep link), else reset to the slug */
+  if(PROJECTS.length>1&&p.slug&&location.hash.slice(1).split('/')[0]!==p.slug)
+    history.replaceState(null,'','#'+p.slug);
 }
 function renderAll(){
   const t=T();document.documentElement.lang=LANG;
@@ -646,6 +660,20 @@ function renderAll(){
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
   $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
+  applyPendingSec();
+}
+/* section deep-link: open the target accordion + scroll to it once after render */
+let PENDING_SEC=null;
+function applyPendingSec(){
+  if(!PENDING_SEC)return;
+  const el=document.getElementById(PENDING_SEC); PENDING_SEC=null;
+  if(el){el.open=true; requestAnimationFrame(()=>el.scrollIntoView({behavior:'smooth',block:'start'}));}
+}
+function parseHash(){
+  const h=location.hash.slice(1); if(!h)return{};
+  const [a,b]=h.split('/');
+  if(b)return{slug:a,sec:b};
+  return a.startsWith('sec-')?{sec:a}:{slug:a};
 }
 
 $('#sel-scope').addEventListener('change',e=>{SCOPE=e.target.value;renderAll();});
@@ -661,8 +689,16 @@ $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h
    where ENC.ct decrypts to {projects:[…]} (same shape). 1 project → nav hidden. */
 function initProjects(){
   $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) loadProject(+b.dataset.pi);});
-  window.addEventListener('hashchange',()=>{const i=slugIndex(location.hash.slice(1)); if(i>=0&&i!==PI) loadProject(i);});
-  const i=slugIndex(location.hash.slice(1)); loadProject(i>=0?i:0);
+  window.addEventListener('hashchange',()=>{
+    const h=parseHash();
+    if(h.sec)PENDING_SEC=h.sec;
+    const i=h.slug!=null?slugIndex(h.slug):-1;
+    if(i>=0&&i!==PI)loadProject(i); else applyPendingSec();
+  });
+  const h=parseHash();
+  if(h.sec)PENDING_SEC=h.sec;
+  const i=h.slug!=null?slugIndex(h.slug):-1;
+  loadProject(i>=0?i:0);
 }
 /* Remembered passphrases are SITE-WIDE (07.28): unlock once anywhere → every page
    this browser can decrypt opens without asking (master passphrase = all pages).
