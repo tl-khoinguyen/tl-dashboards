@@ -120,9 +120,16 @@ tr:last-child td{border-bottom:none;}
 .fresh.g{background:var(--green-soft);color:var(--green);} .fresh.g::before{background:var(--green);}
 .fresh.a{background:var(--amber-soft);color:var(--amber);} .fresh.a::before{background:var(--amber);}
 .fresh.r{background:var(--red-soft);color:var(--red);} .fresh.r::before{background:var(--red);}
-/* sticky filter bar (07.28): sticks to top past the header; labels collapse when stuck */
+/* sticky filter bar (07.28): normal = full row (filters left, lang/theme right);
+   stuck = compact centered CAPSULE fitting just the controls */
 .controls{position:sticky;top:0;z-index:60;background:var(--bg);padding:12px 0 10px;}
-.controls.stuck{border-bottom:1px solid var(--border);box-shadow:0 6px 16px rgba(15,23,42,.10);}
+.cbar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;width:100%;}
+.cgroup{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.controls.stuck{background:transparent;pointer-events:none;padding:8px 0;}
+.controls.stuck .cbar{pointer-events:auto;width:max-content;max-width:100%;margin:0 auto;
+  background:var(--panel);border:1px solid var(--border);border-radius:999px;
+  padding:7px 18px;box-shadow:0 8px 24px rgba(15,23,42,.16);gap:26px;justify-content:center;align-items:center;}
+.controls.stuck .cgroup{align-items:center;}
 .controls.stuck .ctl>label{display:none;}
 /* back to top */
 #totop{position:fixed;right:18px;bottom:18px;z-index:70;width:42px;height:42px;border-radius:50%;
@@ -181,18 +188,25 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     </div>
   </div>
 
-  <!-- sticky while scrolling: filters stay reachable next to any section -->
+  <!-- sticky while scrolling: filters stay reachable next to any section.
+       Normal = full row, filters left / lang+theme right; stuck = centered capsule. -->
   <div class="controls" id="controls">
-    <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
-    <div class="ctl"><label id="l-range">Range</label>
-      <div class="seg" id="seg-range"></div>
-    </div>
-    <div class="ctl"><label id="l-lang">言語</label>
-      <div class="seg" id="seg-lang">
-        <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
+    <div class="cbar">
+      <div class="cgroup">
+        <div class="ctl"><label id="l-scope">Scope</label><select id="sel-scope"></select></div>
+        <div class="ctl"><label id="l-range">Range</label>
+          <div class="seg" id="seg-range"></div>
+        </div>
+      </div>
+      <div class="cgroup">
+        <div class="ctl"><label id="l-lang">言語</label>
+          <div class="seg" id="seg-lang">
+            <button data-lang="ja">日</button><button data-lang="en">EN</button><button data-lang="vi">VI</button>
+          </div>
+        </div>
+        <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
       </div>
     </div>
-    <div class="ctl"><label>&nbsp;</label><button class="btn iconbtn" id="btn-theme" title="theme">◐</button></div>
   </div>
 
   <div class="stalebar" id="stalebar"></div>
