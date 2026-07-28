@@ -5,6 +5,9 @@ template's DATA slot. Outputs a Pages-ready site tree:
   <outdir>/<slug>/index.html   one page per project
   <outdir>/all/index.html      aggregate page (project tabs)
   <outdir>/index.html          redirect -> all/
+Single-app site (07.28): /all/ is THE app (project tabs, #slug hash routing);
+/<slug>/ are tiny redirect stubs into /all/#slug so per-project bookmarks work.
+--only SLUG[,SLUG] instead builds full standalone page(s) for those slugs.
 Encryption: --enc PASSPHRASE or --enc-env VAR (e.g. DASH_PASSPHRASE).
 Plaintext build (no --enc*) is for private ad-hoc snapshots only — never deploy.
 Quick CEO snapshot: --snapshot [PATH] writes ONE all-in-one self-contained HTML
@@ -52,7 +55,7 @@ def payload(pc):
         sys.exit(f"no pulled data for slug '{slug}' — run pull.py")
     p = D["pulls"][slug]
     return {"slug": slug, "name": pc.get("name", pc["key"]),
-        "conf": {"space": SPACE, "pk": pc["key"]},
+        "conf": {"space": SPACE, "pk": pc["key"], "pid": p.get("pid")},
         "SMAP": p["SMAP"], "RAW": p["RAW"],
         "cfg": {"defaultScope": pc.get("defaultScope", "all"),
                 "tagScopes": pc.get("tagScopes", []),
@@ -96,14 +99,20 @@ if a.snapshot is not None:
     print(f"WROTE {out} {round(len(html)/1024)}KB — PLAINTEXT all-in-one snapshot: private send only, never deploy")
     sys.exit(0)
 
-only = a.only.split(",") if a.only else None
-pcs = [pc for pc in CFG["projects"] if not only or pc["slug"] in only]
-for pc in pcs:
-    emit(pc["slug"], [payload(pc)])
-if not only or "all" in only:
+def stub(path, url):
+    d = os.path.dirname(path); os.makedirs(d, exist_ok=True)
+    open(path, "w", encoding="utf-8").write(
+        f'<!doctype html><meta http-equiv="refresh" content="0; url={url}">'
+        f'<a href="{url}">→</a>')
+    print(f"WROTE {path} (redirect -> {url})")
+
+if a.only:
+    # explicit standalone full page(s) for the listed slugs
+    for pc in [pc for pc in CFG["projects"] if pc["slug"] in a.only.split(",")]:
+        emit(pc["slug"], [payload(pc)])
+else:
+    # single-app site: /all/ = the app; per-slug = bookmark stubs; root -> all
     emit("all", [payload(pc) for pc in CFG["projects"]])
-    root = os.path.join(a.outdir, "index.html")
-    open(root, "w", encoding="utf-8").write(
-        '<!doctype html><meta http-equiv="refresh" content="0; url=all/">'
-        '<a href="all/">→</a>')
-    print(f"WROTE {root} (redirect -> all/)")
+    for pc in CFG["projects"]:
+        stub(os.path.join(a.outdir, pc["slug"], "index.html"), f"../all/#{pc['slug']}")
+    stub(os.path.join(a.outdir, "index.html"), "all/")

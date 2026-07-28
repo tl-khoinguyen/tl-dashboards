@@ -84,7 +84,7 @@ for pc in CFG["projects"]:
     for i in op + cl:
         if i["key"] in seen: continue
         seen.add(i["key"]); RAW.append(i)
-    pulls[slug] = {"RAW": RAW, "SMAP": SMAP}
+    pulls[slug] = {"RAW": RAW, "SMAP": SMAP, "pid": PID}
     print(f"{slug} ({key}): RAW={len(RAW)} open={len(op)} closed={len(cl)} statuses={len(sts)}")
 
 os.makedirs(os.path.dirname(a.out), exist_ok=True)

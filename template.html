@@ -236,7 +236,7 @@ const DICT={
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
    th_ticket:"Title",th_due:"Due",th_days:"Days over",
    more:"Show all",less:"Collapse",showing:n=>`Top ${n}`,
-   created:"New",closed:"Closed",net:"Net",week:"Week",stalep:"Stale%",
+   created:"Created",closed:"Closed",net:"Net",week:"Week",stalep:"Stale%",
    risk_h:"High",risk_m:"Mid",risk_l:"Low",
    st:{Open:"To-do",InProgress:"In progress",Resolved:"Resolved/QA",Pending:"Pending",Closed:"Closed"},
    foot_l:"Backlog Dashboard · client-side (works offline)",
@@ -263,7 +263,7 @@ const DICT={
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
    th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
    more:"Xem tất cả",less:"Thu gọn",showing:n=>`Top ${n}`,
-   created:"Mới",closed:"Đóng",net:"Ròng",week:"Tuần",stalep:"Đình trệ%",
+   created:"Tạo",closed:"Đóng",net:"Ròng",week:"Tuần",stalep:"Đình trệ%",
    risk_h:"Cao",risk_m:"TB",risk_l:"Thấp",
    st:{Open:"Chưa làm",InProgress:"Đang làm",Resolved:"Đã xử lý/QA",Pending:"Treo",Closed:"Đóng"},
    foot_l:"Backlog Dashboard · tính client-side (chạy offline)",
@@ -370,11 +370,11 @@ function compute(){
     if(i.dueDate&&D(i.dueDate)<TODAY)M[a].over++; if(D(i.updated)&&days(D(i.updated),TODAY)>CFG.staleDays)M[a].stale++;});
   const members=Object.entries(M).map(([n,v])=>({name:n,open:v.open,over:v.over,stale:v.stale,med:median(v.ages),st:v.st}))
     .sort((a,b)=>b.open-a.open);
-  // categories (種別)
+  // categories — same 5 status buckets as everywhere else (unified 07.28)
   const C={};
-  scoped.forEach(i=>{const k=sub(i);if(k==='—')return;(C[k]=C[k]||{done:0,prog:0,todo:0,pend:0});const b=bkt(i);
-    if(b==='Closed')C[k].done++;else if(b==='InProgress'||b==='Resolved')C[k].prog++;else if(b==='Pending')C[k].pend++;else C[k].todo++;});
-  const cats=Object.entries(C).map(([n,v])=>({name:n,...v,total:v.done+v.prog+v.todo+v.pend}))
+  scoped.forEach(i=>{const k=sub(i);if(k==='—')return;(C[k]=C[k]||{st:{Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0},total:0});
+    C[k].st[bkt(i)]++;C[k].total++;});
+  const cats=Object.entries(C).map(([n,v])=>({name:n,st:v.st,total:v.total,done:v.st.Closed}))
     .sort((a,b)=>b.total-a.total).slice(0,12);
   // weekly (12 wk)
   const weeks=[];for(let w=11;w>=0;w--){const m=monday(TODAY);m.setUTCDate(m.getUTCDate()-w*7);weeks.push(m);}
@@ -391,17 +391,19 @@ function compute(){
 }
 
 /* ============ render ============ */
-function statusMix(st,w=76){
+function statusMix(st,style='width:76px'){
   const tot=Object.values(st).reduce((a,b)=>a+b,0)||1;const order=['InProgress','Open','Resolved','Pending','Closed'];
-  return `<span class="sbar" style="width:${w}px">`+order.map(k=>`<i style="width:${st[k]/tot*100}%;background:${BORDER[k]}"></i>`).join('')+`</span>`;
+  return `<span class="sbar" style="${style}">`+order.map(k=>`<i style="width:${st[k]/tot*100}%;background:${BORDER[k]}"></i>`).join('')+`</span>`;
 }
 function riskChip(med){const t=T();if(med>=CFG.riskMed.high)return `<span class="chip bg-r">${t.risk_h}</span>`;if(med>=CFG.riskMed.mid)return `<span class="chip bg-a">${t.risk_m}</span>`;return `<span class="chip bg-g">${t.risk_l}</span>`;}
 
 function assigneeLink(name){
   if(!name||!CONF||!CONF.space) return name||'—';
   const id=A2ID[name]; if(!id) return name;
-  /* Backlog issue-search URL takes condition.-prefixed params (assigneeId[]= is ignored — verified 07.28) */
-  return `<a class="lnk" href="https://${CONF.space}/find/${CONF.pk}?condition.assigneeId=${id}" target="_blank" rel="noopener">${name}</a>`;
+  /* replicate the URL Backlog's own UI produces for an assignee filter (verified live 07.28):
+     /find/<PK>?assigneeId=<id>&assignerId=<id>&projectId=<pid>&sort=UPDATED */
+  const pid=CONF.pid?`&projectId=${CONF.pid}`:'';
+  return `<a class="lnk" href="https://${CONF.space}/find/${CONF.pk}?assigneeId=${id}&assignerId=${id}${pid}&limit=20&offset=0&sort=UPDATED" target="_blank" rel="noopener">${name}</a>`;
 }
 function ticketLink(key,label){
   const s=(label||'').replace(/</g,'&lt;');
@@ -458,8 +460,8 @@ function trendSVG(wd){
   let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="trend">`;
   for(let k=0;k<=4;k++){const gy=pt+ih*(k/4),vv=Math.round(maxB*(1-k/4));s+=`<line x1="${pl}" y1="${gy}" x2="${W-pr}" y2="${gy}" stroke="${g}"/><text x="${pl-6}" y="${gy+3}" font-size="9" fill="${mut}" text-anchor="end">${vv}</text>`;}
   wd.forEach((w,i)=>{const cx=x(i)+bw*0.5;const bwid=Math.min(9,bw*0.32);
-    s+=`<rect x="${cx-bwid-1}" y="${y(w.cr)}" width="${bwid}" height="${pt+ih-y(w.cr)}" rx="1.5" fill="var(--accent)" opacity=".55"/>`;
-    s+=`<rect x="${cx+1}" y="${y(w.cl)}" width="${bwid}" height="${pt+ih-y(w.cl)}" rx="1.5" fill="var(--green)"/>`;
+    s+=`<rect x="${cx-bwid-1}" y="${y(w.cr)}" width="${bwid}" height="${pt+ih-y(w.cr)}" rx="1.5" fill="var(--faint)" opacity=".85"/>`;
+    s+=`<rect x="${cx+1}" y="${y(w.cl)}" width="${bwid}" height="${pt+ih-y(w.cl)}" rx="1.5" fill="var(--st-closed)"/>`;
     s+=`<text x="${cx}" y="${H-9}" font-size="9" fill="${mut}" text-anchor="middle">${w.label}</text>`;});
   const ry=v=>pt+ih-(v/100)*ih;
   let pts=wd.map((w,i)=>`${x(i)+bw*0.5},${ry(w.stale)}`).join(' ');
@@ -473,9 +475,9 @@ function renderSections(m){
   /* flow */
   H+=`<details class="sec" open><summary><span class="si">📈</span>${t.sec_flow}<span class="chev">▶</span></summary>
     <div class="secbody">${trendSVG(m.wd)}
-    <div class="legend"><span><i style="background:var(--accent);opacity:.55"></i>${t.created}</span><span><i style="background:var(--green)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
+    <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
     <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
-    ${[...m.wd].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono g">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
+    ${[...m.wd].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
     </tbody></table></div></div></details>`;
   /* members */
   const topN=8;
@@ -488,8 +490,8 @@ function renderSections(m){
   /* categories (hidden when the project yields none) */
   if(m.cats.length)H+=`<details class="sec"><summary><span class="si">🏷</span>${t.sec_cat}<span class="cnt">${m.cats.length}</span><span class="chev">▶</span></summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
-      <div class="sbar" style="width:100%;height:9px"><i style="width:${c.done/c.total*100}%;background:var(--green)"></i><i style="width:${c.prog/c.total*100}%;background:var(--accent)"></i><i style="width:${c.todo/c.total*100}%;background:var(--faint)"></i><i style="width:${c.pend/c.total*100}%;background:var(--amber)"></i></div></div>`;}).join('')}
-    <div class="legend"><span><i style="background:var(--green)"></i>${t.th_done}</span><span><i style="background:var(--accent)"></i>${t.th_prog}</span><span><i style="background:var(--faint)"></i>${t.th_todo}</span><span><i style="background:var(--amber)"></i>${t.st.Pending}</span></div></div></details>`;
+      ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
+    <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
@@ -553,11 +555,14 @@ function renderProjNav(){
   nav.style.display='';
   nav.innerHTML=PROJECTS.map((p,i)=>`<button data-pi="${i}" class="${i===PI?'on':''}">${p.name}</button>`).join('');
 }
+const slugIndex=s=>PROJECTS?PROJECTS.findIndex(p=>p.slug===s):-1;
 function loadProject(i){
   PI=i; const p=PROJECTS[i];
   RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{};
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
   renderProjNav(); renderAll();
+  /* single-app UX (07.28): URL hash mirrors the active project tab (bookmarkable) */
+  if(PROJECTS.length>1&&p.slug&&location.hash.slice(1)!==p.slug) history.replaceState(null,'','#'+p.slug);
 }
 function renderAll(){
   const t=T();document.documentElement.lang=LANG;
@@ -584,7 +589,8 @@ $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h
    where ENC.ct decrypts to {projects:[…]} (same shape). 1 project → nav hidden. */
 function initProjects(){
   $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) loadProject(+b.dataset.pi);});
-  loadProject(0);
+  window.addEventListener('hashchange',()=>{const i=slugIndex(location.hash.slice(1)); if(i>=0&&i!==PI) loadProject(i);});
+  const i=slugIndex(location.hash.slice(1)); loadProject(i>=0?i:0);
 }
 const LSKEY='tl_dash_pw';
 async function doUnlock(pass,fromStore){            // throws on wrong pass
