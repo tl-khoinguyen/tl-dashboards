@@ -39,8 +39,8 @@ jobs:
           if [ -n "$DASH_INSIGHT_B64" ]; then echo "$DASH_INSIGHT_B64" | base64 -d > cache/insight.json; fi
       - name: build (encrypted)
         env:
-          DASH_PASSPHRASE: ${{ secrets.DASH_PASSPHRASE }}
-        run: python build.py --config config.json --data cache/data.json --outdir dist --enc-env DASH_PASSPHRASE
+          SITE_KEY: ${{ secrets.SITE_KEY }}
+        run: python build.py --config config.json --data cache/data.json --outdir dist --enc-env SITE_KEY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
