@@ -11,7 +11,9 @@
   --accent:#2563EB; --accent-soft:#E8EFFE;
   --green:#12805C; --green-soft:#E1F3EC; --amber:#B45309; --amber-soft:#FBEFDD;
   --red:#DC2626; --red-soft:#FBE6E6; --grid:#EEF1F5;
-  --st-inprog:#2a78d6; --st-open:#eb6834; --st-resolved:#1baf7a; --st-pending:#eda100; --st-closed:#e87ba4;
+  /* Backlog standard status palette (operator decision 07.28) — per-project real
+     status colors from the API override these at runtime (loadProject) */
+  --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
   --shadow:0 1px 2px rgba(20,30,50,.05),0 2px 8px rgba(20,30,50,.05);
   --radius:14px;
 }
@@ -21,7 +23,7 @@ html[data-theme="dark"]{
   --accent:#5B9BFF; --accent-soft:#16294A;
   --green:#3DD3A0; --green-soft:#123528; --amber:#F5B463; --amber-soft:#3A2A12;
   --red:#F87171; --red-soft:#3A1B1E; --grid:#1B2A45;
-  --st-inprog:#3987e5; --st-open:#d95926; --st-resolved:#199e70; --st-pending:#c98500; --st-closed:#d55181;
+  --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -211,7 +213,7 @@ const DICT={
    more:"すべて表示",less:"折りたたむ",showing:n=>`上位 ${n} 件`,
    created:"新規",closed:"完了",net:"純増減",week:"週",stalep:"停滞%",
    risk_h:"高",risk_m:"中",risk_l:"低",
-   st:{Open:"未着手",InProgress:"進行中",Resolved:"処理済/QA",Pending:"保留",Closed:"完了"},
+   st:{Open:"未対応",InProgress:"処理中",Resolved:"処理済み",Pending:"保留",Closed:"完了"},
    foot_l:"Backlog ダッシュボード · クライアント集計（オフライン可）",
    foot_r:s=>`データ抽出 ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"収束見込みなし",
@@ -238,7 +240,7 @@ const DICT={
    more:"Show all",less:"Collapse",showing:n=>`Top ${n}`,
    created:"Created",closed:"Closed",net:"Net",week:"Week",stalep:"Stale%",
    risk_h:"High",risk_m:"Mid",risk_l:"Low",
-   st:{Open:"To-do",InProgress:"In progress",Resolved:"Resolved/QA",Pending:"Pending",Closed:"Closed"},
+   st:{Open:"Open",InProgress:"In Progress",Resolved:"Resolved",Pending:"Pending",Closed:"Closed"},
    foot_l:"Backlog Dashboard · client-side (works offline)",
    foot_r:s=>`Extracted ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"no convergence",
@@ -265,7 +267,7 @@ const DICT={
    more:"Xem tất cả",less:"Thu gọn",showing:n=>`Top ${n}`,
    created:"Tạo",closed:"Đóng",net:"Ròng",week:"Tuần",stalep:"Đình trệ%",
    risk_h:"Cao",risk_m:"TB",risk_l:"Thấp",
-   st:{Open:"Chưa làm",InProgress:"Đang làm",Resolved:"Đã xử lý/QA",Pending:"Treo",Closed:"Đóng"},
+   st:{Open:"Chưa xử lý",InProgress:"Đang xử lý",Resolved:"Đã xử lý",Pending:"Treo",Closed:"Đóng"},
    foot_l:"Backlog Dashboard · tính client-side (chạy offline)",
    foot_r:s=>`Trích ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"không hội tụ",
@@ -292,7 +294,7 @@ function mergeCFG(o){
 
 /* ============ state ============ */
 let LANG='ja', SCOPE='all', RANGE=30, A2ID={}, PI=0;
-let RAW=null, CONF=null, PCFG={};   // active project's data / deep-link conf / per-project rules
+let RAW=null, CONF=null, PCFG={}, SFULL=[];   // active project's data / deep-link conf / rules / real Backlog statuses
 const T=()=>DICT[LANG];
 const TODAY=new Date(META.today+'T00:00:00Z');
 const $=s=>document.querySelector(s);
@@ -363,6 +365,9 @@ function compute(){
   // status buckets (incl closed)
   const status={Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0};
   scoped.forEach(i=>status[bkt(i)]++);
+  // real per-project statuses (names/colors straight from Backlog)
+  const byId={}; scoped.forEach(i=>{byId[i.stId]=(byId[i.stId]||0)+1;});
+  const sfull=(SFULL||[]).map(s=>({...s,n:byId[s.id]||0})).filter(s=>s.n>0);
   // members
   const M={};
   open.forEach(i=>{const a=i.assignee||'—';(M[a]=M[a]||{open:0,over:0,stale:0,ages:[],st:{Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0}});
@@ -387,7 +392,7 @@ function compute(){
   // delayed list
   const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
     .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,members,cats,wd,delayed};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,members,cats,wd,delayed};
 }
 
 /* ============ render ============ */
@@ -500,11 +505,18 @@ function renderSections(m){
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
     </tbody></table></div></div></details>`;
-  /* status */
+  /* status — the project's REAL Backlog statuses (names/colors as configured there);
+     bucket fallback only if the payload predates status detail */
   const tot=Object.values(m.status).reduce((a,b)=>a+b,0)||1;
+  const stSeg=m.sfull.length
+    ?m.sfull.map(s=>`<i style="width:${s.n/tot*100}%;background:${s.color||'var(--faint)'}" title="${s.name} ${s.n}"></i>`).join('')
+    :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<i style="width:${m.status[k]/tot*100}%;background:${BORDER[k]}" title="${t.st[k]} ${m.status[k]}"></i>`).join('');
+  const stLeg=m.sfull.length
+    ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
+    :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
   H+=`<details class="sec"><summary><span class="si">◔</span>${t.sec_status}<span class="cnt">${tot}</span><span class="chev">▶</span></summary>
-    <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<i style="width:${m.status[k]/tot*100}%;background:${BORDER[k]}" title="${t.st[k]} ${m.status[k]}"></i>`).join('')}</div>
-    <div class="legend" style="margin-top:14px">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('')}</div>
+    <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
+    <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
   $('#sections').innerHTML=H;
   const mb=$('#memmore');
@@ -556,9 +568,12 @@ function renderProjNav(){
   nav.innerHTML=PROJECTS.map((p,i)=>`<button data-pi="${i}" class="${i===PI?'on':''}">${p.name}</button>`).join('');
 }
 const slugIndex=s=>PROJECTS?PROJECTS.findIndex(p=>p.slug===s):-1;
+const CVAR={Open:'--st-open',InProgress:'--st-inprog',Resolved:'--st-resolved',Pending:'--st-pending',Closed:'--st-closed'};
 function loadProject(i){
   PI=i; const p=PROJECTS[i];
-  RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{};
+  RAW=p.RAW; CONF=p.conf; SMAP=p.SMAP||{}; PCFG=p.cfg||{}; SFULL=p.statuses||[];
+  /* bucket colors = the project's real Backlog status colors (API); fallback = Backlog standard palette */
+  const cols=p.colors||{}; for(const k in CVAR) document.documentElement.style.setProperty(CVAR[k],cols[k]||'');
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
   renderProjNav(); renderAll();
   /* single-app UX (07.28): URL hash mirrors the active project tab (bookmarkable) */
@@ -592,7 +607,7 @@ function initProjects(){
   window.addEventListener('hashchange',()=>{const i=slugIndex(location.hash.slice(1)); if(i>=0&&i!==PI) loadProject(i);});
   const i=slugIndex(location.hash.slice(1)); loadProject(i>=0?i:0);
 }
-const LSKEY='tl_dash_pw';
+const LSKEY='tl_dash_pw:'+location.pathname;   // per-page: pages may have different passphrases
 async function doUnlock(pass,fromStore){            // throws on wrong pass
   const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects;
   /* remember automatically (operator decision 07.28): ask only on a new device

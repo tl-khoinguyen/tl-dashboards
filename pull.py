@@ -76,6 +76,14 @@ for pc in CFG["projects"]:
     sts = get(f"projects/{PID}/statuses")
     SMAP = {str(s["id"]): bucket(s) for s in sts}
     SMAP.update({str(k): v for k, v in (pc.get("smap") or {}).items()})   # config overrides win
+    # real per-project statuses (name/color straight from Backlog) + one representative
+    # color per bucket (prefer the built-in status 1-4 of that bucket)
+    STATUSES = [{"id": s["id"], "name": s["name"], "color": s.get("color")}
+                for s in sorted(sts, key=lambda s: s.get("displayOrder", 999))]
+    COLORS = {}
+    for s in sorted(sts, key=lambda s: (s["id"] not in (1, 2, 3, 4), s.get("displayOrder", 999))):
+        b = SMAP[str(s["id"])]
+        if b not in COLORS and s.get("color"): COLORS[b] = s["color"]
     DONE = [s["id"] for s in sts if SMAP[str(s["id"])] == "Closed"]
     OPENIDS = [s["id"] for s in sts if s["id"] not in DONE]
     op = [slim(i) for i in paginate("issues", {"projectId[]": PID, "statusId[]": OPENIDS}, f"{slug}.open")]
@@ -84,7 +92,7 @@ for pc in CFG["projects"]:
     for i in op + cl:
         if i["key"] in seen: continue
         seen.add(i["key"]); RAW.append(i)
-    pulls[slug] = {"RAW": RAW, "SMAP": SMAP, "pid": PID}
+    pulls[slug] = {"RAW": RAW, "SMAP": SMAP, "pid": PID, "statuses": STATUSES, "colors": COLORS}
     print(f"{slug} ({key}): RAW={len(RAW)} open={len(op)} closed={len(cl)} statuses={len(sts)}")
 
 os.makedirs(os.path.dirname(a.out), exist_ok=True)

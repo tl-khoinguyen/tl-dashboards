@@ -5,9 +5,13 @@ template's DATA slot. Outputs a Pages-ready site tree:
   <outdir>/<slug>/index.html   one page per project
   <outdir>/all/index.html      aggregate page (project tabs)
   <outdir>/index.html          redirect -> all/
-Single-app site (07.28): /all/ is THE app (project tabs, #slug hash routing);
-/<slug>/ are tiny redirect stubs into /all/#slug so per-project bookmarks work.
---only SLUG[,SLUG] instead builds full standalone page(s) for those slugs.
+Site layout (07.28 rev2 — audience separation): /all/ = operator+CEO page (tabs,
+#slug hash routing); /<slug>/ = STANDALONE per-project page (own data only, no
+tabs, no link to other projects) shareable to that project's stakeholders.
+Per-page passphrases: a project with "passphrase" in its config entry gets its
+page encrypted with THAT passphrase — its stakeholders cannot open /all or other
+pages (crypto-scoped access without a user system). No per-project passphrase →
+the global one. /all always uses the global.
 Encryption: --enc PASSPHRASE or --enc-env VAR (e.g. DASH_PASSPHRASE).
 Plaintext build (no --enc*) is for private ad-hoc snapshots only — never deploy.
 Quick CEO snapshot: --snapshot [PATH] writes ONE all-in-one self-contained HTML
@@ -57,6 +61,7 @@ def payload(pc):
     return {"slug": slug, "name": pc.get("name", pc["key"]),
         "conf": {"space": SPACE, "pk": pc["key"], "pid": p.get("pid")},
         "SMAP": p["SMAP"], "RAW": p["RAW"],
+        "statuses": p.get("statuses", []), "colors": p.get("colors", {}),
         "cfg": {"defaultScope": pc.get("defaultScope", "all"),
                 "tagScopes": pc.get("tagScopes", []),
                 "categoryMode": pc.get("categoryMode", "issueType"),
@@ -73,9 +78,10 @@ def encrypt(obj, passphrase):
     b64 = lambda x: base64.b64encode(x).decode()
     return {"v": 1, "salt": b64(salt), "iv": b64(iv), "iter": iters, "ct": b64(ct)}
 
-def emit(page_slug, projs):
-    if PASS:
-        enc = encrypt({"projects": projs}, PASS)
+def emit(page_slug, projs, pw=None):
+    pw = pw or PASS
+    if pw:
+        enc = encrypt({"projects": projs}, pw)
         data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
                 f"const ENC={json.dumps(enc)};\nlet PROJECTS=null;")
     else:
@@ -85,7 +91,7 @@ def emit(page_slug, projs):
     d = os.path.join(a.outdir, page_slug); os.makedirs(d, exist_ok=True)
     out = os.path.join(d, "index.html")
     open(out, "w", encoding="utf-8").write(html)
-    print(f"WROTE {out} {round(len(html)/1024)}KB enc={'yes' if PASS else 'NO(plaintext)'}")
+    print(f"WROTE {out} {round(len(html)/1024)}KB enc={'yes' if pw else 'NO(plaintext)'}")
 
 if a.snapshot is not None:
     # quick CEO snapshot — one self-contained file, all projects, plaintext
@@ -106,13 +112,11 @@ def stub(path, url):
         f'<a href="{url}">→</a>')
     print(f"WROTE {path} (redirect -> {url})")
 
-if a.only:
-    # explicit standalone full page(s) for the listed slugs
-    for pc in [pc for pc in CFG["projects"] if pc["slug"] in a.only.split(",")]:
-        emit(pc["slug"], [payload(pc)])
-else:
-    # single-app site: /all/ = the app; per-slug = bookmark stubs; root -> all
+only = a.only.split(",") if a.only else None
+for pc in CFG["projects"]:
+    if only and pc["slug"] not in only: continue
+    # standalone page, optionally under its own passphrase (stakeholder scope)
+    emit(pc["slug"], [payload(pc)], pw=pc.get("passphrase"))
+if not only or "all" in only:
     emit("all", [payload(pc) for pc in CFG["projects"]])
-    for pc in CFG["projects"]:
-        stub(os.path.join(a.outdir, pc["slug"], "index.html"), f"../all/#{pc['slug']}")
     stub(os.path.join(a.outdir, "index.html"), "all/")
