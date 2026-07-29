@@ -75,6 +75,17 @@ META = {"today": D["today"], "generated": a.built or D["generated"]}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
 SPACE = D.get("space", CFG.get("space", ""))
 
+# Web Push (Phase 2, 07.29) — all three from env (locally .env via dash.sh, in CI
+# from Secrets), never from config. Embedded ONLY in encrypted payloads: the
+# verifier is what stops strangers from spamming subscriptions, so it must stay
+# behind the passphrase. Missing env → push UI simply absent.
+PUSH = None
+if all(os.environ.get(k) for k in ("PUSH_VERIFIER", "PUSH_WORKER_URL", "VAPID_PUBLIC")):
+    PUSH = {"v": os.environ["PUSH_VERIFIER"].strip(),
+            "url": os.environ["PUSH_WORKER_URL"].strip().rstrip("/"),
+            "pub": os.environ["VAPID_PUBLIC"].strip()}
+print(f"PUSH {'enabled' if PUSH else 'absent — bell hidden'}")
+
 def payload(pc):
     """One project's full payload object: data + the per-project rules the
     template needs. Company-identifying parts (space/pk/names) travel here —
@@ -121,7 +132,7 @@ def emit(page_slug, projs, pw=None, cross=None):
     # cross = /all-only cross-project insight block (operator+CEO audience)
     passes = [p for p in dict.fromkeys([PASS, pw]) if p]
     if passes:
-        enc = encrypt({"projects": projs, "cross": cross}, passes)
+        enc = encrypt({"projects": projs, "cross": cross, "push": PUSH}, passes)
         data = (f"const META={json.dumps(META)};\nconst BUILD={json.dumps(BUILD)};\n"
                 f"const ENC={json.dumps(enc)};\nlet PROJECTS=null;\nlet CROSS=null;")
     else:

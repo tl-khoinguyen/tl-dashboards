@@ -83,6 +83,7 @@ select:hover,.btn:hover{border-color:var(--accent);}
 @keyframes instglow{0%,100%{box-shadow:0 0 0 0 transparent;}
   50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 32%,transparent);}}
 #btn-install.pulse{animation:instglow 1.5s ease-in-out 4;}
+#btn-push.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
 /* hero */
 .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:12px;margin:18px 0;}
 .kcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
@@ -255,6 +256,8 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     <button class="btn iconbtn" id="btn-theme" title="theme">◐</button>
     <button class="btn iconbtn" id="btn-install" style="display:none"
       title="アプリとしてインストール / Install app / Cài ứng dụng"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="M7 9l5 5 5-5"/><path d="M4 19h16"/></svg></button>
+    <button class="btn iconbtn" id="btn-push" style="display:none"
+      title="毎朝の更新通知 / Update notifications / Thông báo cập nhật"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6.5-2 6.5h16S18 13 18 8"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg></button>
   </div>
   <div class="projnav" id="projnav"></div>
   <div class="top">
@@ -907,6 +910,34 @@ function maybePulse(){const b=$('#btn-install');
 document.addEventListener('visibilitychange',maybePulse);
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();_bip=e;
   $('#btn-install').style.display='';maybePulse();});
+/* Web Push (Phase 2): bell shows only when the unlocked payload carries push
+   config AND the browser supports push. Toggle = subscribe/unsubscribe; the
+   worker stores subscriptions, GitHub Actions sends after scheduled builds. */
+function u8(b64){const s=atob(b64.replace(/-/g,'+').replace(/_/g,'/'));const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+async function initPush(){
+  if(!PUSH||!('serviceWorker' in navigator)||!('PushManager' in window)||typeof Notification==='undefined')return;
+  if(!location.protocol.startsWith('http')||Notification.permission==='denied')return;
+  const b=$('#btn-push');b.style.display='';
+  try{const reg=await navigator.serviceWorker.ready;
+    b.classList.toggle('on',!!(await reg.pushManager.getSubscription()));}catch(_){}
+}
+$('#btn-push').addEventListener('click',async()=>{
+  const b=$('#btn-push');
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const cur=await reg.pushManager.getSubscription();
+    if(cur){
+      await fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
+        body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}).catch(()=>{});
+      await cur.unsubscribe();b.classList.remove('on');return;
+    }
+    if(await Notification.requestPermission()!=='granted')return;
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)});
+    const r=await fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})});
+    if(r.ok){b.classList.add('on');}else{await sub.unsubscribe();}
+  }catch(_){}
+});
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
 /* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
@@ -990,11 +1021,12 @@ async function storedPasses(){
   return l;
 }
 async function rememberPass(p){const l=(await storedPasses()).filter(x=>x!==p);l.unshift(p);await savePasses(l.slice(0,4));}
+let PUSH=null;   // web-push config — only present inside encrypted payloads
 async function doUnlock(pass,fromStore){            // throws on wrong pass
-  const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects; CROSS=_o.cross||null;
+  const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects; CROSS=_o.cross||null; PUSH=_o.push||null;
   /* remember automatically (07.28): ask only on a new device or after rotation */
   await rememberPass(pass);
-  $('#lock').style.display='none'; initProjects(); maybePulse();
+  $('#lock').style.display='none'; initProjects(); maybePulse(); initPush();
 }
 if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unless remembered)
   const t=T(),lk=$('#lock');

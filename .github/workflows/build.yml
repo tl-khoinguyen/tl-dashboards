@@ -7,6 +7,11 @@ on:
     # Odd minute + earlier slot so the site is fresh by the VN workday anyway.
     - cron: "47 21 * * *"
   workflow_dispatch:
+    inputs:
+      notify:
+        description: "send web push after deploy"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -43,6 +48,11 @@ jobs:
       - name: build (encrypted)
         env:
           SITE_KEY: ${{ secrets.SITE_KEY }}
+          # web push config — embedded into the ENCRYPTED payload only; absent
+          # secrets = bell hidden, build still fine
+          PUSH_VERIFIER: ${{ secrets.PUSH_VERIFIER }}
+          PUSH_WORKER_URL: ${{ secrets.PUSH_WORKER_URL }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
         run: python build.py --config config.json --data cache/data.json --outdir dist --enc-env SITE_KEY
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -57,3 +67,26 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # web push "updated" ping — scheduled builds only (manual dispatch: opt-in
+  # via the notify input), and only AFTER a successful deploy. No push
+  # secrets configured -> job exits quietly.
+  notify:
+    needs: deploy
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.notify)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pywebpush
+      - name: send web push
+        env:
+          PUSH_WORKER_URL: ${{ secrets.PUSH_WORKER_URL }}
+          PUSH_LIST_TOKEN: ${{ secrets.PUSH_LIST_TOKEN }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          SITE_URL: https://tl-khoinguyen.github.io/tl-dashboards
+        run: |
+          if [ -z "$PUSH_WORKER_URL" ]; then echo "push not configured — skip"; exit 0; fi
+          python push_send.py

@@ -18,6 +18,27 @@ self.addEventListener('activate', e => e.waitUntil(
     .then(() => self.clients.claim())
 ));
 
+/* Web Push (Phase 2) — payload: {title, body, url}. Sent by GitHub Actions
+   after a successful scheduled build (pywebpush + VAPID). */
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) {}
+  e.waitUntil(self.registration.showNotification(d.title || 'TL Dashboards', {
+    body: d.body || 'ダッシュボード更新 / Dashboard updated',
+    icon: 'icon-192.png', badge: 'icon-192.png',
+    data: { url: d.url || self.registration.scope },
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || self.registration.scope;
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then(ws => {
+    for (const w of ws) if (w.url.startsWith(self.registration.scope) && 'focus' in w) return w.focus();
+    return clients.openWindow(url);
+  }));
+});
+
 self.addEventListener('fetch', e => {
   const r = e.request;
   if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return;
