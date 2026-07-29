@@ -135,8 +135,8 @@ def emit(page_slug, projs, pw=None, cross=None):
     print(f"WROTE {out} {round(len(html)/1024)}KB enc={f'yes({len(passes)} slot)' if passes else 'NO(plaintext)'}")
     # PWA manifest (07.29) — neutral slug-based names only, never project names
     # (the manifest is plaintext in dist; identifying info stays in the payload)
-    nm = "Backlog Dashboard" if page_slug == "all" else f"Backlog Dashboard — {page_slug.upper()}"
-    man = {"name": nm, "short_name": "Dash" if page_slug == "all" else page_slug.upper(),
+    nm = "TL Dashboards" if page_slug == "all" else f"TL Dashboards — {page_slug.upper()}"
+    man = {"name": nm, "short_name": "TL Dashboards" if page_slug == "all" else f"TL Dash {page_slug.upper()}",
            "start_url": "./", "scope": "./", "display": "standalone",
            "background_color": "#F5F7FA", "theme_color": "#F5F7FA",
            "icons": [
