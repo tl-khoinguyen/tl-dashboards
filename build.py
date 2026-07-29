@@ -133,6 +133,19 @@ def emit(page_slug, projs, pw=None, cross=None):
     out = os.path.join(d, "index.html")
     open(out, "w", encoding="utf-8").write(html)
     print(f"WROTE {out} {round(len(html)/1024)}KB enc={f'yes({len(passes)} slot)' if passes else 'NO(plaintext)'}")
+    # PWA manifest (07.29) — neutral slug-based names only, never project names
+    # (the manifest is plaintext in dist; identifying info stays in the payload)
+    nm = "Backlog Dashboard" if page_slug == "all" else f"Backlog Dashboard — {page_slug.upper()}"
+    man = {"name": nm, "short_name": "Dash" if page_slug == "all" else page_slug.upper(),
+           "start_url": "./", "scope": "./", "display": "standalone",
+           "background_color": "#F5F7FA", "theme_color": "#F5F7FA",
+           "icons": [
+               {"src": "../icon-192.png", "sizes": "192x192", "type": "image/png"},
+               {"src": "../icon.png", "sizes": "512x512", "type": "image/png"},
+               {"src": "../icon-maskable.png", "sizes": "512x512", "type": "image/png",
+                "purpose": "maskable"}]}
+    open(os.path.join(d, "manifest.webmanifest"), "w", encoding="utf-8").write(
+        json.dumps(man, ensure_ascii=False))
 
 if a.snapshot is not None:
     # quick CEO snapshot — one self-contained file, all projects, plaintext
@@ -163,8 +176,13 @@ if not only or "all" in only:
     emit("all", [payload(pc) for pc in CFG["projects"]],
          cross=INS.get("cross") if INS else None)
     stub(os.path.join(a.outdir, "index.html"), "all/")
-icon = os.path.join(HERE, "assets", "icon.png")
-if os.path.exists(icon):
-    import shutil
-    shutil.copy(icon, os.path.join(a.outdir, "icon.png"))
-    print(f"WROTE {os.path.join(a.outdir, 'icon.png')} (og image)")
+import shutil
+for f in ("icon.png", "icon-192.png", "icon-maskable.png"):   # og image + PWA icons
+    p = os.path.join(HERE, "assets", f)
+    if os.path.exists(p):
+        shutil.copy(p, os.path.join(a.outdir, f))
+        print(f"WROTE {os.path.join(a.outdir, f)}")
+sw = os.path.join(HERE, "sw.js")                              # PWA offline shell
+if os.path.exists(sw):
+    shutil.copy(sw, os.path.join(a.outdir, "sw.js"))
+    print(f"WROTE {os.path.join(a.outdir, 'sw.js')}")

@@ -8,6 +8,14 @@
 <meta property="og:title" content="Backlog Dashboard">
 <meta property="og:type" content="website">
 <meta property="og:image" content="__OGIMG__">
+<!-- PWA (07.29): per-page manifest written by build.py; sw.js at site root -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<meta name="theme-color" content="#F5F7FA" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0A1120" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>
 :root{
   --bg:#F5F7FA; --panel:#FFFFFF; --panel2:#F0F3F7; --border:#E4E8EF;
@@ -973,6 +981,11 @@ if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unl
     lk.style.display='flex'; $('#pw').focus();
   })();
 } else if(PROJECTS){ initProjects(); }
+/* PWA (07.29): register the root service worker — offline shell. Skips
+   file:// snapshots (no http) and old browsers; failures are silent. */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  addEventListener('load',()=>{ navigator.serviceWorker.register('../sw.js').catch(()=>{}); });
+}
 </script>
 </body>
 </html>
