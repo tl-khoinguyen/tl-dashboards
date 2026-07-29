@@ -19,8 +19,14 @@ KEY = os.environ["BACKLOG_API_KEY"].strip()
 if not SPACE:
     sys.exit("no Backlog space (config.space or BACKLOG_SPACE)")
 BASE = f"https://{SPACE}/api/v2"
-TODAY = datetime.date.today().isoformat()
-WIDE = (datetime.date.today() - datetime.timedelta(days=int(CFG.get("windowDays", 120)))).isoformat()
+# Anchor "today" to the operator's timezone (config tzOffsetHours), NOT the
+# runner's local date — CI runs in UTC, so an early-morning build (before
+# 07:00 UTC+7) would otherwise stamp yesterday's date and shift every
+# range window by a day. Bit the 05:30 daily cron (found 2026-07-29).
+_TZ = datetime.timezone(datetime.timedelta(hours=float(CFG.get("tzOffsetHours", 0))))
+_TODAY = datetime.datetime.now(_TZ).date()
+TODAY = _TODAY.isoformat()
+WIDE = (_TODAY - datetime.timedelta(days=int(CFG.get("windowDays", 120)))).isoformat()
 
 def get(path, params=None):
     params = dict(params or {}); params["apiKey"] = KEY; pairs = []

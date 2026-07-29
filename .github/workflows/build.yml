@@ -2,7 +2,10 @@
 name: build
 on:
   schedule:
-    - cron: "30 22 * * *"   # daily 05:30 VN / 07:30 JP — fresh before the workday
+    # 04:47 VN / 06:47 JP. GitHub cron has NO exact-time SLA — runs queue and
+    # typically start 15-60+ min late (the 05:30 slot ran at 06:30 on 07-29).
+    # Odd minute + earlier slot so the site is fresh by the VN workday anyway.
+    - cron: "47 21 * * *"
   workflow_dispatch:
 
 permissions:
