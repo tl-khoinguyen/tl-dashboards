@@ -76,6 +76,13 @@ select:hover,.btn:hover{border-color:var(--accent);}
 .langbtn svg{display:none;}
 .langbtn svg.on{display:block;}
 .iconbtn{width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18.4px;}
+/* install button — accent-styled so it reads as a call-to-action among the
+   muted util icons; .pulse glows a few beats on FIRST sighting only */
+#btn-install{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+#btn-install:hover{filter:brightness(1.06);}
+@keyframes instglow{0%,100%{box-shadow:0 0 0 0 transparent;}
+  50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 32%,transparent);}}
+#btn-install.pulse{animation:instglow 1.5s ease-in-out 4;}
 /* hero */
 .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:12px;margin:18px 0;}
 .kcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
@@ -247,7 +254,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     </button>
     <button class="btn iconbtn" id="btn-theme" title="theme">◐</button>
     <button class="btn iconbtn" id="btn-install" style="display:none"
-      title="アプリとしてインストール / Install app / Cài ứng dụng">⤓</button>
+      title="アプリとしてインストール / Install app / Cài ứng dụng"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v10"/><path d="M7 9l5 5 5-5"/><path d="M4 19h16"/></svg></button>
   </div>
   <div class="projnav" id="projnav"></div>
   <div class="top">
@@ -891,7 +898,11 @@ $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h
 syncTC();
 /* PWA install: Chrome no longer auto-prompts — offer our own button when eligible */
 let _bip=null;
-addEventListener('beforeinstallprompt',e=>{e.preventDefault();_bip=e;$('#btn-install').style.display='';});
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();_bip=e;
+  const b=$('#btn-install');b.style.display='';
+  /* glow only on first sighting — if they didn't bite, stay quiet after */
+  try{if(!localStorage.getItem('tl_ins')){localStorage.setItem('tl_ins','1');
+    b.classList.add('pulse');b.addEventListener('animationend',()=>b.classList.remove('pulse'),{once:true});}}catch(_){}});
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
 /* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
