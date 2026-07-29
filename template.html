@@ -898,11 +898,15 @@ $('#btn-theme').addEventListener('click',()=>{const h=document.documentElement;h
 syncTC();
 /* PWA install: Chrome no longer auto-prompts — offer our own button when eligible */
 let _bip=null;
+/* glow only on first REAL sighting: dashboard unlocked + tab visible — else the
+   one-shot burns behind the lock screen / a background tab and is never seen */
+function maybePulse(){const b=$('#btn-install');
+  if(!_bip||!PROJECTS||document.visibilityState!=='visible'||b.classList.contains('pulse'))return;
+  try{if(localStorage.getItem('tl_ins2'))return;localStorage.setItem('tl_ins2','1');}catch(_){return;}
+  b.classList.add('pulse');b.addEventListener('animationend',()=>b.classList.remove('pulse'),{once:true});}
+document.addEventListener('visibilitychange',maybePulse);
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();_bip=e;
-  const b=$('#btn-install');b.style.display='';
-  /* glow only on first sighting — if they didn't bite, stay quiet after */
-  try{if(!localStorage.getItem('tl_ins')){localStorage.setItem('tl_ins','1');
-    b.classList.add('pulse');b.addEventListener('animationend',()=>b.classList.remove('pulse'),{once:true});}}catch(_){}});
+  $('#btn-install').style.display='';maybePulse();});
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
 /* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
@@ -990,7 +994,7 @@ async function doUnlock(pass,fromStore){            // throws on wrong pass
   const _o=JSON.parse(await decryptData(pass)); PROJECTS=_o.projects; CROSS=_o.cross||null;
   /* remember automatically (07.28): ask only on a new device or after rotation */
   await rememberPass(pass);
-  $('#lock').style.display='none'; initProjects();
+  $('#lock').style.display='none'; initProjects(); maybePulse();
 }
 if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unless remembered)
   const t=T(),lk=$('#lock');
@@ -1004,7 +1008,7 @@ if(typeof ENC!=='undefined'&&ENC){     // encrypted payload → lock screen (unl
     for(const p of await storedPasses()){ try{ await doUnlock(p,true); return; }catch(e){} }
     lk.style.display='flex'; $('#pw').focus();
   })();
-} else if(PROJECTS){ initProjects(); }
+} else if(PROJECTS){ initProjects(); maybePulse(); }
 /* PWA (07.29): register the root service worker — offline shell. Skips
    file:// snapshots (no http) and old browsers; failures are silent. */
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
