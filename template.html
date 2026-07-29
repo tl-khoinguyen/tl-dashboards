@@ -219,7 +219,8 @@ details.sec>summary .cnt.rchip{background:var(--accent-soft);color:var(--accent)
 svg{display:block;max-width:100%;}
 a.lnk{color:inherit;text-decoration:none;border-bottom:1px dashed var(--faint);transition:color .12s,border-color .12s;}
 a.lnk:hover{color:var(--accent);border-color:var(--accent);}
-.lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
+.lock{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px;
+  z-index:200;}  /* above EVERYTHING (sticky controls 60, totop 70, toast 90) — pre-unlock nothing may peek through */
 .lockcard{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:30px 28px;width:100%;max-width:380px;text-align:center;}
 .lockcard .lockey{font-size:12.6px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;}
 .lockcard h2{font-size:23px;font-weight:700;margin:4px 0 14px;}
