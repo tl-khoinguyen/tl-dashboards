@@ -83,7 +83,17 @@ select:hover,.btn:hover{border-color:var(--accent);}
 @keyframes instglow{0%,100%{box-shadow:0 0 0 0 transparent;}
   50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--accent) 32%,transparent);}}
 #btn-install.pulse{animation:instglow 1.5s ease-in-out 4;}
+/* bell states: off = muted outline · busy = swinging (request in flight) ·
+   on = solid accent fill so the subscribed state is unmissable */
 #btn-push.on{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+#btn-push.on svg{fill:var(--accent);}
+@keyframes bellswing{0%,100%{transform:rotate(0);}25%{transform:rotate(14deg);}75%{transform:rotate(-14deg);}}
+#btn-push.busy svg{animation:bellswing .6s ease-in-out infinite;transform-origin:50% 15%;}
+#pushtoast{position:fixed;top:calc(66px + env(safe-area-inset-top,0px));right:18px;z-index:90;
+  background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;
+  padding:9px 14px;font-size:14.5px;box-shadow:var(--shadow);max-width:min(320px,80vw);
+  opacity:0;transition:opacity .25s;pointer-events:none;}
+#pushtoast.show{opacity:1;}
 /* hero */
 .hero{display:grid;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));gap:12px;margin:18px 0;}
 .kcard{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
@@ -287,6 +297,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div class="insight" id="insight"></div>
   <div id="sections"></div>
 
+  <div id="pushtoast" role="status"></div>
   <button id="totop" title="top" aria-label="back to top">↑</button>
 
   <div class="foot">
@@ -319,6 +330,7 @@ const DICT={
    area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
    sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
+   push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
@@ -351,6 +363,7 @@ const DICT={
    area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
    sec_move:"Movement in period",mv_bycat:"New vs closed by type/category",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
+   push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Risk & overdue",sec_status:"Status breakdown",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
@@ -383,6 +396,7 @@ const DICT={
    area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
    sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
+   push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
@@ -921,22 +935,30 @@ async function initPush(){
   try{const reg=await navigator.serviceWorker.ready;
     b.classList.toggle('on',!!(await reg.pushManager.getSubscription()));}catch(_){}
 }
+let _toastT=null;
+function toast(msg){const el=$('#pushtoast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(_toastT);_toastT=setTimeout(()=>el.classList.remove('show'),3200);}
+const _to=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
 $('#btn-push').addEventListener('click',async()=>{
-  const b=$('#btn-push');
+  const b=$('#btn-push'),t=T();
+  if(b.classList.contains('busy'))return;   // ignore double taps mid-flight
+  b.classList.add('busy');
   try{
-    const reg=await navigator.serviceWorker.ready;
+    const reg=await _to(navigator.serviceWorker.ready,8000);
     const cur=await reg.pushManager.getSubscription();
     if(cur){
-      await fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
-        body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}).catch(()=>{});
-      await cur.unsubscribe();b.classList.remove('on');return;
+      await _to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
+        body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}),8000).catch(()=>{});
+      await cur.unsubscribe();b.classList.remove('on');toast(t.push_off);return;
     }
-    if(await Notification.requestPermission()!=='granted')return;
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)});
-    const r=await fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})});
-    if(r.ok){b.classList.add('on');}else{await sub.unsubscribe();}
-  }catch(_){}
+    if(await Notification.requestPermission()!=='granted'){toast(t.push_denied);return;}
+    const sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);
+    const r=await _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000);
+    if(r.ok){b.classList.add('on');toast(t.push_on);}
+    else{await sub.unsubscribe();toast(t.push_err);}
+  }catch(_){toast(T().push_err);}
+  finally{b.classList.remove('busy');}
 });
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
