@@ -25,7 +25,7 @@ self.addEventListener('push', e => {
   try { d = e.data ? e.data.json() : {}; } catch (_) {}
   e.waitUntil(self.registration.showNotification(d.title || 'TL Dashboards', {
     body: d.body || 'ダッシュボード更新 / Dashboard updated',
-    icon: 'icon-192.png', badge: 'icon-192.png',
+    icon: 'icon-192.png', badge: 'badge-96.png',  // badge MUST be monochrome — else Android falls back to the Chrome logo
     data: { url: d.url || self.registration.scope },
   }));
 });

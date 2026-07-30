@@ -188,7 +188,7 @@ if not only or "all" in only:
          cross=INS.get("cross") if INS else None)
     stub(os.path.join(a.outdir, "index.html"), "all/")
 import shutil
-for f in ("icon.png", "icon-192.png", "icon-maskable.png"):   # og image + PWA icons
+for f in ("icon.png", "icon-192.png", "icon-maskable.png", "badge-96.png"):   # og image + PWA icons + notification badge
     p = os.path.join(HERE, "assets", f)
     if os.path.exists(p):
         shutil.copy(p, os.path.join(a.outdir, f))
