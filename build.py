@@ -71,7 +71,8 @@ def load_insight():
 
 INS = load_insight()
 
-META = {"today": D["today"], "generated": a.built or D["generated"]}
+META = {"today": D["today"], "generated": a.built or D["generated"],
+        "generatedAt": a.built or D.get("generatedAt") or D["generated"]}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
 SPACE = D.get("space", CFG.get("space", ""))
 

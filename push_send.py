@@ -25,10 +25,11 @@ def call(path, method="GET", data=None):
     return json.load(urllib.request.urlopen(req))
 
 tz = datetime.timezone(datetime.timedelta(hours=float(os.environ.get("TZ_OFFSET_HOURS", "7"))))
-today = datetime.datetime.now(tz).date().isoformat()
+now = datetime.datetime.now(tz)
+edition = "朝の更新" if now.hour < 10 else "昼の更新"   # 2x daily: ~05:30 / ~13:00 VN
 site = os.environ.get("SITE_URL", "").rstrip("/")
 payload = json.dumps({"title": "TL Dashboards",
-                      "body": f"{today} データ更新 / Dữ liệu mới",
+                      "body": f"{now:%Y-%m-%d %H:%M} {edition} / Dữ liệu mới",
                       "url": (site + "/all/") if site else None}, ensure_ascii=False)
 
 subs = call("/list")["subs"]

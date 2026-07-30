@@ -24,8 +24,10 @@ BASE = f"https://{SPACE}/api/v2"
 # 07:00 UTC+7) would otherwise stamp yesterday's date and shift every
 # range window by a day. Bit the 05:30 daily cron (found 2026-07-29).
 _TZ = datetime.timezone(datetime.timedelta(hours=float(CFG.get("tzOffsetHours", 0))))
-_TODAY = datetime.datetime.now(_TZ).date()
+_NOW = datetime.datetime.now(_TZ)
+_TODAY = _NOW.date()
 TODAY = _TODAY.isoformat()
+GEN_AT = _NOW.strftime("%Y-%m-%d %H:%M")   # shown as the "updated" stamp (2x daily builds)
 WIDE = (_TODAY - datetime.timedelta(days=int(CFG.get("windowDays", 120)))).isoformat()
 
 def get(path, params=None):
@@ -103,6 +105,6 @@ for pc in CFG["projects"]:
     print(f"{slug} ({key}): RAW={len(RAW)} open={len(op)} closed={len(cl)} statuses={len(sts)}")
 
 os.makedirs(os.path.dirname(a.out), exist_ok=True)
-out = {"generated": TODAY, "today": TODAY, "space": SPACE, "pulls": pulls}
+out = {"generated": TODAY, "generatedAt": GEN_AT, "today": TODAY, "space": SPACE, "pulls": pulls}
 json.dump(out, open(a.out, "w", encoding="utf-8"), ensure_ascii=False)
 print(f"WROTE {a.out}  projects={len(pulls)} issues={sum(len(p['RAW']) for p in pulls.values())}")

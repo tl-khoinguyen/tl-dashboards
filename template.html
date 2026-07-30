@@ -817,7 +817,7 @@ const UPDATE_URL=(typeof BUILD!=='undefined'&&BUILD.updateUrl)||"";  // Actions 
 function freshInfo(){
   const t=T();const built=new Date((META.generated||META.today)+'T00:00:00Z');
   let d=Math.floor((new Date()-built)/864e5); if(d<0)d=0;
-  return {d,cls:d>CFG.fresh.crit?'r':d>CFG.fresh.warn?'a':'g',text:`${t.updated}: ${META.generated} · ${d===0?t.today_:t.daysAgo(d)}`};
+  return {d,cls:d>CFG.fresh.crit?'r':d>CFG.fresh.warn?'a':'g',text:`${t.updated}: ${META.generatedAt||META.generated} · ${d===0?t.today_:t.daysAgo(d)}`};
 }
 function renderFresh(){
   const t=T(),f=freshInfo();
