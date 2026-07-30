@@ -35,8 +35,12 @@ subs = call("/list")["subs"]
 ok = dead = err = 0
 for s in subs:
     try:
+        # ttl matters: the default is 0 = "deliver instantly or DROP" — a phone
+        # in Doze at 05:42 silently loses the ping (bit us 07.30). 24h TTL keeps
+        # it queued until the device wakes; Urgency high may wake it sooner.
         webpush(s, payload, vapid_private_key=os.environ["VAPID_PRIVATE"],
-                vapid_claims={"sub": "mailto:webpush@thankslab.biz"})
+                vapid_claims={"sub": "mailto:webpush@thankslab.biz"},
+                ttl=86400, headers={"Urgency": "high"})
         ok += 1
     except WebPushException as e:
         code = getattr(getattr(e, "response", None), "status_code", None)
