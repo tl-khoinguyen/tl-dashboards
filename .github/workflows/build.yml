@@ -58,6 +58,17 @@ jobs:
           PUSH_WORKER_URL: ${{ secrets.PUSH_WORKER_URL }}
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
         run: python build.py --config config.json --data cache/data.json --outdir dist --enc-env SITE_KEY
+      # /next standing preview (07.31): the feedback-revision build. Same data
+      # pull, next/'s own template+build. Absent next/ folder -> step skipped,
+      # nothing else changes. Promote = next/* replaces the root engine files.
+      - name: build /next preview (skipped when next/ absent)
+        if: ${{ hashFiles('next/build.py') != '' }}
+        env:
+          SITE_KEY: ${{ secrets.SITE_KEY }}
+          PUSH_VERIFIER: ${{ secrets.PUSH_VERIFIER }}
+          PUSH_WORKER_URL: ${{ secrets.PUSH_WORKER_URL }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+        run: python next/build.py --config config.json --data cache/data.json --insight cache/insight.json --outdir dist/next --enc-env SITE_KEY --variant next
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
