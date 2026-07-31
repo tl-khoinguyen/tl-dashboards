@@ -5,8 +5,11 @@ on:
     # Twice daily, targets ~05:30 and ~13:00 VN (operator 07.30). GitHub cron
     # has NO exact-time SLA — runs start 15-60+ min late, so schedule a bit
     # early on odd minutes; treat the target times as approximate.
+    # NOTE: overloaded slots get DROPPED entirely, not just delayed — the 05:43
+    # UTC slot (near the 06:00 UTC global peak) never fired on 07-31. Keep both
+    # entries on odd minutes in quiet windows.
     - cron: "13 22 * * *"   # ~05:30 VN morning edition (yesterday's full picture)
-    - cron: "43 5 * * *"    # ~13:00 VN midday edition (this morning's movement)
+    - cron: "17 5 * * *"    # ~12:30 VN midday edition (this morning's movement)
   workflow_dispatch:
     inputs:
       notify:
