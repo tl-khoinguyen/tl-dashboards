@@ -184,6 +184,18 @@ def stub(path, url):
         f'<a href="{url}">→</a>')
     print(f"WROTE {path} (redirect -> {url})")
 
+def deadend(path):
+    # root gives away nothing (08.03, operator): a per-project link must not lead
+    # to the 3-project /all page by stripping the slug — /all is reachable only
+    # by its direct link. Applies to preview builds too: the shared links are
+    # /all/ and /next/all/, both roots 404.
+    d = os.path.dirname(path); os.makedirs(d, exist_ok=True)
+    open(path, "w", encoding="utf-8").write(
+        '<!doctype html><meta charset="utf-8"><title>404</title>'
+        '<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#889;background:#fff}</style>'
+        '<h1>404</h1>')
+    print(f"WROTE {path} (dead-end root — /all reachable only via direct link)")
+
 only = a.only.split(",") if a.only else None
 for pc in CFG["projects"]:
     if only and pc["slug"] not in only: continue
@@ -192,7 +204,7 @@ for pc in CFG["projects"]:
 if not only or "all" in only:
     emit("all", [payload(pc) for pc in CFG["projects"]],
          cross=INS.get("cross") if INS else None)
-    stub(os.path.join(a.outdir, "index.html"), "all/")
+    deadend(os.path.join(a.outdir, "index.html"))
 import shutil
 for f in ("icon.png", "icon-192.png", "icon-maskable.png", "badge-96.png"):   # og image + PWA icons + notification badge
     p = os.path.join(HERE, "assets", f)

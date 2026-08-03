@@ -38,6 +38,9 @@ ap.add_argument("--snapshot", nargs="?", const="", default=None,
 ap.add_argument("--insight", default=None,
                 help="weekly AI-insight JSON; default: cache/insight.json (CI secret channel) "
                      "else newest ../insights/*.json — absent = section hidden")
+ap.add_argument("--variant", default=None,
+                help="identity suffix for preview builds (e.g. 'next') — appears in the "
+                     "PWA manifest names so an installed preview is tellable from production")
 a = ap.parse_args()
 if a.snapshot is not None and (a.enc or a.enc_env):
     sys.exit("--snapshot is always plaintext — drop --enc/--enc-env")
@@ -108,6 +111,7 @@ def payload(pc):
                 "tagScopes": pc.get("tagScopes", []),
                 "categoryMode": pc.get("categoryMode", "issueType"),
                 "catNormalize": pc.get("catNormalize", {}),
+                "planned": pc.get("plannedCategories", []),
                 "thresholds": pc.get("thresholds", {}),
                 "note": pc.get("note", None)}}
 
@@ -147,8 +151,9 @@ def emit(page_slug, projs, pw=None, cross=None):
     print(f"WROTE {out} {round(len(html)/1024)}KB enc={f'yes({len(passes)} slot)' if passes else 'NO(plaintext)'}")
     # PWA manifest (07.29) — neutral slug-based names only, never project names
     # (the manifest is plaintext in dist; identifying info stays in the payload)
-    nm = "TL Dashboards" if page_slug == "all" else f"TL Dashboards — {page_slug.upper()}"
-    man = {"name": nm, "short_name": "TL Dashboards" if page_slug == "all" else f"TL Dash {page_slug.upper()}",
+    vsuf = f" ({a.variant})" if a.variant else ""
+    nm = ("TL Dashboards" if page_slug == "all" else f"TL Dashboards — {page_slug.upper()}") + vsuf
+    man = {"name": nm, "short_name": ("TL Dashboards" if page_slug == "all" else f"TL Dash {page_slug.upper()}") + vsuf,
            "start_url": "./", "scope": "./", "display": "standalone",
            "background_color": "#F5F7FA", "theme_color": "#F5F7FA",
            "icons": [
@@ -179,6 +184,18 @@ def stub(path, url):
         f'<a href="{url}">→</a>')
     print(f"WROTE {path} (redirect -> {url})")
 
+def deadend(path):
+    # root gives away nothing (08.03, operator): a per-project link must not lead
+    # to the 3-project /all page by stripping the slug — /all is reachable only
+    # by its direct link. Applies to preview builds too: the shared links are
+    # /all/ and /next/all/, both roots 404.
+    d = os.path.dirname(path); os.makedirs(d, exist_ok=True)
+    open(path, "w", encoding="utf-8").write(
+        '<!doctype html><meta charset="utf-8"><title>404</title>'
+        '<style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;color:#889;background:#fff}</style>'
+        '<h1>404</h1>')
+    print(f"WROTE {path} (dead-end root — /all reachable only via direct link)")
+
 only = a.only.split(",") if a.only else None
 for pc in CFG["projects"]:
     if only and pc["slug"] not in only: continue
@@ -187,7 +204,7 @@ for pc in CFG["projects"]:
 if not only or "all" in only:
     emit("all", [payload(pc) for pc in CFG["projects"]],
          cross=INS.get("cross") if INS else None)
-    stub(os.path.join(a.outdir, "index.html"), "all/")
+    deadend(os.path.join(a.outdir, "index.html"))
 import shutil
 for f in ("icon.png", "icon-192.png", "icon-maskable.png", "badge-96.png"):   # og image + PWA icons + notification badge
     p = os.path.join(HERE, "assets", f)
