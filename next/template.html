@@ -240,6 +240,30 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   .wrap{padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(48px + env(safe-area-inset-bottom,0px));}
   .brand h1{font-size:20.7px;}
 }
+/* export (08.03): printer icon beside the project title — different context from
+   the page-pref utility cluster (lang/theme/push), so it lives in the header row */
+.h1row{display:flex;align-items:center;gap:10px;}
+.expwrap{position:relative;}
+#btn-export{width:34px;height:34px;color:var(--muted);}
+#btn-export:hover{color:var(--text);}
+#expmenu{position:absolute;top:40px;left:0;z-index:80;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;gap:2px;min-width:220px;}
+#expmenu button{font:inherit;font-size:14.4px;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;}
+#expmenu button:hover{background:var(--panel2);}
+#expmenu[hidden]{display:none;}
+/* print / PDF (08.03): "export what you see" — JS force-opens every section and
+   forces light theme (beforeprint), page chrome (filters/buttons/toasts) is
+   stripped; the per-assignee area list prints its FIRST page only (.hid rows
+   stay hidden by design — operator decision). Colors kept via print-color-adjust. */
+@media print{
+  .util,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap{display:none!important;}
+  body{background:#fff;font-size:13.5px;}
+  .wrap{max-width:100%;padding:0;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
+  details.sec>summary{break-after:avoid;}
+  details.sec>summary .chev{display:none;}
+  .kcard,.insight,.mvrow,.arow,tr,.bar,.legend,.mvstats{break-inside:avoid;}
+  a.lnk{border-bottom:none;}
+}
 </style>
 </head>
 <body>
@@ -277,7 +301,13 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div class="top">
     <div class="brand">
       <span class="ey" id="t-ey">Backlog</span>
-      <h1 id="t-title">Backlog Dashboard</h1>
+      <div class="h1row">
+        <h1 id="t-title">Backlog Dashboard</h1>
+        <div class="expwrap">
+          <button class="btn iconbtn" id="btn-export"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg></button>
+          <div id="expmenu" hidden><button id="exp-pdf" type="button"></button><button id="exp-html" type="button"></button></div>
+        </div>
+      </div>
       <span class="sub" id="t-sub"></span>
       <span class="fresh g" id="fresh"></span>
     </div>
@@ -347,6 +377,7 @@ const DICT={
    foot_r:s=>`データ抽出 ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"収束見込みなし",
    updated:"更新",today_:"本日",daysAgo:n=>`${n}日前`,staleMsg:n=>`データが ${n}日前 と古くなっています。`,updateNow:"今すぐ更新",
+   exp_t:"エクスポート",exp_pdf:"📄 PDF出力（印刷）",exp_html:"🌐 HTML保存（単一ファイル）",
    lockMsg:"パスワードを入力して表示",unlock:"開く",wrongPass:"パスワードが違います"},
  en:{title:"Backlog Dashboard",scope:"Scope",range:"Range",lang:"Lang",
    sub:s=>`Scope: ${s.scopeName} · ${s.open} open · as of ${s.date}`,
@@ -380,6 +411,7 @@ const DICT={
    foot_r:s=>`Extracted ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"no convergence",
    updated:"Updated",today_:"today",daysAgo:n=>`${n}d ago`,staleMsg:n=>`Data is ${n} days old.`,updateNow:"Update now",
+   exp_t:"Export",exp_pdf:"📄 Export PDF (print)",exp_html:"🌐 Save as HTML (single file)",
    lockMsg:"Enter password to view",unlock:"Unlock",wrongPass:"Wrong password"},
  vi:{title:"Bảng điều khiển Backlog",scope:"Phạm vi",range:"Khoảng",lang:"Ngôn ngữ",
    sub:s=>`Phạm vi: ${s.scopeName} · ${s.open} đang mở · tính đến ${s.date}`,
@@ -413,6 +445,7 @@ const DICT={
    foot_r:s=>`Trích ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"không hội tụ",
    updated:"Cập nhật",today_:"hôm nay",daysAgo:n=>`${n} ngày trước`,staleMsg:n=>`Dữ liệu đã cũ ${n} ngày.`,updateNow:"Cập nhật ngay",
+   exp_t:"Xuất",exp_pdf:"📄 Xuất PDF (in)",exp_html:"🌐 Lưu HTML (một tệp)",
    lockMsg:"Nhập mật khẩu để xem",unlock:"Mở",wrongPass:"Sai mật khẩu"},
 };
 
@@ -847,6 +880,8 @@ function buildControls(){
   // labels
   $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;
   document.querySelectorAll('#btn-lang svg').forEach(s=>s.classList.toggle('on',s.dataset.l===LANG));
+  // export button/menu labels follow the language
+  const be=$('#btn-export');if(be){be.title=t.exp_t;$('#exp-pdf').textContent=t.exp_pdf;$('#exp-html').textContent=t.exp_html;}
 }
 
 const UPDATE_URL=(typeof BUILD!=='undefined'&&BUILD.updateUrl)||"";  // Actions workflow_dispatch page (from build config)
@@ -999,6 +1034,46 @@ $('#btn-push').addEventListener('click',async()=>{
 });
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
+/* ============ export (08.03): PDF via print + static single-file HTML ============
+   Client-side by design: the DOM already shows exactly the chosen project and
+   filter combination, so "export what you see" needs no build-time artifacts and
+   no PDF library (native print = correct JP/VN fonts, user saves as PDF).
+   Prep = open every section + force light theme; restored afterwards. The
+   per-assignee area list keeps only its first page (.hid rows stay hidden). */
+let _pp=null;
+function expPrep(){ if(_pp)return;
+  _pp={open:[...document.querySelectorAll('details.sec')].map(d=>d.open),theme:document.documentElement.dataset.theme||'light'};
+  document.querySelectorAll('details.sec').forEach(d=>d.open=true);
+  document.documentElement.dataset.theme='light';syncTC();
+}
+function expRestore(){ if(!_pp)return;
+  [...document.querySelectorAll('details.sec')].forEach((d,i)=>d.open=_pp.open[i]);
+  document.documentElement.dataset.theme=_pp.theme;syncTC();_pp=null;
+}
+/* Ctrl+P / browser print gets the same prep — the pair is idempotent via _pp */
+window.addEventListener('beforeprint',expPrep);
+window.addEventListener('afterprint',expRestore);
+function exportHTML(){
+  expPrep();
+  const c=document.documentElement.cloneNode(true);
+  expRestore();
+  /* static snapshot: strip scripts + interactive chrome; <details> keep working
+     natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
+  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn').forEach(e=>e.remove());
+  const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
+  const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · Backlog Dashboard · ${META.today}`;
+  const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`dashboard-${nm}-${(META.today||'').replace(/-/g,'')}.html`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+(()=>{const b=$('#btn-export'),m=$('#expmenu');if(!b)return;
+  b.addEventListener('click',e=>{e.stopPropagation();m.hidden=!m.hidden;});
+  document.addEventListener('click',()=>{m.hidden=true;});
+  $('#exp-pdf').addEventListener('click',()=>{m.hidden=true;expPrep();setTimeout(()=>window.print(),60);});
+  $('#exp-html').addEventListener('click',()=>{m.hidden=true;exportHTML();});
+})();
 /* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
 (()=>{const c=$('#controls');if(!c)return;const s=document.createElement('div');
   c.parentNode.insertBefore(s,c);
