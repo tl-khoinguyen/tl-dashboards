@@ -152,8 +152,8 @@ def emit(page_slug, projs, pw=None, cross=None):
     # PWA manifest (07.29) — neutral slug-based names only, never project names
     # (the manifest is plaintext in dist; identifying info stays in the payload)
     vsuf = f" ({a.variant})" if a.variant else ""
-    nm = ("TL Dashboards" if page_slug == "all" else f"TL Dashboards — {page_slug.upper()}") + vsuf
-    man = {"name": nm, "short_name": ("TL Dashboards" if page_slug == "all" else f"TL Dash {page_slug.upper()}") + vsuf,
+    nm = ("TLダッシュボード" if page_slug == "all" else f"TLダッシュボード — {page_slug.upper()}") + vsuf
+    man = {"name": nm, "short_name": ("TLダッシュボード" if page_slug == "all" else f"TLダッシュ {page_slug.upper()}") + vsuf,
            "start_url": "./", "scope": "./", "display": "standalone",
            "background_color": "#F5F7FA", "theme_color": "#F5F7FA",
            "icons": [

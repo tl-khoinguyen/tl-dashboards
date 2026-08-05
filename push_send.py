@@ -28,7 +28,7 @@ tz = datetime.timezone(datetime.timedelta(hours=float(os.environ.get("TZ_OFFSET_
 now = datetime.datetime.now(tz)
 edition = "朝の更新" if now.hour < 10 else "昼の更新"   # 2x daily: ~05:30 / ~13:00 VN
 site = os.environ.get("SITE_URL", "").rstrip("/")
-payload = json.dumps({"title": "TL Dashboards",
+payload = json.dumps({"title": "TLダッシュボード",
                       "body": f"{now:%Y-%m-%d %H:%M} {edition} / Dữ liệu mới",
                       "url": (site + "/all/") if site else None}, ensure_ascii=False)
 
