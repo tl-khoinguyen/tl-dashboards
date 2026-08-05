@@ -18,7 +18,7 @@ on:
         default: false
 
 permissions:
-  contents: read
+  contents: write   # history.enc is committed back by the build (08.05)
   pages: write
   id-token: write
 
@@ -43,6 +43,24 @@ jobs:
         env:
           BACKLOG_API_KEY: ${{ secrets.BACKLOG_API_KEY }}
         run: python pull.py --config config.json --out cache/data.json
+      # history accumulation (08.05): upsert today's per-project aggregate counts
+      # into history.enc (same AES-GCM envelope as the pages — counts only, but
+      # category/type vocabulary is internal) and commit it back. The pull is
+      # ephemeral; trends exist only because each build leaves this trace.
+      - name: accumulate history
+        env:
+          SITE_KEY: ${{ secrets.SITE_KEY }}
+        run: |
+          python history.py --config config.json --data cache/data.json --file history.enc --enc-env SITE_KEY
+          if [ -n "$(git status --porcelain history.enc)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add history.enc
+            git commit -m "update history"
+            git push origin HEAD:main || (git fetch origin main && git rebase origin/main && git push origin HEAD:main)
+          else
+            echo "history unchanged"
+          fi
       - name: materialize insight (optional — absent secret = section hidden)
         env:
           DASH_INSIGHT_B64: ${{ secrets.DASH_INSIGHT_B64 }}

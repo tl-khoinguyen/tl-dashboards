@@ -214,6 +214,9 @@ details.sec>summary .cnt.rchip{background:var(--accent-soft);color:var(--accent)
 .mvbar{display:flex;align-items:center;gap:6px;height:9px;}
 .mvbar i{display:block;height:100%;border-radius:3px;min-width:2px;}
 .mvbar b{font-size:11.8px;color:var(--muted);font-weight:600;line-height:1;}
+.mvnet{flex-shrink:0;min-width:42px;text-align:right;font-size:12.8px;font-weight:700;color:var(--muted);}
+.mvnet.pos{color:var(--amber);}
+.mvplan{margin-left:6px;font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:7px;background:var(--accent-soft);color:var(--accent);vertical-align:1px;}
 .mvfin{display:flex;gap:8px 20px;flex-wrap:wrap;font-size:14.4px;}
 .mvfin b{color:var(--accent);}
 svg{display:block;max-width:100%;}
@@ -236,6 +239,30 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   .kcard .kval{font-size:29.9px;}
   .wrap{padding:calc(14px + env(safe-area-inset-top,0px)) 12px calc(48px + env(safe-area-inset-bottom,0px));}
   .brand h1{font-size:20.7px;}
+}
+/* export (08.03): printer icon beside the project title — different context from
+   the page-pref utility cluster (lang/theme/push), so it lives in the header row */
+.h1row{display:flex;align-items:center;gap:10px;}
+.expwrap{position:relative;}
+#btn-export{width:34px;height:34px;color:var(--muted);}
+#btn-export:hover{color:var(--text);}
+#expmenu{position:absolute;top:40px;left:0;z-index:80;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:6px;display:flex;flex-direction:column;gap:2px;min-width:220px;}
+#expmenu button{font:inherit;font-size:14.4px;text-align:left;background:none;border:none;color:var(--text);padding:8px 10px;border-radius:7px;cursor:pointer;white-space:nowrap;}
+#expmenu button:hover{background:var(--panel2);}
+#expmenu[hidden]{display:none;}
+/* print / PDF (08.03): "export what you see" — JS force-opens every section and
+   forces light theme (beforeprint), page chrome (filters/buttons/toasts) is
+   stripped; the per-assignee area list prints its FIRST page only (.hid rows
+   stay hidden by design — operator decision). Colors kept via print-color-adjust. */
+@media print{
+  .util,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap{display:none!important;}
+  body{background:#fff;font-size:13.5px;}
+  .wrap{max-width:100%;padding:0;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
+  details.sec>summary{break-after:avoid;}
+  details.sec>summary .chev{display:none;}
+  .kcard,.insight,.mvrow,.arow,tr,.bar,.legend,.mvstats{break-inside:avoid;}
+  a.lnk{border-bottom:none;}
 }
 </style>
 </head>
@@ -274,7 +301,13 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div class="top">
     <div class="brand">
       <span class="ey" id="t-ey">Backlog</span>
-      <h1 id="t-title">Backlog Dashboard</h1>
+      <div class="h1row">
+        <h1 id="t-title">Backlog Dashboard</h1>
+        <div class="expwrap">
+          <button class="btn iconbtn" id="btn-export"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg></button>
+          <div id="expmenu" hidden><button id="exp-pdf" type="button"></button><button id="exp-html" type="button"></button></div>
+        </div>
+      </div>
       <span class="sub" id="t-sub"></span>
       <span class="fresh g" id="fresh"></span>
     </div>
@@ -319,31 +352,32 @@ const DICT={
    ms:n=>`マイルストーン: ${n}`,
    k_open:"未完了チケット",k_trend:"バックログ増減",k_over:"期限超過",k_stale:"停滞(30日+)",k_health:"健全度",
    m_open:s=>`現在オープン中。直近${s.r}日で 新規${s.created}・完了${s.closed}`,
-   m_trend:s=>s.net>0?`増加中：${s.r}日で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.r}日で ${s.net}（消化が進行）`:`横ばい`,
+   m_trend:s=>s.planned?`新規${s.created}件（計画起票 ${s.crPlan}・その他 ${s.crOther}）・完了${s.closed}件`:(s.net>0?`増加中：${s.r}日で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.r}日で ${s.net}（消化が進行）`:`横ばい`),
    m_over:s=>`${s.overdue}件が期限超過（オープンの${s.overduePct}%）`,
    m_stale:s=>`${s.stale}件が30日以上未更新（${s.stalePct}%）`,
-   m_health:s=>s.forecast?`現ペースで残${s.open}件を消化 → 約${s.forecast}`:`現ペースでは収束見込みなし`,
+   m_health:s=>s.rate==null?`期間内の流入・処理なし`:`処理 ${s.closed}件 ／ 流入 ${s.inflow}件${s.planned?'（計画外）':''} ＝ 処理率 ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?`（前期 ${s.rateP>=999?'∞':s.rateP+'%'}）`:''}`,
    up:"増加",down:"減少",flat:"横ばい",good:"良好",warn:"注意",crit:"危険",
    ins_title:"サマリー・インサイト",
    ins_ai:"AIインサイト",ins_asof:d=>`${d}時点`,ins_cross:"横断メモ",
    ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
    area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
-   sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",
+   sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了（差分順）",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",plan_chip:"計画",
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
-   sec_risk:"リスク＆期限超過",sec_status:"ステータス構成",
-   th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"リスク",
+   sec_risk:"期限超過チケット",sec_status:"ステータス構成",
+   th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"滞留度",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
    th_ticket:"件名",th_due:"期限",th_days:"超過日数",
    more:"すべて表示",less:"折りたたむ",showing:n=>`上位 ${n} 件`,
    created:"新規",closed:"完了",net:"純増減",week:"週",stalep:"停滞%",
-   risk_h:"高",risk_m:"中",risk_l:"低",
+   risk_h:"長",risk_m:"中",risk_l:"短",
    st:{Open:"未対応",InProgress:"処理中",Resolved:"処理済み",Pending:"保留",Closed:"完了"},
    foot_l:"Backlog ダッシュボード · クライアント集計（オフライン可）",
    foot_r:s=>`データ抽出 ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"収束見込みなし",
    updated:"更新",today_:"本日",daysAgo:n=>`${n}日前`,staleMsg:n=>`データが ${n}日前 と古くなっています。`,updateNow:"今すぐ更新",
+   exp_t:"エクスポート",exp_pdf:"📄 PDF出力（印刷）",exp_html:"🌐 HTML保存（単一ファイル）",
    lockMsg:"パスワードを入力して表示",unlock:"開く",wrongPass:"パスワードが違います"},
  en:{title:"Backlog Dashboard",scope:"Scope",range:"Range",lang:"Lang",
    sub:s=>`Scope: ${s.scopeName} · ${s.open} open · as of ${s.date}`,
@@ -352,31 +386,32 @@ const DICT={
    ms:n=>`Milestone: ${n}`,
    k_open:"Open tickets",k_trend:"Backlog change",k_over:"Overdue",k_stale:"Stale (30d+)",k_health:"Health",
    m_open:s=>`Currently open. Last ${s.r}d: ${s.created} new / ${s.closed} closed`,
-   m_trend:s=>s.net>0?`Growing: +${s.net} over ${s.r}d (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} over ${s.r}d`:`Flat`,
+   m_trend:s=>s.planned?`New ${s.created} (planned ${s.crPlan} / other ${s.crOther}) · closed ${s.closed}`:(s.net>0?`Growing: +${s.net} over ${s.r}d (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} over ${s.r}d`:`Flat`),
    m_over:s=>`${s.overdue} past due (${s.overduePct}% of open)`,
    m_stale:s=>`${s.stale} untouched 30d+ (${s.stalePct}%)`,
-   m_health:s=>s.forecast?`At current pace, ${s.open} open → ~${s.forecast}`:`Does not converge at current pace`,
+   m_health:s=>s.rate==null?`No inflow/outflow in period`:`Closed ${s.closed} / inflow ${s.inflow}${s.planned?' (unplanned)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (prev ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
    up:"up",down:"down",flat:"flat",good:"Good",warn:"Warning",crit:"Critical",
    ins_title:"Summary insight",
    ins_ai:"AI Insight",ins_asof:d=>`as of ${d}`,ins_cross:"Cross-project",
    ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
    area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
-   sec_move:"Movement in period",mv_bycat:"New vs closed by type/category",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",
+   sec_move:"Movement in period",mv_bycat:"New vs closed by type/category (sorted by net)",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",plan_chip:"plan",
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
-   sec_risk:"Risk & overdue",sec_status:"Status breakdown",
-   th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Risk",
+   sec_risk:"Overdue tickets",sec_status:"Status breakdown",
+   th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Dwell",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
    th_ticket:"Title",th_due:"Due",th_days:"Days over",
    more:"Show all",less:"Collapse",showing:n=>`Top ${n}`,
    created:"Created",closed:"Closed",net:"Net",week:"Week",stalep:"Stale%",
-   risk_h:"High",risk_m:"Mid",risk_l:"Low",
+   risk_h:"Long",risk_m:"Mid",risk_l:"Short",
    st:{Open:"Open",InProgress:"In Progress",Resolved:"Resolved",Pending:"Pending",Closed:"Closed"},
    foot_l:"Backlog Dashboard · client-side (works offline)",
    foot_r:s=>`Extracted ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"no convergence",
    updated:"Updated",today_:"today",daysAgo:n=>`${n}d ago`,staleMsg:n=>`Data is ${n} days old.`,updateNow:"Update now",
+   exp_t:"Export",exp_pdf:"📄 Export PDF (print)",exp_html:"🌐 Save as HTML (single file)",
    lockMsg:"Enter password to view",unlock:"Unlock",wrongPass:"Wrong password"},
  vi:{title:"Bảng điều khiển Backlog",scope:"Phạm vi",range:"Khoảng",lang:"Ngôn ngữ",
    sub:s=>`Phạm vi: ${s.scopeName} · ${s.open} đang mở · tính đến ${s.date}`,
@@ -385,31 +420,32 @@ const DICT={
    ms:n=>`Milestone: ${n}`,
    k_open:"Ticket đang mở",k_trend:"Biến động backlog",k_over:"Quá hạn",k_stale:"Đình trệ (30d+)",k_health:"Sức khỏe",
    m_open:s=>`Đang mở. ${s.r} ngày qua: ${s.created} mới / ${s.closed} đóng`,
-   m_trend:s=>s.net>0?`Đang phình: +${s.net} trong ${s.r}d (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} trong ${s.r}d`:`Đi ngang`,
+   m_trend:s=>s.planned?`Tạo ${s.created} (kế hoạch ${s.crPlan} / khác ${s.crOther}) · đóng ${s.closed}`:(s.net>0?`Đang phình: +${s.net} trong ${s.r}d (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} trong ${s.r}d`:`Đi ngang`),
    m_over:s=>`${s.overdue} quá hạn (${s.overduePct}% số mở)`,
    m_stale:s=>`${s.stale} không đụng 30d+ (${s.stalePct}%)`,
-   m_health:s=>s.forecast?`Tốc độ hiện tại, ${s.open} mở → ~${s.forecast}`:`Không hội tụ ở tốc độ hiện tại`,
+   m_health:s=>s.rate==null?`Kỳ này không có dòng vào/ra`:`Đóng ${s.closed} / vào ${s.inflow}${s.planned?' (ngoài kế hoạch)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (kỳ trước ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
    up:"tăng",down:"giảm",flat:"đi ngang",good:"Tốt",warn:"Cảnh báo",crit:"Nguy hiểm",
    ins_title:"Nhận định tổng quan",
    ins_ai:"Nhận định AI",ins_asof:d=>`tại ${d}`,ins_cross:"Liên dự án",
    ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
    area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
-   sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",
+   sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm (xếp theo chênh lệch)",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",plan_chip:"KH",
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
-   sec_risk:"Rủi ro & quá hạn",sec_status:"Phân bố trạng thái",
-   th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Rủi ro",
+   sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
+   th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Độ đọng",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
    th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
    more:"Xem tất cả",less:"Thu gọn",showing:n=>`Top ${n}`,
    created:"Tạo",closed:"Đóng",net:"Ròng",week:"Tuần",stalep:"Đình trệ%",
-   risk_h:"Cao",risk_m:"TB",risk_l:"Thấp",
+   risk_h:"Lâu",risk_m:"TB",risk_l:"Ngắn",
    st:{Open:"Chưa xử lý",InProgress:"Đang xử lý",Resolved:"Đã xử lý",Pending:"Treo",Closed:"Đóng"},
    foot_l:"Backlog Dashboard · tính client-side (chạy offline)",
    foot_r:s=>`Trích ${s.date} · Backlog API · Scope=${s.scopeName}`,
    noconv:"không hội tụ",
    updated:"Cập nhật",today_:"hôm nay",daysAgo:n=>`${n} ngày trước`,staleMsg:n=>`Dữ liệu đã cũ ${n} ngày.`,updateNow:"Cập nhật ngay",
+   exp_t:"Xuất",exp_pdf:"📄 Xuất PDF (in)",exp_html:"🌐 Lưu HTML (một tệp)",
    lockMsg:"Nhập mật khẩu để xem",unlock:"Mở",wrongPass:"Sai mật khẩu"},
 };
 
@@ -420,7 +456,7 @@ const BASECFG={
   stale:{warn:30,crit:50},      // % of open stale → amber / red
   fresh:{warn:3,crit:7},        // freshness badge: amber if >warn days old, red if >crit
   riskMed:{mid:45,high:90},     // member median open-age (days) → 中 / 高 risk chip
-  health:{ staleCrit:50, overdueCrit:40, staleWarn:30, overdueWarn:25 }, // health rollup
+  health:{ rateGood:100, rateWarn:70, trendBand:5 }, // V1 07.31: 処理率% (closed ÷ unplanned inflow) cutoffs + flat band for the trend arrow
 };
 let CFG=BASECFG;                // effective = base + per-project overrides (applyProject)
 function mergeCFG(o){
@@ -502,10 +538,25 @@ function compute(){
   const overduePct=open.length?Math.round(overdue.length/open.length*100):0;
   const stalePct=open.length?Math.round(stale.length/open.length*100):0;
   const medAge=median(open.map(age).filter(x=>x!=null));
-  // health
-  let health='good';
-  if(stalePct>=CFG.health.staleCrit||overduePct>=CFG.health.overdueCrit||(net>0&&net>=createdR.length*0.5))health='crit';
-  else if(stalePct>=CFG.health.staleWarn||overduePct>=CFG.health.overdueWarn||net>0)health='warn';
+  // planned intake (V1 07.31 — stakeholder feedback): categories declared in
+  // config plannedCategories are INTENTIONAL work sources — their new tickets
+  // are forward progress, not backlog leakage. Intent can only come from
+  // config, never from the data itself.
+  const PSET=new Set(PCFG.planned||[]);
+  const crPlan=PSET.size?createdR.filter(i=>PSET.has(sub(i))).length:0;
+  const crOther=createdR.length-crPlan;
+  // previous window (health trend arrow + move section comparisons)
+  const pstart=new Date(TODAY);pstart.setUTCDate(pstart.getUTCDate()-RANGE*2);
+  const createdP=scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start);
+  const closedP=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start);
+  // health (V1 07.31 — redesigned): the signal is inflow vs throughput
+  // (処理率 = closed ÷ unplanned inflow, %). Stale/overdue have their own
+  // cards and no longer vote here; 999 = no inflow, null = no flow at all.
+  const hRate=(cr,cl)=>{const base=PSET.size?cr.filter(i=>!PSET.has(sub(i))).length:cr.length;
+    return base>0?Math.round(cl.length/base*100):(cl.length>0?999:null);};
+  const rate=hRate(createdR,closedR), rateP=hRate(createdP,closedP);
+  const hTrend=(rate!=null&&rateP!=null)?(rate-rateP>CFG.health.trendBand?'up':rateP-rate>CFG.health.trendBand?'down':'flat'):null;
+  const health=rate==null?'warn':rate>=CFG.health.rateGood?'good':rate>=CFG.health.rateWarn?'warn':'crit';
   // status buckets (incl closed)
   const status={Open:0,InProgress:0,Resolved:0,Pending:0,Closed:0};
   scoped.forEach(i=>status[bkt(i)]++);
@@ -544,6 +595,12 @@ function compute(){
     C[k].st[bkt(i)]++;C[k].total++;});
   const cats=Object.entries(C).map(([n,v])=>({name:n,st:v.st,total:v.total,done:v.st.Closed}))
     .sort((a,b)=>b.total-a.total).slice(0,12);
+  // per-category dwell (V1 07.31): median age of OPEN tickets — feeds the
+  // summary bullet that replaced "largest category" (count alone ≠ insight)
+  const CA={};
+  open.forEach(i=>{const k=sub(i);if(k==='—')return;const g=age(i);if(g!=null)(CA[k]=CA[k]||[]).push(g);});
+  const catAge=Object.entries(CA).map(([n,xs])=>({name:n,med:median(xs),n:xs.length}))
+    .sort((a,b)=>b.med-a.med);
   // flow buckets follow RANGE (07.28): 7d/30d → daily bars, 90d → 13 weekly.
   // lx = draw an x-axis label for this bucket (sparse on the 30-day view: Mondays only)
   let wd;
@@ -562,22 +619,24 @@ function compute(){
       wd.push(bucketStat(wk,end,`${wk.getUTCMonth()+1}/${wk.getUTCDate()}`,true));}
   }
   // in-period movement (07.28): what actually happened inside RANGE — created vs
-  // closed per type/category, top finishers, median cycle time (vs previous window)
-  const pstart=new Date(TODAY);pstart.setUTCDate(pstart.getUTCDate()-RANGE*2);
-  const createdP=scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start);
-  const closedP=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start);
+  // closed per type/category, top finishers, median cycle time (vs previous
+  // window — createdP/closedP computed above with the health trend)
   const cycOf=list=>median(list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null));
   const MV={};
   createdR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cr++;});
   closedR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cl++;});
   const FIN={};closedR.forEach(i=>{const a=i.assignee;if(a)FIN[a]=(FIN[a]||0)+1;});
-  const move={cats:Object.entries(MV).map(([n,v])=>({name:n,...v})).sort((a,b)=>(b.cr+b.cl)-(a.cr+a.cl)).slice(0,8),
+  // V1 07.31: keep the top-8 most ACTIVE categories, but ORDER them by net
+  // (new − closed) — the stakeholder-requested view is "who outpaces closing"
+  const mvAll=Object.entries(MV).map(([n,v])=>({name:n,...v,net:v.cr-v.cl}));
+  const move={cats:[...mvAll].sort((a,b)=>(b.cr+b.cl)-(a.cr+a.cl)).slice(0,8).sort((a,b)=>b.net-a.net),
+    over:[...mvAll].sort((a,b)=>b.net-a.net)[0]||null,
     fin:Object.entries(FIN).map(([n,c])=>({name:n,n:c})).sort((a,b)=>b.n-a.n).slice(0,5),
     cyc:cycOf(closedR),cycP:cycOf(closedP),crP:createdP.length,clP:closedP.length};
   // delayed list
   const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
     .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,status,sfull,areas,members,cats,wd,move,delayed};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed};
 }
 
 /* ============ render ============ */
@@ -610,14 +669,18 @@ function mdIns(s){
 function renderHero(m){
   const t=T();const r=RANGE;
   const s={r,created:m.createdR.length,closed:m.closedR.length,net:m.net,open:m.open.length,
-    overdue:m.overdue.length,overduePct:m.overduePct,stale:m.stale.length,stalePct:m.stalePct,forecast:m.forecast};
+    overdue:m.overdue.length,overduePct:m.overduePct,stale:m.stale.length,stalePct:m.stalePct,forecast:m.forecast,
+    planned:m.planned,crPlan:m.crPlan,crOther:m.crOther,rate:m.rate,rateP:m.rateP,inflow:m.crOther};
   const lvl=c=>c==='r'?t.crit:c==='a'?t.warn:t.good;
-  const trendCls=m.net>0?'r':m.net<0?'g':'b';
+  /* V1 07.31: growth is not framed as bad by default — amber only when the
+     UNPLANNED inflow alone outpaces closing; planned-driven growth stays neutral */
+  const trendCls=m.net>0?(m.crOther>m.closedR.length?'a':'b'):m.net<0?'g':'b';
   const overCls=m.overduePct>=CFG.overdue.crit?'r':m.overduePct>=CFG.overdue.warn?'a':'g';
   const staleCls=m.stalePct>=CFG.stale.crit?'r':m.stalePct>=CFG.stale.warn?'a':'g';
   const hCls=m.health==='crit'?'r':m.health==='warn'?'a':'g';
   const hEmoji=hCls==='r'?'🔴':hCls==='a'?'🟡':'🟢';
-  const hTxt=m.health==='crit'?t.crit:m.health==='warn'?t.warn:t.good;
+  const hArr=m.hTrend==='up'?' ↗':m.hTrend==='down'?' ↘':m.hTrend==='flat'?' →':'';
+  const hTxt=(m.health==='crit'?t.crit:m.health==='warn'?t.warn:t.good)+hArr;
   const cards=[
     {tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
     {tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
@@ -633,8 +696,13 @@ function renderHero(m){
 
 function renderInsight(m){
   const t=T();const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
-  const topRisk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med)[0];
-  const worstCat=m.cats[0];
+  /* V1 07.31 (stakeholder feedback): summary bullets carry actionable angles —
+     longest-dwelling category + new-exceeds-closed category. No personal names
+     in this layer (names live in the operational tables below). */
+  /* floor n>=3: a lone ancient ticket in a typo/niche category is noise, not
+     the dwell story — fall back to the raw top only if nothing clears it */
+  const stagCat=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
+  const overCat=m.move&&m.move.over&&m.move.over.net>0?m.move.over:null;
   const p1=`<span class="hl">${scopeName(SCOPE)}</span>: ${m.open.length}${LANG==='ja'?'件オープン':LANG==='vi'?' đang mở':' open'}, `+
     (LANG==='ja'?`直近${RANGE}日で新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
     :LANG==='vi'?`${RANGE} ngày qua tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
@@ -644,8 +712,8 @@ function renderInsight(m){
   const bullets=[
     (LANG==='ja'?`期限超過 ${m.overdue.length}件（${m.overduePct}%）・停滞 ${m.stale.length}件（${m.stalePct}%）`:LANG==='vi'?`Quá hạn ${m.overdue.length} (${m.overduePct}%) · đình trệ ${m.stale.length} (${m.stalePct}%)`:`Overdue ${m.overdue.length} (${m.overduePct}%) · stale ${m.stale.length} (${m.stalePct}%)`),
   ];
-  if(topRisk)bullets.push(LANG==='ja'?`最長経過: ${topRisk.name}（中央値 ${topRisk.med}日）`:LANG==='vi'?`Tồn lâu nhất: ${topRisk.name} (trung vị ${topRisk.med}d)`:`Oldest load: ${topRisk.name} (median ${topRisk.med}d)`);
-  if(worstCat)bullets.push(LANG==='ja'?`最大カテゴリ: ${worstCat.name}（${worstCat.total}件）`:LANG==='vi'?`Nhóm lớn nhất: ${worstCat.name} (${worstCat.total})`:`Largest category: ${worstCat.name} (${worstCat.total})`);
+  if(stagCat)bullets.push(LANG==='ja'?`滞留最長カテゴリ: ${stagCat.name}（未完了${stagCat.n}件・経過中央値 ${stagCat.med}日）`:LANG==='vi'?`Nhóm đọng lâu nhất: ${stagCat.name} (${stagCat.n} đang mở, trung vị ${stagCat.med}d)`:`Longest-dwelling category: ${stagCat.name} (${stagCat.n} open, median ${stagCat.med}d)`);
+  if(overCat)bullets.push(LANG==='ja'?`新規超過カテゴリ: ${overCat.name}（新規${overCat.cr}・完了${overCat.cl} ＝ +${overCat.net}）`:LANG==='vi'?`Nhóm tạo vượt đóng: ${overCat.name} (tạo ${overCat.cr} / đóng ${overCat.cl} = +${overCat.net})`:`New exceeds closed: ${overCat.name} (${overCat.cr} new / ${overCat.cl} closed = +${overCat.net})`);
   $('#insight').innerHTML=`<h2>💡 ${t.ins_title}</h2><p>${p1} ${p2}</p><ul>${bullets.map(b=>`<li>${b}</li>`).join('')}</ul>`;
 }
 
@@ -725,9 +793,10 @@ function renderSections(m){
         <div class="mvstat"><span class="mvl">${t.mv_cyc}</span><span class="mvv mono">${mv.cyc!=null?mv.cyc+'d':'·'}</span><span class="mvp mono">${mv.cycP!=null?t.mv_prev(mv.cycP+'d'):''}</span></div>
       </div>
       ${mv.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.mv_bycat}</div>
-      ${mv.cats.map(c=>`<div class="mvrow"><span class="mvname">${c.name}</span>
+      ${mv.cats.map(c=>`<div class="mvrow"><span class="mvname">${c.name}${(PCFG.planned||[]).includes(c.name)?`<span class="mvplan">${t.plan_chip}</span>`:''}</span>
         <span class="mvbars"><span class="mvbar"><i style="width:${c.cr/mmax*100}%;background:var(--faint);opacity:.85"></i><b class="mono">${c.cr||''}</b></span>
-        <span class="mvbar"><i style="width:${c.cl/mmax*100}%;background:var(--st-closed)"></i><b class="mono">${c.cl||''}</b></span></span></div>`).join('')}
+        <span class="mvbar"><i style="width:${c.cl/mmax*100}%;background:var(--st-closed)"></i><b class="mono">${c.cl||''}</b></span></span>
+        <span class="mvnet mono${c.net>0?' pos':''}">${c.net>0?'+':''}${c.net}</span></div>`).join('')}
       <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span></div>`:''}
       ${mv.fin.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 6px">${t.mv_fin}</div>
       <div class="mvfin">${mv.fin.map(f=>`<span>${assigneeLink(f.name)} <b class="mono">${f.n}</b></span>`).join('')}</div>`:''}
@@ -811,6 +880,8 @@ function buildControls(){
   // labels
   $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;
   document.querySelectorAll('#btn-lang svg').forEach(s=>s.classList.toggle('on',s.dataset.l===LANG));
+  // export button/menu labels follow the language
+  const be=$('#btn-export');if(be){be.title=t.exp_t;$('#exp-pdf').textContent=t.exp_pdf;$('#exp-html').textContent=t.exp_html;}
 }
 
 const UPDATE_URL=(typeof BUILD!=='undefined'&&BUILD.updateUrl)||"";  // Actions workflow_dispatch page (from build config)
@@ -963,6 +1034,46 @@ $('#btn-push').addEventListener('click',async()=>{
 });
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
+/* ============ export (08.03): PDF via print + static single-file HTML ============
+   Client-side by design: the DOM already shows exactly the chosen project and
+   filter combination, so "export what you see" needs no build-time artifacts and
+   no PDF library (native print = correct JP/VN fonts, user saves as PDF).
+   Prep = open every section + force light theme; restored afterwards. The
+   per-assignee area list keeps only its first page (.hid rows stay hidden). */
+let _pp=null;
+function expPrep(){ if(_pp)return;
+  _pp={open:[...document.querySelectorAll('details.sec')].map(d=>d.open),theme:document.documentElement.dataset.theme||'light'};
+  document.querySelectorAll('details.sec').forEach(d=>d.open=true);
+  document.documentElement.dataset.theme='light';syncTC();
+}
+function expRestore(){ if(!_pp)return;
+  [...document.querySelectorAll('details.sec')].forEach((d,i)=>d.open=_pp.open[i]);
+  document.documentElement.dataset.theme=_pp.theme;syncTC();_pp=null;
+}
+/* Ctrl+P / browser print gets the same prep — the pair is idempotent via _pp */
+window.addEventListener('beforeprint',expPrep);
+window.addEventListener('afterprint',expRestore);
+function exportHTML(){
+  expPrep();
+  const c=document.documentElement.cloneNode(true);
+  expRestore();
+  /* static snapshot: strip scripts + interactive chrome; <details> keep working
+     natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
+  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn').forEach(e=>e.remove());
+  const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
+  const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · Backlog Dashboard · ${META.today}`;
+  const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`dashboard-${nm}-${(META.today||'').replace(/-/g,'')}.html`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+(()=>{const b=$('#btn-export'),m=$('#expmenu');if(!b)return;
+  b.addEventListener('click',e=>{e.stopPropagation();m.hidden=!m.hidden;});
+  document.addEventListener('click',()=>{m.hidden=true;});
+  $('#exp-pdf').addEventListener('click',()=>{m.hidden=true;expPrep();setTimeout(()=>window.print(),60);});
+  $('#exp-html').addEventListener('click',()=>{m.hidden=true;exportHTML();});
+})();
 /* sticky filter bar: add .stuck (shadow + compact) once scrolled past its resting spot */
 (()=>{const c=$('#controls');if(!c)return;const s=document.createElement('div');
   c.parentNode.insertBefore(s,c);
