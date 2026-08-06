@@ -99,9 +99,12 @@ def payload(pc):
         sys.exit(f"no pulled data for slug '{slug}' — run pull.py")
     p = D["pulls"][slug]
     ins = None
-    if INS and slug in INS.get("pages", {}):
+    _sec = (INS.get("sections") or {}).get(slug) if INS else None
+    if INS and (slug in INS.get("pages", {}) or _sec):
+        # v2.1 (08.06): optional per-section AI remarks ride along; the client
+        # decides freshness (≤3d normal, ≤7d greyed, older = base verdicts only)
         ins = {"date": INS.get("date"), "week": INS.get("week"),
-               "items": INS["pages"][slug]}
+               "items": INS.get("pages", {}).get(slug), "sections": _sec}
     return {"slug": slug, "name": pc.get("name", pc["key"]),
         "conf": {"space": SPACE, "pk": pc["key"], "pid": p.get("pid")},
         "SMAP": p["SMAP"], "RAW": p["RAW"], "insight": ins,

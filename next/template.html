@@ -76,6 +76,16 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 .aboutrow{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
 .aboutrow button{font:inherit;font-size:13.5px;padding:7px 14px;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:var(--text);cursor:pointer;}
 .aboutrow button:hover{border-color:var(--accent);}
+/* verdict lines on section strips (v2.1) — a collapsed row still tells its story */
+.sec>summary{flex-wrap:wrap;}
+.vline{flex-basis:100%;font-size:13.6px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:3px;}
+.aibdg{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:7px;padding:1px 7px;margin-right:7px;vertical-align:1px;white-space:nowrap;}
+.vline.ai{color:var(--text);}
+.vline.ai.old,.aibdg.old,.ailist.old{color:var(--muted);filter:grayscale(1);opacity:.85;}
+/* ⓘ definition popovers (v2.1) — the manual lives at the point of doubt */
+.defbtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border:1px solid var(--border);border-radius:50%;font-size:10.5px;color:var(--muted);cursor:help;vertical-align:1px;}
+.defbtn:hover{color:var(--accent);border-color:var(--accent);}
+#defpop{position:absolute;max-width:320px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow);z-index:95;line-height:1.65;}
 .top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .controls{padding-top:12px;border-top:1px solid var(--border);}
 .brand{display:flex;flex-direction:column;gap:2px;}
@@ -276,7 +286,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
    stripped; the per-assignee area list prints its FIRST page only (.hid rows
    stay hidden by design — operator decision). Colors kept via print-color-adjust. */
 @media print{
-  .util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov{display:none!important;}
+  .util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov,.defbtn,#defpop{display:none!important;}
   body{background:#fff;font-size:13.5px;}
   .wrap{max-width:100%;padding:0;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
@@ -391,6 +401,22 @@ const DICT={
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
    sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
    about_t:"このダッシュボードについて",about_ch:"今回の主な変更",about_copy:"全文コピー",about_copied:"コピーしました",about_close:"閉じる",
+   ai_pw:"AI分析",
+   sec_stag:"滞留の内訳",stg_note:"Backlogに原因の記録は無いため、これは「どこで止まっているか」の分解です（停滞=30日以上更新なし・件数ベース）",
+   stg_wait:"確認・保留など待ち状態",stg_work:"作業中のまま",stg_open:"未着手のまま",stg_unas:"担当者未設定",stg_c1:"31〜90日",stg_c2:"91日〜1年",stg_c3:"1年超",stg_total:"合計",
+   vd_cl_none:"期間内の完了はありません",vd_cl_late:(ok,n)=>`期限どおりの完了は少数派です（期限あり${n}件中${ok}件）`,vd_cl_slow:(a,b)=>`処理日数が延びています（中央値${a}日・前期${b}日）`,vd_cl_fast:(a,b)=>`処理が速くなっています（中央値${a}日・前期${b}日）`,vd_cl_base:(n,p)=>`${n}件完了・処理日数の中央値${p}日`,
+   vd_fl_in:n=>`流入が消化を上回っています(純増+${n})`,vd_fl_out:n=>`消化が流入を上回っています(純減${n})`,vd_fl_flat:"流入と消化はほぼ拮抗しています",
+   vd_mv_over:(c,n)=>`「${c}」の新規が完了を+${n}件上回ります`,vd_mv_base:(cr,cl)=>`新規${cr}件・完了${cl}件`,
+   vd_st_none:"30日以上停滞しているチケットはありません",vd_st_unas:n=>`担当者未設定のまま停滞しているチケットが${n}件あります`,vd_st_wait:(w,t2)=>`停滞${t2}件の過半（${w}件）は確認・保留などの待ち状態側です`,vd_st_base:(t2,o)=>`停滞${t2}件・うち1年超は${o}件`,
+   vd_mem_top:(p,n)=>`未完了の${p}%が担当上位${n}名に集中しています`,
+   vd_area_top:a=>`直近の活動は「${a}」領域が中心です`,
+   vd_cat_dwell:(c,d)=>`滞留最長は「${c}」（経過中央値${d}日）`,
+   vd_risk:(n,d)=>`期限超過${n}件・最長${d}日超過`,vd_risk_none:"期限超過はありません",
+   vd_status_top:(s,n)=>`最多ステータスは「${s}」（${n}件）`,
+   def_health:"処理率 = 期間内の完了件数 ÷ 計画外の新規件数。100%以上なら消化が流入に追いついています。矢印は前期との比較",
+   def_over:"期限超過 = 期限日を過ぎたオープンチケットの、全オープンに対する割合",
+   def_stale:"停滞 = 30日以上更新のないオープンチケットの、全オープンに対する割合",
+   def_cyc:"処理日数 = 作成日から最終更新日（完了日の近似）までの日数。チケット件数ベースで、工数ではありません",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"滞留度",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
    th_ticket:"件名",th_due:"期限",th_days:"超過日数",
@@ -427,6 +453,22 @@ const DICT={
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
    sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
    about_t:"About this dashboard",about_ch:"What's new in this release",about_copy:"Copy text",about_copied:"Copied",about_close:"Close",
+   ai_pw:"AI analysis",
+   sec_stag:"Stagnation breakdown",stg_note:"Backlog records no cause, so this decomposes WHERE items are stuck (stale = no update for 30+ days; ticket counts)",
+   stg_wait:"Waiting states (review/hold)",stg_work:"In progress",stg_open:"Not started",stg_unas:"No assignee",stg_c1:"31–90d",stg_c2:"91d–1y",stg_c3:">1 year",stg_total:"Total",
+   vd_cl_none:"No tickets closed in this period",vd_cl_late:(ok,n)=>`On-time completion is the minority (${ok} of ${n} with a due date)`,vd_cl_slow:(a,b)=>`Cycle time is stretching (median ${a}d vs ${b}d prev)`,vd_cl_fast:(a,b)=>`Cycle time is improving (median ${a}d vs ${b}d prev)`,vd_cl_base:(n,p)=>`${n} closed · median cycle ${p}d`,
+   vd_fl_in:n=>`Inflow outpaces closing (net +${n})`,vd_fl_out:n=>`Closing outpaces inflow (net −${n})`,vd_fl_flat:"Inflow and closing are roughly balanced",
+   vd_mv_over:(c,n)=>`"${c}" gains +${n} (new exceeds closed)`,vd_mv_base:(cr,cl)=>`${cr} new · ${cl} closed`,
+   vd_st_none:"No tickets stalled over 30 days",vd_st_unas:n=>`${n} stalled tickets have no assignee`,vd_st_wait:(w,t2)=>`Most of the ${t2} stalled items (${w}) sit in waiting states (review/hold)`,vd_st_base:(t2,o)=>`${t2} stalled · ${o} over a year`,
+   vd_mem_top:(p,n)=>`${p}% of open work sits with the top ${n} assignees`,
+   vd_area_top:a=>`Recent activity centers on "${a}"`,
+   vd_cat_dwell:(c,d)=>`Longest-dwelling: "${c}" (median ${d}d)`,
+   vd_risk:(n,d)=>`${n} overdue · worst ${d}d past due`,vd_risk_none:"Nothing overdue",
+   vd_status_top:(s,n)=>`Largest status: "${s}" (${n})`,
+   def_health:"Throughput rate = closed in period ÷ unplanned new. 100%+ means closing keeps up with inflow. Arrow compares to the previous period",
+   def_over:"Overdue = open tickets past their due date, as a share of all open",
+   def_stale:"Stale = open tickets untouched for 30+ days, as a share of all open",
+   def_cyc:"Cycle time = days from creation to last update (approximation of close date). Ticket counts, not hours",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Dwell",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
    th_ticket:"Title",th_due:"Due",th_days:"Days over",
@@ -463,6 +505,22 @@ const DICT={
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
    sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
    about_t:"Về dashboard này",about_ch:"Thay đổi chính trong bản này",about_copy:"Sao chép toàn bộ",about_copied:"Đã sao chép",about_close:"Đóng",
+   ai_pw:"Phân tích AI",
+   sec_stag:"Phân rã tồn đọng",stg_note:"Backlog không ghi nguyên nhân, nên đây là phân rã \"đang kẹt ở đâu\" (tồn đọng = không cập nhật 30+ ngày; đếm ticket)",
+   stg_wait:"Trạng thái chờ (review/treo)",stg_work:"Đang xử lý",stg_open:"Chưa bắt đầu",stg_unas:"Chưa có người nhận",stg_c1:"31–90 ngày",stg_c2:"91 ngày–1 năm",stg_c3:">1 năm",stg_total:"Tổng",
+   vd_cl_none:"Không có ticket đóng trong kỳ",vd_cl_late:(ok,n)=>`Đóng đúng hạn là thiểu số (${ok}/${n} ticket có hạn)`,vd_cl_slow:(a,b)=>`Ngày xử lý đang dài ra (trung vị ${a}d, kỳ trước ${b}d)`,vd_cl_fast:(a,b)=>`Xử lý đang nhanh lên (trung vị ${a}d, kỳ trước ${b}d)`,vd_cl_base:(n,p)=>`${n} đã đóng · trung vị ${p} ngày`,
+   vd_fl_in:n=>`Phát sinh vượt tiêu hoá (tăng ròng +${n})`,vd_fl_out:n=>`Tiêu hoá vượt phát sinh (giảm ròng ${n})`,vd_fl_flat:"Phát sinh và tiêu hoá đang cân bằng",
+   vd_mv_over:(c,n)=>`"${c}" tạo vượt đóng +${n}`,vd_mv_base:(cr,cl)=>`${cr} mới · ${cl} đóng`,
+   vd_st_none:"Không có ticket tồn đọng quá 30 ngày",vd_st_unas:n=>`${n} ticket tồn đọng chưa có người nhận`,vd_st_wait:(w,t2)=>`Quá nửa trong ${t2} ticket tồn đọng (${w}) nằm ở trạng thái chờ (review/treo)`,vd_st_base:(t2,o)=>`${t2} tồn đọng · ${o} quá 1 năm`,
+   vd_mem_top:(p,n)=>`${p}% việc đang mở dồn vào ${n} người nhận nhiều nhất`,
+   vd_area_top:a=>`Hoạt động gần đây tập trung ở mảng "${a}"`,
+   vd_cat_dwell:(c,d)=>`Đọng lâu nhất: "${c}" (trung vị ${d} ngày)`,
+   vd_risk:(n,d)=>`${n} quá hạn · lâu nhất trễ ${d} ngày`,vd_risk_none:"Không có ticket quá hạn",
+   vd_status_top:(s,n)=>`Trạng thái đông nhất: "${s}" (${n})`,
+   def_health:"Tỷ lệ xử lý = số đóng trong kỳ ÷ số mới ngoài kế hoạch. Từ 100% nghĩa là tiêu hoá theo kịp phát sinh. Mũi tên so với kỳ trước",
+   def_over:"Quá hạn = ticket mở đã quá ngày hạn, tính trên tổng số đang mở",
+   def_stale:"Tồn đọng = ticket mở không được cập nhật 30+ ngày, tính trên tổng số đang mở",
+   def_cyc:"Ngày xử lý = số ngày từ lúc tạo đến lần cập nhật cuối (xấp xỉ ngày đóng). Đếm ticket, không phải giờ công",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Độ đọng",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
    th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
@@ -491,6 +549,10 @@ const VERINFO={ver:'v2 preview',
   "数値はチケット件数にもとづく近似であり、作業時間や工数そのものではありません。個別の判断にあたっては、元データ（Backlog）の確認を推奨します。"],
  changes:[
   "完了チケットの分析セクションを追加（処理日数の分布・期限内完了率・完了の内訳）",
+  "「滞留の内訳」セクションを追加 — どこで止まっているかを状態×放置期間で分解し、該当チケットまで辿れます",
+  "各セクションに要約の一文を常時表示 — 畳んだままでも要点が読めます",
+  "主要指標にⓘを追加 — その場で定義を確認できます",
+  "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
   "プロジェクトごとに表示内容を調整できる仕組みを導入（プロジェクトの特性に合わない指標は表示されないことがあります）",
   "この「このダッシュボードについて」画面を追加"]},
  en:{premise:[
@@ -500,6 +562,10 @@ const VERINFO={ver:'v2 preview',
   "All figures are approximations based on ticket counts — not working hours or effort. For individual decisions, please refer to the source data in Backlog."],
  changes:[
   "Added a closed-ticket analysis section (cycle-time distribution, on-time completion rate, completed-work mix)",
+  "Added a \"Stagnation breakdown\" section — decomposes where items are stuck (state × idle time), down to the individual tickets",
+  "Every section now shows a one-line summary even while collapsed",
+  "Added ⓘ marks with on-the-spot definitions for key metrics",
+  "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
   "Introduced per-project display tuning (metrics that do not fit a project's nature may be hidden)",
   "Added this About screen"]},
  vi:{premise:[
@@ -509,6 +575,10 @@ const VERINFO={ver:'v2 preview',
   "Các con số là xấp xỉ dựa trên số lượng ticket — không phải giờ công hay khối lượng thực tế. Khi cần quyết định cụ thể, nên đối chiếu dữ liệu gốc trên Backlog."],
  changes:[
   "Thêm mục phân tích ticket đã đóng (phân bố ngày xử lý, tỷ lệ đóng đúng hạn, cơ cấu việc đã hoàn thành)",
+  "Thêm mục \"Phân rã tồn đọng\" — bóc tách đang kẹt ở đâu (trạng thái × thời gian đứng yên), truy đến từng ticket",
+  "Mỗi mục luôn hiển thị một câu tóm tắt ngay cả khi thu gọn",
+  "Thêm dấu ⓘ xem định nghĩa chỉ số ngay tại chỗ",
+  "Khi có phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
   "Thêm cơ chế điều chỉnh nội dung hiển thị theo từng dự án (chỉ số không phù hợp với đặc thù dự án có thể được ẩn)",
   "Thêm màn hình giới thiệu này"]}};
 
@@ -531,8 +601,9 @@ function mergeCFG(o){
 /* per-project display config (v2 — internal fine-tuning only, end users see no
    settings): PCFG.display = {kpis:[...ids], sections:{id:false,...}}.
    Absent/partial → everything shown, in default order — a config-less project
-   renders exactly as before this knob existed. Section ids: ai, summary, area,
-   move, closed, flow, mem, cat, risk, status. KPI ids: open, trend, over, stale, health. */
+   renders exactly as before this knob existed. Section ids: ai (AI override of
+   the summary slot), summary, area, move, closed, stag, flow, mem, cat, risk,
+   status. KPI ids: open, trend, over, stale, health. */
 const showSec=id=>{const s=(PCFG.display||{}).sections;return !s||s[id]!==false;};
 const KPI_ORDER=['open','trend','over','stale','health'];
 const kpiSel=()=>{const k=(PCFG.display||{}).kpis;return Array.isArray(k)?k.filter(x=>KPI_ORDER.includes(x)):KPI_ORDER;};
@@ -725,7 +796,61 @@ function compute(){
   const closedA={n:closedR.length,p50:median(cycAges),p85:pctl(cycAges,0.85),p50P:cycAgesP.length?median(cycAgesP):null,
     cats:closedCats,ageB,due:{n:withDue.length,ok:onTimeOk},
     mix:Object.entries(MIX).map(([n,v])=>({name:n,n:v})).sort((a,b)=>(a.name==='_none')-(b.name==='_none')||b.n-a.n)};
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA};
+  // stagnation decomposition (v2.1 08.06 — PM feedback): the stale set split by
+  // state-group × idle-time + the unassigned. Backlog records no CAUSE — this is
+  // the honest proxy: WHERE an item is stuck. Waiting states (Pending + Resolved
+  // buckets = held / done-awaiting-confirmation) hint at dependencies; the
+  // dashboard never attributes delay to a person.
+  const idleD=i=>D(i.updated)?days(D(i.updated),TODAY):0;
+  const sgrp=i=>{const b=bkt(i);return (b==='Pending'||b==='Resolved')?'wait':b==='InProgress'?'work':'open';};
+  const SGR={wait:[[],[],[]],work:[[],[],[]],open:[[],[],[]]};
+  let y1=0;
+  stale.forEach(i=>{const d=idleD(i);const ci=d<=90?0:d<=365?1:2;if(ci===2)y1++;SGR[sgrp(i)][ci].push(i);});
+  const unasL=open.filter(i=>!i.assignee);
+  const stag={total:stale.length,y1,unas:unasL.length,
+    wait:SGR.wait[0].length+SGR.wait[1].length+SGR.wait[2].length,
+    rows:['wait','work','open'].map(g=>({g,cells:SGR[g].map(a=>({n:a.length,
+      top:[...a].sort((x,z)=>idleD(z)-idleD(x)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i),st:(SFULL.find(s=>s.id===i.stId)||{}).name||bkt(i)}))}))})),
+    unasTop:[...unasL].sort((a,b)=>idleD(b)-idleD(a)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i)}))};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag};
+}
+
+/* ============ verdict engine (v2.1 08.06 — PM feedback ①) ============
+   Rule-based one-line judgements per section: computed numbers × thresholds pick
+   a sentence template (DICT, trilingual) deterministically. No AI required —
+   these run on every build; AI remarks (INSW.sections) REPLACE them in the same
+   slot when fresh. Rules are ordered most-specific first; last = neutral fact. */
+function verdicts(m){
+  const t=T(),v={};
+  const ca=m.closedA;
+  v.closed=!ca||!ca.n?t.vd_cl_none
+    :(ca.due.n>=10&&ca.due.ok/ca.due.n<0.3)?t.vd_cl_late(ca.due.ok,ca.due.n)
+    :(ca.p50P>0&&ca.p50>=ca.p50P*1.25)?t.vd_cl_slow(ca.p50,ca.p50P)
+    :(ca.p50P>0&&ca.p50<=ca.p50P*0.75)?t.vd_cl_fast(ca.p50,ca.p50P)
+    :t.vd_cl_base(ca.n,ca.p50==null?'–':ca.p50);
+  v.flow=(m.net>0&&m.crOther>m.closedR.length)?t.vd_fl_in(m.net):m.net<0?t.vd_fl_out(Math.abs(m.net)):t.vd_fl_flat;
+  const oc=m.move&&m.move.over&&m.move.over.net>0?m.move.over:null;
+  v.move=oc?t.vd_mv_over(oc.name,oc.net):t.vd_mv_base(m.createdR.length,m.closedR.length);
+  const sg=m.stag;
+  v.stag=!sg||!sg.total?t.vd_st_none
+    :sg.unas>=10?t.vd_st_unas(sg.unas)
+    :(sg.wait>sg.total/2)?t.vd_st_wait(sg.wait,sg.total)
+    :t.vd_st_base(sg.total,sg.y1);
+  const tot=m.open.length||1;const topN=Math.min(3,m.members.length);
+  const top3=m.members.slice(0,topN).reduce((s,x)=>s+x.open,0);
+  v.mem=m.members.length?t.vd_mem_top(Math.round(top3/tot*100),topN):'';
+  v.area='';
+  if(m.areas&&m.areas.all.total){
+    const eid=Object.entries(m.areas.all.by).sort((a,b)=>b[1]-a[1])[0][0];
+    const r=((PCFG.areas||{}).rules||[]).find(x=>x.id===eid);
+    v.area=t.vd_area_top(eid==='_other'?(((PCFG.areas||{}).other||{})[LANG]||'—'):(r?(r[LANG]||r.en||r.id):eid));
+  }
+  const sc=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
+  v.cat=sc?t.vd_cat_dwell(sc.name,sc.med):'';
+  v.risk=m.overdue.length?t.vd_risk(m.overdue.length,m.delayed.length?m.delayed[0].over:0):t.vd_risk_none;
+  const bt=(m.sfull&&m.sfull.length)?[...m.sfull].filter(s=>SMAP[s.id]!=='Closed'&&SMAP[String(s.id)]!=='Closed').sort((a,b)=>b.n-a.n)[0]:null;
+  v.status=bt?t.vd_status_top(bt.name,bt.n):'';
+  return v;
 }
 
 /* ============ render ============ */
@@ -773,14 +898,14 @@ function renderHero(m){
   const CARDS={
     open:{tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
     trend:{tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
-    over:{tone:overCls,emoji:'⏰',lbl:t.k_over,val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
-    stale:{tone:staleCls,emoji:'🕒',lbl:t.k_stale,val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
-    health:{tone:hCls,emoji:'🩺',lbl:t.k_health,pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
+    over:{tone:overCls,emoji:'⏰',lbl:t.k_over,def:'over',val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
+    stale:{tone:staleCls,emoji:'🕒',lbl:t.k_stale,def:'stale',val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
+    health:{tone:hCls,emoji:'🩺',lbl:t.k_health,def:'health',pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
   };
   const cards=kpiSel().map(k=>CARDS[k]).filter(Boolean);
   $('#hero').style.display=cards.length?'':'none';
   $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}"><div class="top-dot dot-${c.tone}"></div>
-    <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
+    <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.def?`<span class="defbtn" data-def="${c.def}">i</span>`:''}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
     ${c.pill?`<div class="kpill">${c.pill}</div>`:`<div class="kval mono ${c.tone}">${c.val}${c.unit?`<span class="kunit">${c.unit}</span>`:''}</div>`}
     <div class="kmean">${c.mean}</div></div>`).join('');
 }
@@ -790,7 +915,22 @@ function renderInsight(m){
   const _el=$('#insight');
   if(!showSec('summary')){_el.innerHTML='';_el.style.display='none';return;}
   _el.style.display='';
-  const t=T();const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
+  const t=T();
+  /* one slot, one content (v2.1): a fresh AI summary REPLACES the mechanical one
+     in this same box (⚡ tag + as-of date). Client staleness: ≤3d normal · ≤7d
+     greyed · older → the mechanical summary below takes over again. */
+  const AGE=(INSW&&INSW.date)?Math.floor((Date.now()-new Date(INSW.date+'T00:00:00Z').getTime())/864e5):null;
+  const aiItems=INSW&&INSW.items&&(INSW.items[LANG]||INSW.items.ja||INSW.items.en);
+  if(aiItems&&aiItems.length&&AGE!=null&&AGE<=7&&showSec('ai')){
+    const old=AGE>3;
+    const crossItems=(PROJECTS&&PROJECTS.length>1&&typeof CROSS!=='undefined'&&CROSS)?(CROSS[LANG]||CROSS.ja||CROSS.en):null;
+    _el.innerHTML=`<h2>💡 ${t.ins_title} <span class="aibdg${old?' old':''}">⚡ ${t.ai_pw} · ${t.ins_asof(INSW.date)}</span></h2>
+      <ul class="ailist${old?' old':''}">${aiItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>
+      ${crossItems&&crossItems.length?`<div class="asep" style="margin:12px 0 10px"></div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px">🧭 ${t.ins_cross}</div><ul class="ailist${old?' old':''}">${crossItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>`:''}
+      <div class="note">${t.ins_ai_note}</div>`;
+    return;
+  }
+  const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
   /* V1 07.31 (stakeholder feedback): summary bullets carry actionable angles —
      longest-dwelling category + new-exceeds-closed category. No personal names
      in this layer (names live in the operational tables below). */
@@ -833,24 +973,25 @@ function trendSVG(wd){
 function renderSections(m){
   const t=T();let H='';
   const SH=id=>`<button class="share" type="button" data-sec="${id}" title="copy link">🔗</button>`;
+  /* v2.1 remark slots: ONE content per slot — base verdict (rule engine), replaced
+     by the AI remark when fresh. Client-side staleness vs the remark date:
+     ≤3d normal · ≤7d greyed · older → base verdict only. */
+  const SEC={},V=verdicts(m);
+  const AGE=(INSW&&INSW.date)?Math.floor((Date.now()-new Date(INSW.date+'T00:00:00Z').getTime())/864e5):null;
+  const VL=k=>{
+    const s=INSW&&INSW.sections&&INSW.sections[k];
+    const txt=s?(s[LANG]||s.ja||s.en):null;
+    if(txt&&AGE!=null&&AGE<=7){const old=AGE>3;
+      return `<span class="vline ai${old?' old':''}"><span class="aibdg${old?' old':''}" title="${t.ins_asof(INSW.date)}">⚡ ${t.ai_pw}</span>${mdIns(txt)}</span>`;}
+    return V[k]?`<span class="vline">${V[k]}</span>`:'';
+  };
   /* period-scoped sections wear the accent range chip; snapshot sections wear a
      grey 現時点 chip — so the reader always knows which knob moves which box */
   const RCHIP=`<span class="cnt rchip">${t['r'+RANGE]||RANGE+'d'}</span>`;
   const NCHIP=`<span class="cnt nchip">${t.now_}</span>`;
-  /* AI insight — weekly narrative (operator-reviewed, embedded at build time).
-     Optional by design: no insight in the build → the whole section is absent.
-     Cross-project block renders only on the multi page (/all — operator+CEO). */
-  const insItems=INSW&&INSW.items&&(INSW.items[LANG]||INSW.items.ja||INSW.items.en);
-  if(insItems&&insItems.length&&showSec('ai')){
-    const crossItems=(PROJECTS&&PROJECTS.length>1&&typeof CROSS!=='undefined'&&CROSS)?(CROSS[LANG]||CROSS.ja||CROSS.en):null;
-    H+=`<details class="sec" id="sec-ai" open><summary><span class="si">🤖</span>${t.ins_ai}<span class="cnt">${t.ins_asof(INSW.date)}</span>${SH('sec-ai')}<span class="chev">▶</span></summary>
-      <div class="secbody">
-      <ul class="ailist">${insItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>
-      ${crossItems&&crossItems.length?`<div class="asep" style="margin:12px 0 10px"></div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px">🧭 ${t.ins_cross}</div><ul class="ailist">${crossItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>`:''}
-      <div class="note">${t.ins_ai_note}</div>
-      </div></details>`;
-  }
-  /* areas — RANGE-scoped section, so it sits first, right under the filter bar.
+  /* (the separate AI-insight box is gone — v2.1 merges AI content into the
+     summary slot and per-section verdict lines) */
+  /* areas — RANGE-scoped section.
      Layout: prominent aggregate row + legend + note → strong separator → members
      (paginated, +10 per click). */
   if(m.areas&&m.areas.members.length&&showSec('area')){
@@ -865,7 +1006,7 @@ function renderSections(m){
         return `<div class="arow${x.hid?' hid':''}" style="margin-bottom:${big?6:11}px"><div style="display:flex;justify-content:space-between;font-size:${big?15.5:14.9}px;margin-bottom:4px"><span style="font-weight:${big?800:600}">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
         <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div></div>`;};
     const STEP=10, mem=m.areas.members;
-    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
+    SEC.area=`<details class="sec" id="sec-area"><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span>${VL('area')}</summary>
       <div class="secbody">
       ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by},true)}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
@@ -880,7 +1021,7 @@ function renderSections(m){
   const mv=m.move;
   if(mv&&(m.createdR.length||m.closedR.length)&&showSec('move')){
     const mmax=Math.max(1,...mv.cats.map(c=>Math.max(c.cr,c.cl)));
-    H+=`<details class="sec" id="sec-move" open><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${SH('sec-move')}<span class="chev">▶</span></summary>
+    SEC.move=`<details class="sec" id="sec-move"><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${SH('sec-move')}<span class="chev">▶</span>${VL('move')}</summary>
       <div class="secbody">
       <div class="mvstats">
         <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${t.mv_prev(mv.crP)}</span></div>
@@ -907,10 +1048,10 @@ function renderSections(m){
     const amax=Math.max(1,...ca.ageB.map(x=>x.n));
     const cmax=Math.max(1,...ca.cats.map(x=>x.p50),1);
     const mmix=ca.mix.slice(0,8);const mtot=ca.mix.reduce((s,x)=>s+x.n,0)||1;
-    H+=`<details class="sec" id="sec-closed" open><summary><span class="si">✅</span>${t.sec_closed}${RCHIP}<span class="cnt">${ca.n}</span>${SH('sec-closed')}<span class="chev">▶</span></summary>
+    SEC.closed=`<details class="sec" id="sec-closed"><summary><span class="si">✅</span>${t.sec_closed}${RCHIP}<span class="cnt">${ca.n}</span>${SH('sec-closed')}<span class="chev">▶</span>${VL('closed')}</summary>
       <div class="secbody">
       <div class="mvstats">
-        <div class="mvstat"><span class="mvl">${t.cl_p50}</span><span class="mvv mono">${ca.p50!=null?ca.p50+'d':'·'}</span><span class="mvp mono">${ca.p50P!=null?t.mv_prev(ca.p50P+'d'):''}</span></div>
+        <div class="mvstat"><span class="mvl">${t.cl_p50}<span class="defbtn" data-def="cyc">i</span></span><span class="mvv mono">${ca.p50!=null?ca.p50+'d':'·'}</span><span class="mvp mono">${ca.p50P!=null?t.mv_prev(ca.p50P+'d'):''}</span></div>
         <div class="mvstat"><span class="mvl">${t.cl_p85}</span><span class="mvv mono">${ca.p85!=null?ca.p85+'d':'·'}</span><span class="mvp mono"></span></div>
         <div class="mvstat"><span class="mvl">${t.cl_ontime}</span><span class="mvv mono">${ca.due.n?Math.round(ca.due.ok/ca.due.n*100)+'%':'·'}</span><span class="mvp mono">${ca.due.n?t.cl_due_d(ca.due.ok,ca.due.n):t.cl_nodue}</span></div>
       </div>
@@ -927,34 +1068,48 @@ function renderSections(m){
   /* flow — buckets follow the range since 07.28 (7d/30d daily, 90d weekly) */
   if(showSec('flow')){
   const tblB=RANGE===30?m.wd.slice(-14):m.wd;
-  H+=`<details class="sec" id="sec-flow" open><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${SH('sec-flow')}<span class="chev">▶</span></summary>
+  SEC.flow=`<details class="sec" id="sec-flow"><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${SH('sec-flow')}<span class="chev">▶</span>${VL('flow')}</summary>
     <div class="secbody">${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
     <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
     ${[...tblB].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
     </tbody></table></div>${tblB.length<m.wd.length?`<div class="note">${t.flow_tbl(tblB.length)}</div>`:''}</div></details>`;
   }
-  /* ---- everything below is a snapshot of NOW — visibly fenced off from the
-     period filter (07.28): labeled divider + grey 現時点 chips ---- */
-  const anySnap=showSec('mem')||showSec('cat')||showSec('risk')||showSec('status');
-  if(anySnap)H+=`<div class="snapdiv" id="snapdiv"><span>📌 ${t.snap_div}</span></div>`;
+  /* stagnation breakdown (v2.1 08.06 — PM feedback ②③): the stale set by
+     state-group × idle-time, plus the unassigned. Cells expand to ticket lists
+     (Backlog links). Explicitly labeled as WHERE-stuck, never why. */
+  if(m.stag&&showSec('stag')){
+    const sgl={wait:t.stg_wait,work:t.stg_work,open:t.stg_open};
+    const cols=[t.stg_c1,t.stg_c2,t.stg_c3];
+    SEC.stag=`<details class="sec" id="sec-stag"><summary><span class="si">🧊</span>${t.sec_stag}${NCHIP}<span class="cnt">${m.stag.total}</span>${SH('sec-stag')}<span class="chev">▶</span>${VL('stag')}</summary>
+      <div class="secbody">
+      <div style="overflow-x:auto"><table><thead><tr><th style="text-align:left"></th>${cols.map(c=>`<th>${c}</th>`).join('')}<th>${t.stg_total}</th></tr></thead><tbody>
+      ${m.stag.rows.map(r=>{const rt=r.cells.reduce((s,c)=>s+c.n,0);
+        return `<tr><td style="text-align:left;font-weight:600">${sgl[r.g]}</td>${r.cells.map((c,ci)=>`<td class="mono">${c.n?`<a class="lnk stgcell" data-g="${r.g}" data-ci="${ci}" href="#">${c.n}</a>`:'·'}</td>`).join('')}<td class="mono"><b>${rt}</b></td></tr>`;}).join('')}
+      </tbody></table></div>
+      <div id="stglist" style="margin-top:10px"></div>
+      ${m.stag.unas?`<div style="margin-top:12px;font-weight:700;font-size:14.5px">${t.stg_unas} · ${m.stag.unas}</div>
+      <div style="overflow-x:auto;margin-top:6px"><table><tbody>${m.stag.unasTop.map(x=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title||x.key)}</td><td class="mono" style="width:70px">${x.d}d</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="note" style="margin-top:10px">${t.stg_note}</div>
+      </div></details>`;
+  }
   /* members */
   const topN=8;
   const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
-  if(showSec('mem'))H+=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span></summary>
+  if(showSec('mem'))SEC.mem=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span>${VL('mem')}</summary>
     <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* categories (hidden when the project yields none) */
-  if(m.cats.length&&showSec('cat'))H+=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span></summary>
+  if(m.cats.length&&showSec('cat'))SEC.cat=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span>${VL('cat')}</summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
       ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
-  if(showSec('risk'))H+=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span></summary>
+  if(showSec('risk'))SEC.risk=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span>${VL('risk')}</summary>
     <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
@@ -968,11 +1123,27 @@ function renderSections(m){
   const stLeg=m.sfull.length
     ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
     :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
-  if(showSec('status'))H+=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span></summary>
+  if(showSec('status'))SEC.status=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span>${VL('status')}</summary>
     <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
     <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
+  /* assembly (v2.1): question order — how it moves → where it stops → who → what.
+     Period-scoped first, then the NOW divider, then snapshot sections. */
+  ['closed','flow','move','area'].forEach(k=>{if(SEC[k])H+=SEC[k];});
+  if(SEC.stag||SEC.risk||SEC.mem||SEC.cat||SEC.status)H+=`<div class="snapdiv" id="snapdiv"><span>📌 ${t.snap_div}</span></div>`;
+  ['stag','risk','mem','cat','status'].forEach(k=>{if(SEC[k])H+=SEC[k];});
   $('#sections').innerHTML=H;
+  /* stagnation matrix cells → ticket list below the table */
+  if(m.stag){
+    const sgl={wait:t.stg_wait,work:t.stg_work,open:t.stg_open};
+    const cols=[t.stg_c1,t.stg_c2,t.stg_c3];
+    document.querySelectorAll('.stgcell').forEach(a=>a.onclick=e=>{
+      e.preventDefault();e.stopPropagation();
+      const cell=m.stag.rows.find(r=>r.g===a.dataset.g).cells[+a.dataset.ci];
+      $('#stglist').innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:6px">${sgl[a.dataset.g]} · ${cols[+a.dataset.ci]} — ${t.showing(cell.top.length)} / ${cell.n}</div>
+        <div style="overflow-x:auto"><table><tbody>${cell.top.map(x=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title||x.key)}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${x.st}</td><td class="mono" style="width:70px">${x.d}d</td></tr>`).join('')}</tbody></table></div>`;
+    });
+  }
   /* share buttons — copy a deep link to this section (#<slug>/<sec> on multi, #<sec> on single) */
   document.querySelectorAll('.sec .share').forEach(b=>b.onclick=e=>{
     e.preventDefault();e.stopPropagation();
@@ -1200,6 +1371,19 @@ function openAbout(){
   };
 }
 $('#aboutov').addEventListener('click',e=>{if(e.target.id==='aboutov')$('#aboutov').hidden=true;});
+/* ⓘ definition popovers (v2.1) — one at a time, click anywhere else to close.
+   The definition text is the "manual", delivered at the point of doubt. */
+document.addEventListener('click',e=>{
+  const old=$('#defpop');if(old)old.remove();
+  const b=e.target.closest('.defbtn');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  const txt=T()['def_'+b.dataset.def];if(!txt)return;
+  const d=document.createElement('div');d.id='defpop';d.textContent=txt;
+  document.body.appendChild(d);
+  const r=b.getBoundingClientRect();
+  d.style.top=(scrollY+r.bottom+8)+'px';
+  d.style.left=Math.max(8,Math.min(scrollX+r.left,scrollX+innerWidth-d.offsetWidth-12))+'px';
+},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#aboutov').hidden)$('#aboutov').hidden=true;});
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
@@ -1228,7 +1412,7 @@ function exportHTML(){
   expRestore();
   /* static snapshot: strip scripts + interactive chrome; <details> keep working
      natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
-  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov').forEach(e=>e.remove());
+  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov,.defbtn,#defpop').forEach(e=>e.remove());
   const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
   const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · TLダッシュボード · ${META.today}`;
   const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});
