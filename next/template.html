@@ -56,7 +56,10 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 .projnav button{font:inherit;font-size:15px;font-weight:700;padding:9px 18px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:10px;cursor:pointer;transition:all .12s;}
 .projnav button:hover{border-color:var(--accent);color:var(--text);}
 .projnav button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:var(--shadow);}
-.projnav .aboutbtn{margin-left:auto;font-weight:600;color:var(--muted);border-style:dashed;}
+/* about = a deliberately low-key text link in the footer (08.06 — a button in the
+   tab bar collided with the utility cluster and drew too much attention) */
+#lnk-about{cursor:pointer;color:var(--muted);border-bottom:1px dashed var(--border);}
+#lnk-about:hover{color:var(--text);border-bottom-color:var(--muted);}
 /* about modal (v2 08.06) — multi page only */
 #aboutov{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;}
 #aboutov[hidden]{display:none;}
@@ -1041,10 +1044,7 @@ function renderProjNav(){
   const nav=$('#projnav');
   if(!PROJECTS||PROJECTS.length<2){nav.style.display='none';return;}
   nav.style.display='';
-  /* about button rides the tab bar → exists on the multi page only (per-project
-     standalone pages have no tab bar and deliberately no about link — 08.06) */
-  nav.innerHTML=PROJECTS.map((p,i)=>`<button data-pi="${i}" class="${i===PI?'on':''}">${p.name}</button>`).join('')
-    +`<button class="aboutbtn" id="btn-about" type="button">ⓘ ${T().about_t}</button>`;
+  nav.innerHTML=PROJECTS.map((p,i)=>`<button data-pi="${i}" class="${i===PI?'on':''}">${p.name}</button>`).join('');
 }
 const slugIndex=s=>PROJECTS?PROJECTS.findIndex(p=>p.slug===s):-1;
 const CVAR={Open:'--st-open',InProgress:'--st-inprog',Resolved:'--st-resolved',Pending:'--st-pending',Closed:'--st-closed'};
@@ -1076,7 +1076,11 @@ function renderAll(){
       :nm;
   }
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
-  $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
+  /* multi page only: quiet about/changelog link at the end of the footer line */
+  const _ab=(PROJECTS&&PROJECTS.length>1)?` · <span id="lnk-about">ⓘ ${t.about_t}</span>`:'';
+  $('#f-left').innerHTML=t.foot_l.replace(/</g,'&lt;')+_ab;
+  const _al=$('#lnk-about');if(_al)_al.onclick=openAbout;
+  $('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
   applyPendingSec();
 }
@@ -1255,7 +1259,7 @@ function exportHTML(){
      const ENC={v,salt,iv,iter,ct}; let PROJECTS=null;        — encrypted build
    where ENC.ct decrypts to {projects:[…]} (same shape). 1 project → nav hidden. */
 function initProjects(){
-  $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; if(b.id==='btn-about'){openAbout();return;} if(b.dataset.pi!==undefined) loadProject(+b.dataset.pi);});
+  $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b&&b.dataset.pi!==undefined) loadProject(+b.dataset.pi);});
   window.addEventListener('hashchange',()=>{
     const h=parseHash();
     if(h.sec)PENDING_SEC=h.sec;
