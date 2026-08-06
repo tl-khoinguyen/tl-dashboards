@@ -66,16 +66,15 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 /* about modal (v2 08.06) — multi page only */
 #aboutov{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;}
 #aboutov[hidden]{display:none;}
-.aboutbox{background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:640px;width:100%;max-height:82vh;overflow-y:auto;padding:22px 24px;box-shadow:var(--shadow);}
-.aboutbox h2{font-size:16.5px;margin-bottom:4px;}
-.aboutbox .aver{font-size:13px;color:var(--muted);margin-bottom:12px;}
-.aboutbox p{font-size:14.7px;line-height:1.65;margin-bottom:9px;color:var(--text);}
-.aboutbox h3{font-size:14.7px;margin:14px 0 6px;}
-.aboutbox ul{margin:0 0 4px 18px;}
-.aboutbox li{font-size:14.5px;line-height:1.6;margin-bottom:4px;}
-.aboutrow{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;}
-.aboutrow button{font:inherit;font-size:13.5px;padding:7px 14px;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:var(--text);cursor:pointer;}
-.aboutrow button:hover{border-color:var(--accent);}
+.aboutbox{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:620px;width:100%;max-height:86vh;overflow-y:auto;padding:16px 20px 14px;box-shadow:var(--shadow);}
+.aboutbox h2{font-size:15.5px;margin:0 30px 8px 0;}
+.aboutbox p{font-size:14px;line-height:1.6;margin-bottom:7px;color:var(--text);}
+.aboutbox h3{font-size:14px;margin:11px 0 5px;}
+.aboutbox ul{margin:0 0 2px 17px;}
+.aboutbox li{font-size:13.8px;line-height:1.55;margin-bottom:3px;}
+#about-txt{cursor:copy;}
+.aboutx{position:absolute;top:8px;right:9px;width:30px;height:30px;border:none;background:none;font-size:21px;line-height:1;color:var(--muted);cursor:pointer;border-radius:8px;}
+.aboutx:hover{background:var(--panel2);color:var(--text);}
 /* verdict lines on section strips (v2.1) — a collapsed row still tells its story */
 .sec>summary{flex-wrap:wrap;}
 .vline{flex-basis:100%;font-size:13.6px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:3px;}
@@ -425,7 +424,7 @@ const DICT={
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
    sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
-   about_t:"このダッシュボードについて",about_ch:"今回の主な変更",about_copy:"全文コピー",about_copied:"コピーしました",about_close:"閉じる",
+   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_copied:"コピーしました",about_taphint:"本文をタップするとコピーできます",
    ai_pw:"AI分析",
    sec_stag:"滞留の内訳",stg_note:"Backlogに原因の記録は無いため、これは「どこで止まっているか」の分解です（停滞=30日以上更新なし・件数ベース）",
    stg_wait:"確認・保留など待ち状態",stg_work:"作業中のまま",stg_open:"未着手のまま",stg_unas:"担当者未設定",stg_c1:"31〜90日",stg_c2:"91日〜1年",stg_c3:"1年超",stg_total:"合計",
@@ -482,7 +481,7 @@ const DICT={
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
    sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
-   about_t:"About this dashboard",about_ch:"What's new in this release",about_copy:"Copy text",about_copied:"Copied",about_close:"Close",
+   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_copied:"Copied",about_taphint:"Tap the text to copy it",
    ai_pw:"AI analysis",
    sec_stag:"Stagnation breakdown",stg_note:"Backlog records no cause, so this decomposes WHERE items are stuck (stale = no update for 30+ days; ticket counts)",
    stg_wait:"Waiting states (review/hold)",stg_work:"In progress",stg_open:"Not started",stg_unas:"No assignee",stg_c1:"31–90d",stg_c2:"91d–1y",stg_c3:">1 year",stg_total:"Total",
@@ -539,7 +538,7 @@ const DICT={
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
    sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
-   about_t:"Về dashboard này",about_ch:"Thay đổi chính trong bản này",about_copy:"Sao chép toàn bộ",about_copied:"Đã sao chép",about_close:"Đóng",
+   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_copied:"Đã sao chép",about_taphint:"Chạm vào phần chữ để sao chép",
    ai_pw:"Phân tích AI",
    sec_stag:"Phân rã tồn đọng",stg_note:"Backlog không ghi nguyên nhân, nên đây là phân rã \"đang kẹt ở đâu\" (tồn đọng = không cập nhật 30+ ngày; đếm ticket)",
    stg_wait:"Trạng thái chờ (review/treo)",stg_work:"Đang xử lý",stg_open:"Chưa bắt đầu",stg_unas:"Chưa có người nhận",stg_c1:"31–90 ngày",stg_c2:"91 ngày–1 năm",stg_c3:">1 năm",stg_total:"Tổng",
@@ -1423,16 +1422,18 @@ $('#btn-push').addEventListener('click',async()=>{
    language; the copy button hands over the whole text as plain text so it can be
    pasted into chat/mail for stakeholders unchanged. */
 function openAbout(){
+  /* rev3 (operator 08.06): compact chrome — plain one-word title, no subtitle,
+     no button row; tapping the text copies the whole block, ✕ closes. */
   const t=T();const v=VERINFO[LANG]||VERINFO.ja;
-  $('#aboutbox').innerHTML=`<h2>ⓘ ${t.about_t}</h2><div class="aver">TLダッシュボード · ${VERINFO.ver}</div>
-    ${v.premise.map(p=>`<p>${p}</p>`).join('')}
-    <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul>
-    <div class="aboutrow"><button id="about-copy" type="button">⧉ ${t.about_copy}</button><button id="about-close" type="button">${t.about_close}</button></div>`;
+  $('#aboutbox').innerHTML=`<button class="aboutx" id="about-x" type="button" aria-label="close">×</button><h2>${t.about_h}</h2>
+    <div id="about-txt">${v.premise.map(p=>`<p>${p}</p>`).join('')}
+    <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul></div>
+    <div class="note" style="margin-top:8px">⧉ ${t.about_taphint}</div>`;
   $('#aboutov').hidden=false;
-  $('#about-close').onclick=()=>{$('#aboutov').hidden=true;};
-  $('#about-copy').onclick=()=>{
-    const txt=[t.about_t+' — TLダッシュボード '+VERINFO.ver,'',...v.premise,'',t.about_ch+':',...v.changes.map(c=>'- '+c)].join('\n');
-    const done=()=>{const b=$('#about-copy');if(b){b.textContent='✓ '+t.about_copied;setTimeout(()=>{const b2=$('#about-copy');if(b2)b2.textContent='⧉ '+t.about_copy;},1500);}};
+  $('#about-x').onclick=()=>{$('#aboutov').hidden=true;};
+  $('#about-txt').onclick=()=>{
+    const txt=[t.about_t,'',...v.premise,'',t.about_ch+':',...v.changes.map(c=>'- '+c)].join('\n');
+    const done=()=>toast('✓ '+t.about_copied);
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>prompt('',txt));
     else prompt('',txt);
   };
