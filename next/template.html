@@ -93,14 +93,19 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 #cardtip .ctvd{color:var(--muted);margin-top:5px;border-top:1px dashed var(--border);padding-top:5px;}
 #cardtip .cthint{color:var(--accent);font-size:12px;margin-top:6px;}
 details.sec.flash{box-shadow:0 0 0 3px var(--accent-soft);transition:box-shadow .3s;}
-/* wide-screen header (v2.2): title left, summary/insight right — the dead zone
-   becomes home for the page's story. DOM is relocated by JS so narrow screens
-   keep today's exact order. */
-.headgrid{display:block;}
-@media (min-width:1100px){
-  .headgrid{display:grid;grid-template-columns:minmax(340px,0.85fr) 1.15fr;gap:22px;align-items:start;margin-bottom:14px;}
-  .headgrid .top{margin-bottom:0;}
-  .headgrid .insight{margin:0;}
+/* v2.2 rev2 (operator 08.06 — the title|insight side-by-side made things worse):
+   wide layout = KPI cards LEFT | remark RIGHT (two tall variable blocks balance
+   each other), and the filter bar rides up into the title row (JS relocates it;
+   the stuck state becomes position:fixed there, sentinel logic unchanged).
+   Narrow screens keep today's exact stacked order. */
+.bodygrid{display:block;}
+@media (min-width:1280px){
+  .bodygrid{display:grid;grid-template-columns:minmax(420px,44%) 1fr;gap:18px;align-items:start;margin:18px 0;}
+  .bodygrid .hero{grid-template-columns:1fr 1fr;margin:0;}
+  .bodygrid .insight{margin:0;}
+  .h1row .controls{border-top:none;padding:0;margin-left:auto;position:static;}
+  .h1row .controls .ctl>label{display:none;}
+  .controls.stuck{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;}
 }
 .top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .controls{padding-top:12px;border-top:1px solid var(--border);}
@@ -347,7 +352,6 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div class="utilabout" id="utilabout"></div>
   <div class="projnav" id="projnav"></div>
   <div id="aboutov" hidden><div class="aboutbox" id="aboutbox"></div></div>
-  <div class="headgrid" id="headgrid">
   <div class="top">
     <div class="brand">
       <span class="ey" id="t-ey">Backlog</span>
@@ -362,7 +366,6 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
       <span class="fresh g" id="fresh"></span>
     </div>
   </div>
-  </div><!-- /headgrid: #insight is relocated here by JS on wide screens -->
 
   <!-- sticky while scrolling: DATA filters only (scope + period) — page prefs
        live in the top-right utility cluster. Stuck = centered capsule. -->
@@ -378,8 +381,12 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   </div>
 
   <div class="stalebar" id="stalebar"></div>
-  <div class="hero" id="hero"></div>
-  <div class="insight" id="insight"></div>
+  <!-- bodygrid (v2.2 rev2): wide screens = KPI cards left | remark right (two
+       tall blocks balance each other); narrow = block flow, original order -->
+  <div class="bodygrid" id="bodygrid">
+    <div class="hero" id="hero"></div>
+    <div class="insight" id="insight"></div>
+  </div>
   <div id="sections"></div>
 
   <div id="pushtoast" role="status"></div>
@@ -587,7 +594,7 @@ const VERINFO={ver:'v2 preview',
   "主要指標にⓘを追加 — その場で定義を確認できます",
   "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
   "KPIカードをクリックすると該当セクションへ移動できます（PCではホバーで補足を表示）",
-  "ワイド画面ではタイトル横にサマリーを配置し、最初の一画面で全体が掴めるようにしました",
+  "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行に移動 — 冒頭の一画面で全体が掴めます",
   "プロジェクトの状況に応じてKPIカードを追加できるようにしました（例：期限内完了・待ち状態の滞留）",
   "プロジェクトごとに表示内容を調整できる仕組みを導入（プロジェクトの特性に合わない指標は表示されないことがあります）",
   "この「このダッシュボードについて」画面を追加"]},
@@ -603,7 +610,7 @@ const VERINFO={ver:'v2 preview',
   "Added ⓘ marks with on-the-spot definitions for key metrics",
   "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
   "Click a KPI card to jump to its section (hover shows a preview on PC)",
-  "On wide screens the summary now sits beside the title, so the first screen tells the whole story",
+  "On wide screens KPI cards and the summary sit side by side, with filters moved up to the title row — the first screen tells the whole story",
   "KPI cards can now be added per project (e.g. on-time completion, waiting-state stalls)",
   "Introduced per-project display tuning (metrics that do not fit a project's nature may be hidden)",
   "Added this About screen"]},
@@ -619,7 +626,7 @@ const VERINFO={ver:'v2 preview',
   "Thêm dấu ⓘ xem định nghĩa chỉ số ngay tại chỗ",
   "Khi có phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
   "Bấm thẻ KPI để nhảy đến mục tương ứng (trên PC rê chuột xem tóm tắt)",
-  "Trên màn hình rộng, phần tóm tắt nằm cạnh tiêu đề — một màn hình đầu đủ nắm toàn cảnh",
+  "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề — một màn hình đầu nắm trọn toàn cảnh",
   "Có thể bổ sung thẻ KPI theo từng dự án (vd. đóng đúng hạn, tồn đọng dạng chờ)",
   "Thêm cơ chế điều chỉnh nội dung hiển thị theo từng dự án (chỉ số không phù hợp với đặc thù dự án có thể được ẩn)",
   "Thêm màn hình giới thiệu này"]}};
@@ -1463,19 +1470,23 @@ $('#aboutov').addEventListener('click',e=>{if(e.target.id==='aboutov')$('#abouto
     });
   }
 })();
-/* wide-screen header (v2.2): move #insight beside the title ≥1100px; narrow
-   screens keep the original DOM position (anchor = #hero, insight goes back
-   right before it). */
+/* filter bar placement (v2.2 rev2): ≥1280px the controls join the title row
+   (right of the export button); narrower puts them back in their own band.
+   The stuck sentinel stays at the ORIGINAL flow position either way. */
 (function(){
-  const mq=matchMedia('(min-width:1100px)');
+  const mq=matchMedia('(min-width:1280px)');
+  let anchor=null;
   function place(){
-    const ins=$('#insight'),hg=$('#headgrid'),hero=$('#hero');
-    if(!ins||!hg||!hero)return;
-    if(mq.matches){if(ins.parentElement!==hg)hg.appendChild(ins);}
-    else if(ins.parentElement===hg){hero.after(ins);}   /* back to original spot: right after #hero */
+    const c=$('#controls'),row=document.querySelector('.h1row');
+    if(!c||!row)return;
+    if(!anchor){anchor=document.createElement('div');anchor.style.display='none';c.parentNode.insertBefore(anchor,c);}
+    if(mq.matches){if(c.parentElement!==row)row.appendChild(c);}
+    else if(c.parentElement===row){anchor.after(c);}
   }
   mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
-  place();window.addEventListener('load',place);
+  /* deferred: the sticky sentinel (created later in this script) must be
+     inserted at the controls' ORIGINAL flow position before we move them */
+  setTimeout(place,0);
 })();
 /* ⓘ definition popovers (v2.1) — one at a time, click anywhere else to close.
    The definition text is the "manual", delivered at the point of doubt. */
