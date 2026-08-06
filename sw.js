@@ -30,6 +30,33 @@ self.addEventListener('push', e => {
   }));
 });
 
+/* pushsubscriptionchange (08.06): Chrome/Android rotates or silently revokes FCM
+   subscriptions (Doze/battery management — three dead subs in four days). When the
+   browser fires this event, re-subscribe and re-register with the worker using the
+   config the page saved at subscribe time (IndexedDB tlk-push/cfg) — so a rotation
+   heals itself without a page open. */
+self.addEventListener('pushsubscriptionchange', e => {
+  e.waitUntil((async () => {
+    const cfg = await new Promise(res => {
+      try {
+        const r = indexedDB.open('tlk-push', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('cfg');
+        r.onsuccess = () => { try {
+          const g = r.result.transaction('cfg', 'readonly').objectStore('cfg').get('push');
+          g.onsuccess = () => res(g.result); g.onerror = () => res(null);
+        } catch (_) { res(null); } };
+        r.onerror = () => res(null);
+      } catch (_) { res(null); }
+    });
+    if (!cfg) return;
+    const u8 = b64 => { const s = atob(b64.replace(/-/g, '+').replace(/_/g, '/')); const a = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; };
+    try {
+      const sub = e.newSubscription || await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(cfg.pub) });
+      await fetch(cfg.url + '/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: cfg.v, sub: sub.toJSON() }) });
+    } catch (_) {}
+  })());
+});
+
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || self.registration.scope;

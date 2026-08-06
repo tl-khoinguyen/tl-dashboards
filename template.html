@@ -1000,12 +1000,33 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();_bip=e;
    config AND the browser supports push. Toggle = subscribe/unsubscribe; the
    worker stores subscriptions, GitHub Actions sends after scheduled builds. */
 function u8(b64){const s=atob(b64.replace(/-/g,'+').replace(/_/g,'/'));const a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return a;}
+/* push config mirror for the SW (08.06): pushsubscriptionchange fires in the SW
+   with no page open, so the worker URL/verifier/VAPID key it needs to re-register
+   are kept in IndexedDB — device-local, same trust level as the remembered
+   passphrase key that already lives there. Cleared on manual unsubscribe. */
+function pushCfgSave(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').put({url:PUSH.url,v:PUSH.v,pub:PUSH.pub},'push');}catch(_){}};}catch(_){}}
+function pushCfgClear(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').delete('push');}catch(_){}};}catch(_){}}
 async function initPush(){
   if(!PUSH||!('serviceWorker' in navigator)||!('PushManager' in window)||typeof Notification==='undefined')return;
   if(!location.protocol.startsWith('http')||Notification.permission==='denied')return;
   const b=$('#btn-push');b.style.display='';
   try{const reg=await navigator.serviceWorker.ready;
-    b.classList.toggle('on',!!(await reg.pushManager.getSubscription()));}catch(_){}
+    let sub=await reg.pushManager.getSubscription();
+    /* self-heal (08.06): Android repeatedly invalidates Chrome's FCM registration
+       (3 silent deaths in 4 days) and the browser can keep showing a live-looking
+       subscription the push service already 410'd. So on every unlocked open of a
+       device that opted in: no sub → silently re-subscribe (permission already
+       granted, no prompt); with sub → re-POST to the worker (upsert by endpoint)
+       so a registry-side prune heals too. Opt-in memory = localStorage flag; a
+       pre-flag device that still holds a subscription arms itself. */
+    if(sub&&!localStorage.getItem('tl_dash_push'))localStorage.setItem('tl_dash_push','1');
+    if(localStorage.getItem('tl_dash_push')==='1'&&Notification.permission==='granted'){
+      if(!sub){try{sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);}catch(_){}}
+      if(sub){pushCfgSave();
+        _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
+          body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000).catch(()=>{});}
+    }
+    b.classList.toggle('on',!!sub);}catch(_){}
 }
 let _toastT=null;
 function toast(msg){const el=$('#pushtoast');el.textContent=msg;el.classList.add('show');
@@ -1021,13 +1042,13 @@ $('#btn-push').addEventListener('click',async()=>{
     if(cur){
       await _to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
         body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}),8000).catch(()=>{});
-      await cur.unsubscribe();b.classList.remove('on');toast(t.push_off);return;
+      await cur.unsubscribe();b.classList.remove('on');localStorage.removeItem('tl_dash_push');pushCfgClear();toast(t.push_off);return;
     }
     if(await Notification.requestPermission()!=='granted'){toast(t.push_denied);return;}
     const sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);
     const r=await _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
       body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000);
-    if(r.ok){b.classList.add('on');toast(t.push_on);}
+    if(r.ok){b.classList.add('on');localStorage.setItem('tl_dash_push','1');pushCfgSave();toast(t.push_on);}
     else{await sub.unsubscribe();toast(t.push_err);}
   }catch(_){toast(T().push_err);}
   finally{b.classList.remove('busy');}
