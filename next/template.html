@@ -86,6 +86,22 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 .defbtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border:1px solid var(--border);border-radius:50%;font-size:10.5px;color:var(--muted);cursor:help;vertical-align:1px;}
 .defbtn:hover{color:var(--accent);border-color:var(--accent);}
 #defpop{position:absolute;max-width:320px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow);z-index:95;line-height:1.65;}
+/* KPI card interactions (v2.2): click = jump to its section, hover = preview */
+.kcard{cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s;}
+.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+#cardtip{position:absolute;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow);z-index:95;line-height:1.6;}
+#cardtip .ctvd{color:var(--muted);margin-top:5px;border-top:1px dashed var(--border);padding-top:5px;}
+#cardtip .cthint{color:var(--accent);font-size:12px;margin-top:6px;}
+details.sec.flash{box-shadow:0 0 0 3px var(--accent-soft);transition:box-shadow .3s;}
+/* wide-screen header (v2.2): title left, summary/insight right — the dead zone
+   becomes home for the page's story. DOM is relocated by JS so narrow screens
+   keep today's exact order. */
+.headgrid{display:block;}
+@media (min-width:1100px){
+  .headgrid{display:grid;grid-template-columns:minmax(340px,0.85fr) 1.15fr;gap:22px;align-items:start;margin-bottom:14px;}
+  .headgrid .top{margin-bottom:0;}
+  .headgrid .insight{margin:0;}
+}
 .top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .controls{padding-top:12px;border-top:1px solid var(--border);}
 .brand{display:flex;flex-direction:column;gap:2px;}
@@ -331,6 +347,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div class="utilabout" id="utilabout"></div>
   <div class="projnav" id="projnav"></div>
   <div id="aboutov" hidden><div class="aboutbox" id="aboutbox"></div></div>
+  <div class="headgrid" id="headgrid">
   <div class="top">
     <div class="brand">
       <span class="ey" id="t-ey">Backlog</span>
@@ -345,6 +362,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
       <span class="fresh g" id="fresh"></span>
     </div>
   </div>
+  </div><!-- /headgrid: #insight is relocated here by JS on wide screens -->
 
   <!-- sticky while scrolling: DATA filters only (scope + period) — page prefs
        live in the top-right utility cluster. Stuck = centered capsule. -->
@@ -417,6 +435,11 @@ const DICT={
    def_over:"期限超過 = 期限日を過ぎたオープンチケットの、全オープンに対する割合",
    def_stale:"停滞 = 30日以上更新のないオープンチケットの、全オープンに対する割合",
    def_cyc:"処理日数 = 作成日から最終更新日（完了日の近似）までの日数。チケット件数ベースで、工数ではありません",
+   k_cyc:"処理日数(中央値)",m_cyc:s=>s.n?`直近の完了${s.n}件の中央値${s.pp?`（前期 ${s.pp}日）`:''}`:'期間内の完了なし',
+   k_ontime:"期限内完了",m_ontime:s=>s.n?`期限つき完了${s.n}件中 ${s.ok}件が期限内`:'期限つきの完了なし',
+   k_unas:"担当者未設定",m_unas:s=>`オープンのうち担当者未設定が${s.n}件`,
+   k_wait:"待ち状態の滞留",m_wait:s=>`停滞${s.t}件のうち確認・保留などの待ちが${s.w}件`,
+   card_go:"クリックでセクションへ移動",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"滞留度",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
    th_ticket:"件名",th_due:"期限",th_days:"超過日数",
@@ -469,6 +492,11 @@ const DICT={
    def_over:"Overdue = open tickets past their due date, as a share of all open",
    def_stale:"Stale = open tickets untouched for 30+ days, as a share of all open",
    def_cyc:"Cycle time = days from creation to last update (approximation of close date). Ticket counts, not hours",
+   k_cyc:"Cycle time (median)",m_cyc:s=>s.n?`Median of ${s.n} recent completions${s.pp?` (prev ${s.pp}d)`:''}`:'No completions in period',
+   k_ontime:"Closed on time",m_ontime:s=>s.n?`${s.ok} of ${s.n} due-dated completions on time`:'No due-dated completions',
+   k_unas:"No assignee",m_unas:s=>`${s.n} open tickets without an assignee`,
+   k_wait:"Waiting-state stalls",m_wait:s=>`${s.w} of ${s.t} stalled sit in waiting states`,
+   card_go:"Click to open the section",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Dwell",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
    th_ticket:"Title",th_due:"Due",th_days:"Days over",
@@ -521,6 +549,11 @@ const DICT={
    def_over:"Quá hạn = ticket mở đã quá ngày hạn, tính trên tổng số đang mở",
    def_stale:"Tồn đọng = ticket mở không được cập nhật 30+ ngày, tính trên tổng số đang mở",
    def_cyc:"Ngày xử lý = số ngày từ lúc tạo đến lần cập nhật cuối (xấp xỉ ngày đóng). Đếm ticket, không phải giờ công",
+   k_cyc:"Ngày xử lý (trung vị)",m_cyc:s=>s.n?`Trung vị của ${s.n} ticket đóng gần đây${s.pp?` (kỳ trước ${s.pp}d)`:''}`:'Không có ticket đóng trong kỳ',
+   k_ontime:"Đóng đúng hạn",m_ontime:s=>s.n?`${s.ok}/${s.n} ticket có hạn đóng đúng hạn`:'Không có ticket đóng kèm hạn',
+   k_unas:"Chưa có người nhận",m_unas:s=>`${s.n} ticket mở chưa có người nhận`,
+   k_wait:"Tồn đọng dạng chờ",m_wait:s=>`${s.w}/${s.t} ticket tồn đọng nằm ở trạng thái chờ`,
+   card_go:"Bấm để mở mục tương ứng",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Độ đọng",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
    th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
@@ -553,6 +586,9 @@ const VERINFO={ver:'v2 preview',
   "各セクションに要約の一文を常時表示 — 畳んだままでも要点が読めます",
   "主要指標にⓘを追加 — その場で定義を確認できます",
   "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
+  "KPIカードをクリックすると該当セクションへ移動できます（PCではホバーで補足を表示）",
+  "ワイド画面ではタイトル横にサマリーを配置し、最初の一画面で全体が掴めるようにしました",
+  "プロジェクトの状況に応じてKPIカードを追加できるようにしました（例：期限内完了・待ち状態の滞留）",
   "プロジェクトごとに表示内容を調整できる仕組みを導入（プロジェクトの特性に合わない指標は表示されないことがあります）",
   "この「このダッシュボードについて」画面を追加"]},
  en:{premise:[
@@ -566,6 +602,9 @@ const VERINFO={ver:'v2 preview',
   "Every section now shows a one-line summary even while collapsed",
   "Added ⓘ marks with on-the-spot definitions for key metrics",
   "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
+  "Click a KPI card to jump to its section (hover shows a preview on PC)",
+  "On wide screens the summary now sits beside the title, so the first screen tells the whole story",
+  "KPI cards can now be added per project (e.g. on-time completion, waiting-state stalls)",
   "Introduced per-project display tuning (metrics that do not fit a project's nature may be hidden)",
   "Added this About screen"]},
  vi:{premise:[
@@ -579,6 +618,9 @@ const VERINFO={ver:'v2 preview',
   "Mỗi mục luôn hiển thị một câu tóm tắt ngay cả khi thu gọn",
   "Thêm dấu ⓘ xem định nghĩa chỉ số ngay tại chỗ",
   "Khi có phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
+  "Bấm thẻ KPI để nhảy đến mục tương ứng (trên PC rê chuột xem tóm tắt)",
+  "Trên màn hình rộng, phần tóm tắt nằm cạnh tiêu đề — một màn hình đầu đủ nắm toàn cảnh",
+  "Có thể bổ sung thẻ KPI theo từng dự án (vd. đóng đúng hạn, tồn đọng dạng chờ)",
   "Thêm cơ chế điều chỉnh nội dung hiển thị theo từng dự án (chỉ số không phù hợp với đặc thù dự án có thể được ẩn)",
   "Thêm màn hình giới thiệu này"]}};
 
@@ -605,8 +647,16 @@ function mergeCFG(o){
    the summary slot), summary, area, move, closed, stag, flow, mem, cat, risk,
    status. KPI ids: open, trend, over, stale, health. */
 const showSec=id=>{const s=(PCFG.display||{}).sections;return !s||s[id]!==false;};
-const KPI_ORDER=['open','trend','over','stale','health'];
-const kpiSel=()=>{const k=(PCFG.display||{}).kpis;return Array.isArray(k)?k.filter(x=>KPI_ORDER.includes(x)):KPI_ORDER;};
+/* KPI cards: CORE = the default five; the extended pool (v2.2) is opt-in per
+   project via display.kpis — "wide shows more" only when the project has more
+   to say, never unconditionally. */
+const KPI_CORE=['open','trend','over','stale','health'];
+const KPI_ORDER=[...KPI_CORE,'cyc','ontime','unas','wait'];
+const kpiSel=()=>{const k=(PCFG.display||{}).kpis;return Array.isArray(k)?k.filter(x=>KPI_ORDER.includes(x)):KPI_CORE;};
+/* card → section jump map + which verdict feeds the hover tooltip */
+const KMAP={open:'sec-status',trend:'sec-flow',over:'sec-risk',stale:'sec-stag',health:'sec-flow',cyc:'sec-closed',ontime:'sec-closed',unas:'sec-stag',wait:'sec-stag'};
+const KVD={open:'status',trend:'flow',over:'risk',stale:'stag',health:'flow',cyc:'closed',ontime:'closed',unas:'stag',wait:'stag'};
+let HEROTIP={};
 
 /* ============ state ============ */
 /* language is a VIEWER preference: persisted per device (07.28), never carried in
@@ -895,16 +945,26 @@ function renderHero(m){
   const hEmoji=hCls==='r'?'🔴':hCls==='a'?'🟡':'🟢';
   const hArr=m.hTrend==='up'?' ↗':m.hTrend==='down'?' ↘':m.hTrend==='flat'?' →':'';
   const hTxt=(m.health==='crit'?t.crit:m.health==='warn'?t.warn:t.good)+hArr;
+  const ca2=m.closedA||{},sg2=m.stag||{};
+  const dn=ca2.due?ca2.due.n:0,otPct=dn?Math.round(ca2.due.ok/dn*100):null;
   const CARDS={
     open:{tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
     trend:{tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
     over:{tone:overCls,emoji:'⏰',lbl:t.k_over,def:'over',val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
     stale:{tone:staleCls,emoji:'🕒',lbl:t.k_stale,def:'stale',val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
     health:{tone:hCls,emoji:'🩺',lbl:t.k_health,def:'health',pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
+    /* extended pool (v2.2) — shown only when display.kpis lists them */
+    cyc:{tone:(ca2.p50P>0&&ca2.p50>=ca2.p50P*1.25)?'a':'b',emoji:'⏱',lbl:t.k_cyc,def:'cyc',val:ca2.p50!=null?ca2.p50:'–',unit:ca2.p50!=null?'d':'',mean:t.m_cyc({p:ca2.p50,pp:ca2.p50P,n:ca2.n||0}),chip:''},
+    ontime:{tone:otPct==null?'b':otPct>=70?'g':otPct>=30?'a':'r',emoji:'🎯',lbl:t.k_ontime,val:otPct==null?'–':otPct,unit:otPct==null?'':'%',mean:t.m_ontime({ok:dn?ca2.due.ok:0,n:dn}),chip:otPct==null?'':lvl(otPct>=70?'g':otPct>=30?'a':'r')},
+    unas:{tone:sg2.unas>=30?'r':sg2.unas>=10?'a':'g',emoji:'👤',lbl:t.k_unas,val:sg2.unas||0,unit:'',mean:t.m_unas({n:sg2.unas||0}),chip:''},
+    wait:{tone:(sg2.total&&sg2.wait>sg2.total/2)?'a':'b',emoji:'⏸',lbl:t.k_wait,val:sg2.wait||0,unit:'',mean:t.m_wait({w:sg2.wait||0,t:sg2.total||0}),chip:''},
   };
-  const cards=kpiSel().map(k=>CARDS[k]).filter(Boolean);
+  const cards=kpiSel().map(k=>CARDS[k]?{...CARDS[k],k}:null).filter(Boolean);
+  /* hover tooltip data: the card's meaning line + the target section's verdict */
+  const V=verdicts(m);HEROTIP={};
+  cards.forEach(c=>{HEROTIP[c.k]={mean:c.mean,vd:V[KVD[c.k]]||''};});
   $('#hero').style.display=cards.length?'':'none';
-  $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}"><div class="top-dot dot-${c.tone}"></div>
+  $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}" data-k="${c.k}"><div class="top-dot dot-${c.tone}"></div>
     <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.def?`<span class="defbtn" data-def="${c.def}">i</span>`:''}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
     ${c.pill?`<div class="kpill">${c.pill}</div>`:`<div class="kval mono ${c.tone}">${c.val}${c.unit?`<span class="kunit">${c.unit}</span>`:''}</div>`}
     <div class="kmean">${c.mean}</div></div>`).join('');
@@ -1371,6 +1431,52 @@ function openAbout(){
   };
 }
 $('#aboutov').addEventListener('click',e=>{if(e.target.id==='aboutov')$('#aboutov').hidden=true;});
+/* KPI card interactions (v2.2): click = open + scroll to the mapped section
+   (brief flash); hover (pointer devices only) = preview tooltip with the card's
+   meaning line + the target section's verdict. */
+(function(){
+  const hv=$('#hero');if(!hv)return;
+  hv.addEventListener('click',e=>{
+    if(e.target.closest('.defbtn'))return;
+    const c=e.target.closest('.kcard');if(!c)return;
+    const el=document.getElementById(KMAP[c.dataset.k]||'');if(!el)return;
+    const p=$('#cardtip');if(p)p.remove();
+    el.open=true;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  if(matchMedia('(hover:hover)').matches){
+    hv.addEventListener('mouseover',e=>{
+      const c=e.target.closest('.kcard');if(!c)return;
+      if($('#cardtip')&&$('#cardtip').dataset.k===c.dataset.k)return;
+      const p0=$('#cardtip');if(p0)p0.remove();
+      const info=HEROTIP[c.dataset.k];if(!info)return;
+      const t=T();const d=document.createElement('div');d.id='cardtip';d.dataset.k=c.dataset.k;
+      d.innerHTML=`<div>${info.mean}</div>${info.vd?`<div class="ctvd">${info.vd}</div>`:''}<div class="cthint">→ ${t.card_go}</div>`;
+      document.body.appendChild(d);
+      const r=c.getBoundingClientRect();
+      d.style.top=(scrollY+r.bottom+6)+'px';
+      d.style.left=Math.max(8,Math.min(scrollX+r.left,scrollX+innerWidth-d.offsetWidth-12))+'px';
+    });
+    hv.addEventListener('mouseout',e=>{
+      const c=e.target.closest('.kcard');
+      if(c&&!c.contains(e.relatedTarget)){const p=$('#cardtip');if(p)p.remove();}
+    });
+  }
+})();
+/* wide-screen header (v2.2): move #insight beside the title ≥1100px; narrow
+   screens keep the original DOM position (anchor = #hero, insight goes back
+   right before it). */
+(function(){
+  const mq=matchMedia('(min-width:1100px)');
+  function place(){
+    const ins=$('#insight'),hg=$('#headgrid'),hero=$('#hero');
+    if(!ins||!hg||!hero)return;
+    if(mq.matches){if(ins.parentElement!==hg)hg.appendChild(ins);}
+    else if(ins.parentElement===hg){hero.after(ins);}   /* back to original spot: right after #hero */
+  }
+  mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
+  place();window.addEventListener('load',place);
+})();
 /* ⓘ definition popovers (v2.1) — one at a time, click anywhere else to close.
    The definition text is the "manual", delivered at the point of doubt. */
 document.addEventListener('click',e=>{
