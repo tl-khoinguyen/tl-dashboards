@@ -56,8 +56,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 .projnav button{font:inherit;font-size:15px;font-weight:700;padding:9px 18px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:10px;cursor:pointer;transition:all .12s;}
 .projnav button:hover{border-color:var(--accent);color:var(--text);}
 .projnav button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:var(--shadow);}
-/* about = a deliberately low-key text link in the footer (08.06 — a button in the
-   tab bar collided with the utility cluster and drew too much attention) */
+/* about = a deliberately low-key text line right under the utility cluster
+   (08.06 — operator; a button in the tab bar collided with the cluster, and the
+   footer placement was too buried) */
+.utilabout{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));right:18px;z-index:20;font-size:12.5px;}
+.utilabout:empty{display:none;}
 #lnk-about{cursor:pointer;color:var(--muted);border-bottom:1px dashed var(--border);}
 #lnk-about:hover{color:var(--text);border-bottom-color:var(--muted);}
 /* about modal (v2 08.06) — multi page only */
@@ -193,6 +196,7 @@ tr:last-child td{border-bottom:none;}
    a compact full-width card when stuck */
 @media (max-width:680px){
   .util{position:static;justify-content:flex-end;margin-bottom:6px;}
+  .utilabout{position:static;text-align:right;margin:-2px 0 6px;}
   .controls .cbar{align-items:flex-start;}
   .controls .cgroup{gap:8px;flex-wrap:wrap;min-width:0;}
   .controls.stuck .cbar{width:100%;max-width:100%;border-radius:16px;padding:9px 10px;}
@@ -272,7 +276,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
    stripped; the per-assignee area list prints its FIRST page only (.hid rows
    stay hidden by design — operator decision). Colors kept via print-color-adjust. */
 @media print{
-  .util,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov{display:none!important;}
+  .util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov{display:none!important;}
   body{background:#fff;font-size:13.5px;}
   .wrap{max-width:100%;padding:0;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
@@ -314,6 +318,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     <button class="btn iconbtn" id="btn-push" style="display:none"
       title="毎朝の更新通知 / Update notifications / Thông báo cập nhật"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6.5-2 6.5h16S18 13 18 8"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg></button>
   </div>
+  <div class="utilabout" id="utilabout"></div>
   <div class="projnav" id="projnav"></div>
   <div id="aboutov" hidden><div class="aboutbox" id="aboutbox"></div></div>
   <div class="top">
@@ -384,7 +389,7 @@ const DICT={
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
-   sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",
+   sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
    about_t:"このダッシュボードについて",about_ch:"今回の主な変更",about_copy:"全文コピー",about_copied:"コピーしました",about_close:"閉じる",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"滞留度",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
@@ -420,7 +425,7 @@ const DICT={
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
-   sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",
+   sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
    about_t:"About this dashboard",about_ch:"What's new in this release",about_copy:"Copy text",about_copied:"Copied",about_close:"Close",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Dwell",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
@@ -456,7 +461,7 @@ const DICT={
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
-   sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",
+   sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
    about_t:"Về dashboard này",about_ch:"Thay đổi chính trong bản này",about_copy:"Sao chép toàn bộ",about_copied:"Đã sao chép",about_close:"Đóng",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Độ đọng",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
@@ -714,10 +719,12 @@ function compute(){
   const ageB=[[0,7],[8,30],[31,90],[91,Infinity]].map(([lo,hi])=>({n:cycAges.filter(x=>x>=lo&&x<=hi).length}));
   const withDue=closedR.filter(i=>i.dueDate);
   const onTimeOk=withDue.filter(i=>i.updated&&i.updated<=i.dueDate).length;
-  const MIX={};closedR.forEach(i=>{const k=sub(i);if(k!=='—')MIX[k]=(MIX[k]||0)+1;});
+  // mix keeps EVERY closed ticket — uncategorized ones fold into a grey "—"
+  // bucket so the shares are of all closed, never of the categorized few
+  const MIX={};closedR.forEach(i=>{const k=sub(i);MIX[k==='—'?'_none':k]=(MIX[k==='—'?'_none':k]||0)+1;});
   const closedA={n:closedR.length,p50:median(cycAges),p85:pctl(cycAges,0.85),p50P:cycAgesP.length?median(cycAgesP):null,
     cats:closedCats,ageB,due:{n:withDue.length,ok:onTimeOk},
-    mix:Object.entries(MIX).map(([n,v])=>({name:n,n:v})).sort((a,b)=>b.n-a.n)};
+    mix:Object.entries(MIX).map(([n,v])=>({name:n,n:v})).sort((a,b)=>(a.name==='_none')-(b.name==='_none')||b.n-a.n)};
   return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA};
 }
 
@@ -911,9 +918,9 @@ function renderSections(m){
       ${ca.ageB.map((x,i)=>`<div class="bar" style="margin-bottom:8px"><span style="width:96px;font-size:14.4px;color:var(--muted)">${ageLbl[i]}</span><span class="tk"><i style="width:${x.n/amax*100}%;background:var(--st-closed)"></i></span><span class="mono" style="width:86px;text-align:right;color:var(--muted)">${x.n} · ${Math.round(x.n/(ca.n||1)*100)}%</span></div>`).join('')}
       ${ca.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_bycat}</div>
       ${ca.cats.map(c=>`<div class="bar" style="margin-bottom:8px"><span style="width:130px;font-size:14.4px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span><span class="tk"><i style="width:${c.p50/cmax*100}%;background:var(--a2)"></i></span><span class="mono" style="width:110px;text-align:right;color:var(--muted)">${c.p50}d · ${c.n}${t.cl_items}</span></div>`).join('')}`:''}
-      ${mmix.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_mix}</div>
-      <div class="sbar" style="width:100%;height:16px;border-radius:8px">${mmix.map((x,i)=>`<i style="width:${x.n/mtot*100}%;background:var(--a${(i%5)+1})" title="${x.name} ${x.n}"></i>`).join('')}</div>
-      <div class="legend" style="margin-top:10px">${mmix.map((x,i)=>`<span><i style="background:var(--a${(i%5)+1})"></i>${x.name} · <b class="mono">${x.n}</b> (${Math.round(x.n/mtot*100)}%)</span>`).join('')}</div>`:''}
+      ${mmix.length&&mmix.some(x=>x.name!=='_none')?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_mix}</div>
+      <div class="sbar" style="width:100%;height:16px;border-radius:8px">${mmix.map((x,i)=>`<i style="width:${x.n/mtot*100}%;background:${x.name==='_none'?'var(--faint)':`var(--a${(i%5)+1})`}" title="${x.name==='_none'?t.cl_other:x.name} ${x.n}"></i>`).join('')}</div>
+      <div class="legend" style="margin-top:10px">${mmix.map((x,i)=>`<span><i style="background:${x.name==='_none'?'var(--faint)':`var(--a${(i%5)+1})`}"></i>${x.name==='_none'?t.cl_other:x.name} · <b class="mono">${x.n}</b> (${Math.round(x.n/mtot*100)}%)</span>`).join('')}</div>`:''}
       <div class="note" style="margin-top:10px">${t.cl_note}</div>
       </div></details>`;
   }
@@ -1076,11 +1083,10 @@ function renderAll(){
       :nm;
   }
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
-  /* multi page only: quiet about/changelog link at the end of the footer line */
-  const _ab=(PROJECTS&&PROJECTS.length>1)?` · <span id="lnk-about">ⓘ ${t.about_t}</span>`:'';
-  $('#f-left').innerHTML=t.foot_l.replace(/</g,'&lt;')+_ab;
+  /* multi page only: quiet about/changelog line right under the utility cluster */
+  $('#utilabout').innerHTML=(PROJECTS&&PROJECTS.length>1)?`<span id="lnk-about">ⓘ ${t.about_t}</span>`:'';
   const _al=$('#lnk-about');if(_al)_al.onclick=openAbout;
-  $('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
+  $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
   applyPendingSec();
 }
@@ -1222,7 +1228,7 @@ function exportHTML(){
   expRestore();
   /* static snapshot: strip scripts + interactive chrome; <details> keep working
      natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
-  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov').forEach(e=>e.remove());
+  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov').forEach(e=>e.remove());
   const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
   const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · TLダッシュボード · ${META.today}`;
   const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});
