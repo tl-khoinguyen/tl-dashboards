@@ -424,7 +424,7 @@ const DICT={
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
    sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
-   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_copied:"コピーしました",about_taphint:"本文をタップするとコピーできます",
+   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_copied:"コピーしました",
    ai_pw:"AI分析",
    sec_stag:"滞留の内訳",stg_note:"Backlogに原因の記録は無いため、これは「どこで止まっているか」の分解です（停滞=30日以上更新なし・件数ベース）",
    stg_wait:"確認・保留など待ち状態",stg_work:"作業中のまま",stg_open:"未着手のまま",stg_unas:"担当者未設定",stg_c1:"31〜90日",stg_c2:"91日〜1年",stg_c3:"1年超",stg_total:"合計",
@@ -481,7 +481,7 @@ const DICT={
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
    sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
-   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_copied:"Copied",about_taphint:"Tap the text to copy it",
+   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_copied:"Copied",
    ai_pw:"AI analysis",
    sec_stag:"Stagnation breakdown",stg_note:"Backlog records no cause, so this decomposes WHERE items are stuck (stale = no update for 30+ days; ticket counts)",
    stg_wait:"Waiting states (review/hold)",stg_work:"In progress",stg_open:"Not started",stg_unas:"No assignee",stg_c1:"31–90d",stg_c2:"91d–1y",stg_c3:">1 year",stg_total:"Total",
@@ -538,7 +538,7 @@ const DICT={
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
    sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
-   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_copied:"Đã sao chép",about_taphint:"Chạm vào phần chữ để sao chép",
+   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_copied:"Đã sao chép",
    ai_pw:"Phân tích AI",
    sec_stag:"Phân rã tồn đọng",stg_note:"Backlog không ghi nguyên nhân, nên đây là phân rã \"đang kẹt ở đâu\" (tồn đọng = không cập nhật 30+ ngày; đếm ticket)",
    stg_wait:"Trạng thái chờ (review/treo)",stg_work:"Đang xử lý",stg_open:"Chưa bắt đầu",stg_unas:"Chưa có người nhận",stg_c1:"31–90 ngày",stg_c2:"91 ngày–1 năm",stg_c3:">1 năm",stg_total:"Tổng",
@@ -1428,7 +1428,7 @@ function openAbout(){
   $('#aboutbox').innerHTML=`<button class="aboutx" id="about-x" type="button" aria-label="close">×</button><h2>${t.about_h}</h2>
     <div id="about-txt">${v.premise.map(p=>`<p>${p}</p>`).join('')}
     <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul></div>
-    <div class="note" style="margin-top:8px">⧉ ${t.about_taphint}</div>`;
+`;
   $('#aboutov').hidden=false;
   $('#about-x').onclick=()=>{$('#aboutov').hidden=true;};
   $('#about-txt').onclick=()=>{
