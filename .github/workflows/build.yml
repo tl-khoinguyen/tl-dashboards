@@ -1,15 +1,19 @@
 # -> goes to .github/workflows/build.yml in the public repo
 name: build
 on:
-  schedule:
-    # Twice daily, targets ~05:30 and ~13:00 VN (operator 07.30). GitHub cron
-    # has NO exact-time SLA — runs start 15-60+ min late, so schedule a bit
-    # early on odd minutes; treat the target times as approximate.
-    # NOTE: overloaded slots get DROPPED entirely, not just delayed — the 05:43
-    # UTC slot (near the 06:00 UTC global peak) never fired on 07-31. Keep both
-    # entries on odd minutes in quiet windows.
-    - cron: "13 22 * * *"   # ~05:30 VN morning edition (yesterday's full picture)
-    - cron: "17 5 * * *"    # ~12:30 VN midday edition (this morning's movement)
+  # GitHub's own cron is retired (08.07) — measured over 15 runs it started
+  # 60 min (morning) to 150 min (midday) late, and dropped a slot entirely
+  # twice (07-31, 08-07: no build at all, so no push and no history row). The
+  # schedule now lives in the Cloudflare push worker's Cron Trigger, which
+  # calls this workflow through workflow_dispatch with notify=true at 05:30 /
+  # 13:00 VN (engine/worker.js + cfops.py CRON). Keeping the entries below as
+  # a backup does not work: a late GitHub run no longer overlaps the CF-driven
+  # one, so the pages concurrency group cannot cancel it and the device gets a
+  # second push. If the PAT expires (2026-11-09) or CF fails, dispatch by hand
+  # (`python ghops.py dispatch '{"notify": true}'`) or re-enable these:
+  #   schedule:
+  #     - cron: "13 22 * * *"   # ~05:30 VN
+  #     - cron: "17 5 * * *"    # ~12:30 VN
   workflow_dispatch:
     inputs:
       notify:
