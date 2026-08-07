@@ -83,8 +83,16 @@ SPACE = D.get("space", CFG.get("space", ""))
 # from Secrets), never from config. Embedded ONLY in encrypted payloads: the
 # verifier is what stops strangers from spamming subscriptions, so it must stay
 # behind the passphrase. Missing env → push UI simply absent.
+# Preview builds carry NO push config (08.07): /next/ has its own service-worker
+# scope, so a device opted in on production silently gains a SECOND subscription
+# the moment it opens the preview (the self-heal re-subscribes on any page whose
+# localStorage flag is set — same origin, different scope). That is how one phone
+# got two pings at 14:54 on 08.06 (registry went 1 → 3 subs in a day). Push is a
+# production-only feature; the preview simply hides the bell.
 PUSH = None
-if all(os.environ.get(k) for k in ("PUSH_VERIFIER", "PUSH_WORKER_URL", "VAPID_PUBLIC")):
+if a.variant:
+    pass
+elif all(os.environ.get(k) for k in ("PUSH_VERIFIER", "PUSH_WORKER_URL", "VAPID_PUBLIC")):
     PUSH = {"v": os.environ["PUSH_VERIFIER"].strip(),
             "url": os.environ["PUSH_WORKER_URL"].strip().rstrip("/"),
             "pub": os.environ["VAPID_PUBLIC"].strip()}

@@ -1371,6 +1371,17 @@ function u8(b64){const s=atob(b64.replace(/-/g,'+').replace(/_/g,'/'));const a=n
    passphrase key that already lives there. Cleared on manual unsubscribe. */
 function pushCfgSave(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').put({url:PUSH.url,v:PUSH.v,pub:PUSH.pub},'push');}catch(_){}};}catch(_){}}
 function pushCfgClear(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').delete('push');}catch(_){}};}catch(_){}}
+/* register a subscription, retiring the previous one (08.07): the registry keys
+   by endpoint, so a re-subscribe with a rotated endpoint leaves the old record
+   behind and the device gets the same ping twice. Remember what we last handed
+   over and delete it whenever a different endpoint replaces it. */
+function pushPut(sub){
+  const prev=localStorage.getItem('tl_dash_ep');
+  if(prev&&prev!==sub.endpoint)_to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
+    body:JSON.stringify({v:PUSH.v,endpoint:prev})}),8000).catch(()=>{});
+  return _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000).then(r=>{if(r.ok)localStorage.setItem('tl_dash_ep',sub.endpoint);return r;});
+}
 async function initPush(){
   if(!PUSH||!('serviceWorker' in navigator)||!('PushManager' in window)||typeof Notification==='undefined')return;
   if(!location.protocol.startsWith('http')||Notification.permission==='denied')return;
@@ -1387,9 +1398,7 @@ async function initPush(){
     if(sub&&!localStorage.getItem('tl_dash_push'))localStorage.setItem('tl_dash_push','1');
     if(localStorage.getItem('tl_dash_push')==='1'&&Notification.permission==='granted'){
       if(!sub){try{sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);}catch(_){}}
-      if(sub){pushCfgSave();
-        _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
-          body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000).catch(()=>{});}
+      if(sub){pushCfgSave();pushPut(sub).catch(()=>{});}
     }
     b.classList.toggle('on',!!sub);}catch(_){}
 }
@@ -1407,12 +1416,11 @@ $('#btn-push').addEventListener('click',async()=>{
     if(cur){
       await _to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
         body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}),8000).catch(()=>{});
-      await cur.unsubscribe();b.classList.remove('on');localStorage.removeItem('tl_dash_push');pushCfgClear();toast(t.push_off);return;
+      await cur.unsubscribe();b.classList.remove('on');localStorage.removeItem('tl_dash_push');localStorage.removeItem('tl_dash_ep');pushCfgClear();toast(t.push_off);return;
     }
     if(await Notification.requestPermission()!=='granted'){toast(t.push_denied);return;}
     const sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);
-    const r=await _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000);
+    const r=await pushPut(sub);
     if(r.ok){b.classList.add('on');localStorage.setItem('tl_dash_push','1');pushCfgSave();toast(t.push_on);}
     else{await sub.unsubscribe();toast(t.push_err);}
   }catch(_){toast(T().push_err);}

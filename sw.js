@@ -26,6 +26,10 @@ self.addEventListener('push', e => {
   e.waitUntil(self.registration.showNotification(d.title || 'TLダッシュボード', {
     body: d.body || 'ダッシュボード更新 / Dashboard updated',
     icon: 'icon-192.png', badge: 'badge-96.png',  // badge MUST be monochrome — else Android falls back to the Chrome logo
+    // tag (08.07): collapse duplicates — one device can end up holding more than
+    // one live subscription (scope split, endpoint rotation), and without a tag
+    // each delivery stacks as its own notification. renotify keeps the alert.
+    tag: 'tlk-update', renotify: true,
     data: { url: d.url || self.registration.scope },
   }));
 });
@@ -53,6 +57,11 @@ self.addEventListener('pushsubscriptionchange', e => {
     try {
       const sub = e.newSubscription || await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(cfg.pub) });
       await fetch(cfg.url + '/sub', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: cfg.v, sub: sub.toJSON() }) });
+      // drop the rotated-away record (08.07) — the registry keys by endpoint, so
+      // without this the old one lingers until the push service finally 410s it
+      // and the device receives the same ping twice.
+      const old = e.oldSubscription && e.oldSubscription.endpoint;
+      if (old) await fetch(cfg.url + '/sub', { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ v: cfg.v, endpoint: old }) });
     } catch (_) {}
   })());
 });
