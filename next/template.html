@@ -105,6 +105,16 @@ details.sec.flash{box-shadow:0 0 0 3px var(--accent-soft);transition:box-shadow 
   .h1row .controls{border-top:none;padding:0;margin-left:auto;position:static;}
   .h1row .controls .ctl>label{display:none;}
   .controls.stuck{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;}
+  /* v2.2 rev3 (08.14 — operator spotted the collision): on a STANDALONE page the
+     tab row is absent, so the title row rides up into the exact band the absolute
+     utility cluster owns (top-right) and the filter bar's last button sat under
+     the lang/theme/install buttons. Wide + no tabs => the cluster joins the row as
+     a flex item and flex keeps them apart. /all is untouched: there the tab row
+     holds that band, so the cluster stays in its corner (JS decides, see place()). */
+  .h1row .util{position:static;margin-left:10px;}
+  /* stuck = the filter bar goes position:fixed and leaves the row; without this
+     the cluster would slide back next to the title */
+  .h1row .controls.stuck~.util{margin-left:auto;}
 }
 .top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .controls{padding-top:12px;border-top:1px solid var(--border);}
@@ -1298,7 +1308,7 @@ function loadProject(i){
   /* bucket colors = the project's real Backlog status colors (API); fallback = Backlog standard palette */
   const cols=p.colors||{}; for(const k in CVAR) document.documentElement.style.setProperty(CVAR[k],cols[k]||'');
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
-  renderProjNav(); renderAll();
+  renderProjNav(); if(PLACE)PLACE(); renderAll();
   /* URL hash mirrors the active project tab (07.28); keep a section part if it
      belongs to this project's current hash (deep link), else reset to the slug */
   if(PROJECTS.length>1&&p.slug&&location.hash.slice(1).split('/')[0]!==p.slug)
@@ -1482,20 +1492,32 @@ $('#aboutov').addEventListener('click',e=>{if(e.target.id==='aboutov')$('#abouto
 /* filter bar placement (v2.2 rev2): ≥1280px the controls join the title row
    (right of the export button); narrower puts them back in their own band.
    The stuck sentinel stays at the ORIGINAL flow position either way. */
+var PLACE=null;   /* set by the IIFE below; loadProject() re-runs it once tabs exist */
 (function(){
   const mq=matchMedia('(min-width:1280px)');
-  let anchor=null;
+  let anchor=null,uanchor=null;
   function place(){
     const c=$('#controls'),row=document.querySelector('.h1row');
     if(!c||!row)return;
     if(!anchor){anchor=document.createElement('div');anchor.style.display='none';c.parentNode.insertBefore(anchor,c);}
     if(mq.matches){if(c.parentElement!==row)row.appendChild(c);}
     else if(c.parentElement===row){anchor.after(c);}
+    /* rev3 (08.14): the utility cluster follows the filter bar into the title row
+       — but ONLY on a standalone page. On /all the project tabs occupy that top
+       band, the cluster does not collide with anything, and moving it would strand
+       the About link that sits right under it. Tabs exist only after a project
+       loads, so loadProject() re-runs this. */
+    const u=$('#util'); if(!u)return;
+    if(!uanchor){uanchor=document.createElement('div');uanchor.style.display='none';u.parentNode.insertBefore(uanchor,u);}
+    const solo=!document.querySelector('.projnav button');
+    if(mq.matches&&solo){if(u.parentElement!==row)row.appendChild(u);}
+    else if(u.parentElement===row){uanchor.after(u);}
   }
   mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
   /* deferred: the sticky sentinel (created later in this script) must be
      inserted at the controls' ORIGINAL flow position before we move them */
   setTimeout(place,0);
+  PLACE=place;
 })();
 /* ⓘ definition popovers (v2.1) — one at a time, click anywhere else to close.
    The definition text is the "manual", delivered at the point of doubt. */
