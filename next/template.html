@@ -255,6 +255,20 @@ tr:last-child td{border-bottom:none;}
 .stalebar a{color:inherit;font-weight:700;text-decoration:underline;}
 .foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
 .note{font-size:13.2px;color:var(--faint);margin-top:8px;}
+/* 参考 / 見方 / 基準 (08.18 — adopted from the JP monthly IT report):
+   (a) a section whose numbers approximate effort from ticket counts says so on
+   its COLLAPSED header, because every section starts closed and a caveat in the
+   body is read only by someone already inside it;
+   (b) .howto sits ABOVE the box it explains — a legend under a chart arrives
+   after the misreading;
+   (c) .basisbox is the printed "what this document is" block: on screen the
+   basis lives behind the ⓘ next to the subtitle, but an exported PDF/HTML
+   travels without its ⓘ, so the same text is printed at the foot. */
+details.sec>summary .cnt.rfchip{background:transparent;color:var(--faint);border:1px dashed var(--border);font-weight:600;cursor:help;}
+.howto{font-size:13.4px;color:var(--muted);line-height:1.62;margin:0 0 13px;padding:9px 12px;background:var(--panel2);border-radius:9px;}
+.howto b{color:var(--text);font-weight:700;margin-right:7px;}
+.basisbox{display:none;margin-top:22px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);line-height:1.66;}
+.basisbox b{display:block;font-size:13.2px;color:var(--muted);margin-bottom:5px;}
 .ailist{margin:4px 0 8px;padding-left:20px;}
 .ailist li{margin:7px 0;line-height:1.68;font-size:14.6px;}
 /* period vs snapshot signalling (07.28) */
@@ -317,6 +331,7 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
    stay hidden by design — operator decision). Colors kept via print-color-adjust. */
 @media print{
   .util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov,.defbtn,#defpop{display:none!important;}
+  .basisbox{display:block!important;}
   body{background:#fff;font-size:13.5px;}
   .wrap{max-width:100%;padding:0;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
@@ -401,6 +416,8 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   <div id="pushtoast" role="status"></div>
   <button id="totop" title="top" aria-label="back to top">↑</button>
 
+  <div class="basisbox" id="basisbox"></div>
+
   <div class="foot">
     <span id="f-left"></span>
     <span id="f-right"></span>
@@ -451,6 +468,13 @@ const DICT={
    def_over:"期限超過 = 期限日を過ぎたオープンチケットの、全オープンに対する割合",
    def_stale:"停滞 = 30日以上更新のないオープンチケットの、全オープンに対する割合",
    def_cyc:"処理日数 = 作成日から最終更新日（完了日の近似）までの日数。チケット件数ベースで、工数ではありません",
+   def_basis:(w,d)=>`対象＝このBacklogプロジェクトのチケット。未完了は全件、完了は直近${w}日以内に更新されたもののみ（それ以前の完了は含まれません）。数値はすべてチケット件数で、工数（時間）やコストではありません。完了日は最終更新日による近似。上部のスコープ・期間フィルターが効くのは「期間」チップの付いたセクションだけで、「現時点」チップのセクションは常に全体を表します。抽出時点＝${d}。`,
+   basis_t:"集計範囲・算出について",howto:"見方",
+   ref_chip:"参考",ref_why:"参考値 — チケット件数ベースの近似であり、工数（時間）の実績ではありません",
+   due_cov:(w,o,p)=>`期限が設定されているのはオープン${o}件中${w}件（${p}%）。期限のないチケットは超過に数えられないため、超過率は実態より低めに出ます。`,
+   m_over_cov:p=>`期限設定は${p}%`,
+   hm_stag:"縦＝止まっている状態（待ち／作業中／未着手）、横＝最終更新からの経過。数字はチケット件数で、クリックすると該当チケットが開きます。",
+   hm_flow:"棒＝新規（灰）と完了（緑）の件数、破線＝その時点の停滞率。完了の棒が新規を上回る日が続けばバックログは減ります。",
    k_cyc:"処理日数(中央値)",m_cyc:s=>s.n?`直近の完了${s.n}件の中央値${s.pp?`（前期 ${s.pp}日）`:''}`:'期間内の完了なし',
    k_ontime:"期限内完了",m_ontime:s=>s.n?`期限つき完了${s.n}件中 ${s.ok}件が期限内`:'期限つきの完了なし',
    k_unas:"担当者未設定",m_unas:s=>`オープンのうち担当者未設定が${s.n}件`,
@@ -508,6 +532,13 @@ const DICT={
    def_over:"Overdue = open tickets past their due date, as a share of all open",
    def_stale:"Stale = open tickets untouched for 30+ days, as a share of all open",
    def_cyc:"Cycle time = days from creation to last update (approximation of close date). Ticket counts, not hours",
+   def_basis:(w,d)=>`Scope = tickets in this Backlog project. All open tickets; closed tickets only where updated within the last ${w} days (earlier completions are not included). Every number is a ticket count — never hours or cost. Close date is approximated by the last update. The scope/period filters at the top act only on sections carrying the period chip; sections marked "now" always show the whole picture. Data as of ${d}.`,
+   basis_t:"Basis & method",howto:"How to read",
+   ref_chip:"reference",ref_why:"Reference only — approximated from ticket counts, not recorded effort (hours)",
+   due_cov:(w,o,p)=>`${w} of ${o} open tickets carry a due date (${p}%). A ticket without one can never count as overdue, so the overdue rate reads lower than reality.`,
+   m_over_cov:p=>`due dates set on ${p}%`,
+   hm_stag:"Rows = the state it is stuck in (waiting / in progress / untouched), columns = time since the last update. Numbers are ticket counts; click one to list those tickets.",
+   hm_flow:"Bars = created (grey) vs closed (green); the dashed line = stale share at that point. The backlog shrinks only while green stays above grey.",
    k_cyc:"Cycle time (median)",m_cyc:s=>s.n?`Median of ${s.n} recent completions${s.pp?` (prev ${s.pp}d)`:''}`:'No completions in period',
    k_ontime:"Closed on time",m_ontime:s=>s.n?`${s.ok} of ${s.n} due-dated completions on time`:'No due-dated completions',
    k_unas:"No assignee",m_unas:s=>`${s.n} open tickets without an assignee`,
@@ -565,6 +596,13 @@ const DICT={
    def_over:"Quá hạn = ticket mở đã quá ngày hạn, tính trên tổng số đang mở",
    def_stale:"Tồn đọng = ticket mở không được cập nhật 30+ ngày, tính trên tổng số đang mở",
    def_cyc:"Ngày xử lý = số ngày từ lúc tạo đến lần cập nhật cuối (xấp xỉ ngày đóng). Đếm ticket, không phải giờ công",
+   def_basis:(w,d)=>`Phạm vi = ticket của project Backlog này. Lấy toàn bộ ticket đang mở; ticket đã đóng chỉ lấy phần được cập nhật trong ${w} ngày gần nhất (các ticket đóng trước đó không có trong số liệu). Mọi con số đều là số ticket — không phải giờ công hay chi phí. Ngày đóng là xấp xỉ theo lần cập nhật cuối. Bộ lọc phạm vi/kỳ ở đầu trang chỉ tác động lên các mục có chip kỳ; mục gắn chip "hiện tại" luôn hiển thị toàn bộ. Dữ liệu tính đến ${d}.`,
+   basis_t:"Phạm vi tổng hợp & cách tính",howto:"Cách đọc",
+   ref_chip:"tham khảo",ref_why:"Chỉ để tham khảo — ước lượng theo số ticket, không phải giờ công thực tế",
+   due_cov:(w,o,p)=>`Chỉ ${w}/${o} ticket đang mở có ngày hạn (${p}%). Ticket không có hạn thì không bao giờ bị tính quá hạn, nên tỉ lệ quá hạn thấp hơn thực tế.`,
+   m_over_cov:p=>`${p}% có ngày hạn`,
+   hm_stag:"Hàng = trạng thái đang mắc (chờ / đang làm / chưa động), cột = thời gian từ lần cập nhật cuối. Số là số ticket; bấm vào để xem danh sách.",
+   hm_flow:"Cột = số tạo mới (xám) và số đóng (xanh); đường đứt nét = tỉ lệ đình trệ tại thời điểm đó. Backlog chỉ giảm khi cột xanh liên tục cao hơn cột xám.",
    k_cyc:"Ngày xử lý (trung vị)",m_cyc:s=>s.n?`Trung vị của ${s.n} ticket đóng gần đây${s.pp?` (kỳ trước ${s.pp}d)`:''}`:'Không có ticket đóng trong kỳ',
    k_ontime:"Đóng đúng hạn",m_ontime:s=>s.n?`${s.ok}/${s.n} ticket có hạn đóng đúng hạn`:'Không có ticket đóng kèm hạn',
    k_unas:"Chưa có người nhận",m_unas:s=>`${s.n} ticket mở chưa có người nhận`,
@@ -606,7 +644,11 @@ const VERINFO={ver:'v2 preview',
   "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行に移動 — 冒頭の一画面で全体が掴めます",
   "プロジェクトの状況に応じてKPIカードを追加できるようにしました（例：期限内完了・待ち状態の滞留）",
   "プロジェクトごとに表示内容を調整できる仕組みを導入（プロジェクトの特性に合わない指標は表示されないことがあります）",
-  "この「このダッシュボードについて」画面を追加"]},
+  "この「このダッシュボードについて」画面を追加",
+  "「参考」バッジを追加 — チケット件数から推計しているセクションを、畳んだ状態の見出しでも分かるようにしました",
+  "図表の上に「見方」の一文を追加 — 滞留の内訳とフロー＆トレンドで、縦・横・棒が何を表すかをその場で確認できます",
+  "見出し横のⓘに集計基準を追加 — 対象範囲、完了チケットをどこまで遡って集めているか、数値がチケット件数であることを明記。PDF／HTML出力にも同じ説明が末尾に印字されます",
+  "期限超過のセクションに、期限が設定されているチケットの割合を表示 — 期限のないチケットは超過に数えられないため、割合の読み違いを防ぎます"]},
  en:{premise:[
   "This dashboard is an internal tool for keeping track of project status.",
   "Previously, status sharing relied on checking individual tickets or on documents prepared by hand for each occasion — which took time to produce, was often already outdated when shared, and gave each reader a different slice of the picture.",
@@ -622,7 +664,11 @@ const VERINFO={ver:'v2 preview',
   "On wide screens KPI cards and the summary sit side by side, with filters moved up to the title row — the first screen tells the whole story",
   "KPI cards can now be added per project (e.g. on-time completion, waiting-state stalls)",
   "Introduced per-project display tuning (metrics that do not fit a project's nature may be hidden)",
-  "Added this About screen"]},
+  "Added this About screen",
+  "Added a \"reference\" badge — sections whose numbers are estimated from ticket counts now say so on the heading, even while collapsed",
+  "Added a \"How to read\" line above the charts in Stagnation breakdown and Flow & trend, stating what the rows, columns and bars mean",
+  "The ⓘ beside the subtitle now states the aggregation basis — what is covered, how far back closed tickets are collected, and that every figure is a ticket count; the same note is printed at the end of PDF/HTML exports",
+  "The overdue section now shows how many open tickets actually carry a due date, so the overdue share is not misread"]},
  vi:{premise:[
   "Dashboard này là công cụ nội bộ để theo dõi tình hình các dự án.",
   "Trước đây, việc chia sẻ tình hình dựa vào xem từng ticket hoặc các tài liệu soạn thủ công theo từng dịp — tốn công soạn, thông tin thường đã cũ ngay khi chia sẻ, và mỗi người xem một lát cắt khác nhau.",
@@ -638,7 +684,11 @@ const VERINFO={ver:'v2 preview',
   "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề — một màn hình đầu nắm trọn toàn cảnh",
   "Có thể bổ sung thẻ KPI theo từng dự án (vd. đóng đúng hạn, tồn đọng dạng chờ)",
   "Thêm cơ chế điều chỉnh nội dung hiển thị theo từng dự án (chỉ số không phù hợp với đặc thù dự án có thể được ẩn)",
-  "Thêm màn hình giới thiệu này"]}};
+  "Thêm màn hình giới thiệu này",
+  "Thêm nhãn \"tham khảo\" — các mục có số liệu ước lượng từ số ticket được ghi rõ ngay ở tiêu đề, kể cả khi đang thu gọn",
+  "Thêm dòng \"Cách đọc\" phía trên biểu đồ ở mục Phân rã tồn đọng và Dòng chảy & xu hướng, nói rõ hàng, cột và các cột biểu đồ thể hiện điều gì",
+  "Dấu ⓘ cạnh dòng phụ đề nay nêu cơ sở tổng hợp — phạm vi lấy dữ liệu, lấy ticket đã đóng đến đâu, và việc mọi con số đều là số ticket; cùng nội dung đó được in ở cuối bản xuất PDF/HTML",
+  "Mục ticket quá hạn hiển thị bao nhiêu ticket đang mở thực sự có ngày hạn, tránh đọc sai tỉ lệ quá hạn"]}};
 
 /* ============ CONFIG — tunable thresholds & indicators (single place) ============ */
 const BASECFG={
@@ -663,6 +713,11 @@ function mergeCFG(o){
    the summary slot), summary, area, move, closed, stag, flow, mem, cat, risk,
    status. KPI ids: open, trend, over, stale, health. */
 const showSec=id=>{const s=(PCFG.display||{}).sections;return !s||s[id]!==false;};
+/* 参考 sections (08.18): numbers that approximate EFFORT from ticket counts.
+   Per-project override via display.reference; the default covers the two
+   workload views, which is exactly where a reader assumes hours. */
+const REF_DEF=['area','mem'];
+const isRef=id=>{const r=(PCFG.display||{}).reference;return (Array.isArray(r)?r:REF_DEF).includes(id);};
 /* KPI cards: CORE = the default five; the extended pool (v2.2) is opt-in per
    project via display.kpis — "wide shows more" only when the project has more
    to say, never unconditionally. */
@@ -744,6 +799,10 @@ function compute(){
   const perDay=closedR.length/RANGE;
   const forecast=(perDay>0&&net<0)?(()=>{const d=new Date(TODAY);d.setUTCDate(d.getUTCDate()+Math.round(open.length/perDay));return fmtDate(d);})():null;
   const overduePct=open.length?Math.round(overdue.length/open.length*100):0;
+  /* denominator disclosure (08.18): a ticket with no due date can never be
+     overdue, so overduePct silently understates wherever due dates are thin */
+  const openWithDue=open.filter(i=>i.dueDate).length;
+  const dueCovPct=open.length?Math.round(openWithDue/open.length*100):0;
   const stalePct=open.length?Math.round(stale.length/open.length*100):0;
   const medAge=median(open.map(age).filter(x=>x!=null));
   // planned intake (V1 07.31 — stakeholder feedback): categories declared in
@@ -878,7 +937,7 @@ function compute(){
     rows:['wait','work','open'].map(g=>({g,cells:SGR[g].map(a=>({n:a.length,
       top:[...a].sort((x,z)=>idleD(z)-idleD(x)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i),st:(SFULL.find(s=>s.id===i.stId)||{}).name||bkt(i)}))}))})),
     unasTop:[...unasL].sort((a,b)=>idleD(b)-idleD(a)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i)}))};
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,openWithDue,dueCovPct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag};
 }
 
 /* ============ verdict engine (v2.1 08.06 — PM feedback ①) ============
@@ -966,7 +1025,8 @@ function renderHero(m){
   const CARDS={
     open:{tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
     trend:{tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
-    over:{tone:overCls,emoji:'⏰',lbl:t.k_over,def:'over',val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
+    over:{tone:overCls,emoji:'⏰',lbl:t.k_over,def:'over',val:m.overduePct,unit:'%',
+      mean:t.m_over(s)+(m.dueCovPct<60?` · ${t.m_over_cov(m.dueCovPct)}`:''),chip:lvl(overCls)},
     stale:{tone:staleCls,emoji:'🕒',lbl:t.k_stale,def:'stale',val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
     health:{tone:hCls,emoji:'🩺',lbl:t.k_health,def:'health',pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
     /* extended pool (v2.2) — shown only when display.kpis lists them */
@@ -1065,6 +1125,9 @@ function renderSections(m){
      grey 現時点 chip — so the reader always knows which knob moves which box */
   const RCHIP=`<span class="cnt rchip">${t['r'+RANGE]||RANGE+'d'}</span>`;
   const NCHIP=`<span class="cnt nchip">${t.now_}</span>`;
+  /* 参考 badge on the collapsed header + 見方 line above the box (08.18) */
+  const RF=id=>isRef(id)?`<span class="cnt rfchip" title="${t.ref_why}">${t.ref_chip}</span>`:'';
+  const HOW=k=>`<div class="howto"><b>${t.howto}</b>${t[k]}</div>`;
   /* (the separate AI-insight box is gone — v2.1 merges AI content into the
      summary slot and per-section verdict lines) */
   /* areas — RANGE-scoped section.
@@ -1082,7 +1145,7 @@ function renderSections(m){
         return `<div class="arow${x.hid?' hid':''}" style="margin-bottom:${big?6:11}px"><div style="display:flex;justify-content:space-between;font-size:${big?15.5:14.9}px;margin-bottom:4px"><span style="font-weight:${big?800:600}">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
         <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div></div>`;};
     const STEP=10, mem=m.areas.members;
-    SEC.area=`<details class="sec" id="sec-area"><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span>${VL('area')}</summary>
+    SEC.area=`<details class="sec" id="sec-area"><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${RF('area')}${SH('sec-area')}<span class="chev">▶</span>${VL('area')}</summary>
       <div class="secbody">
       ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by},true)}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
@@ -1097,7 +1160,7 @@ function renderSections(m){
   const mv=m.move;
   if(mv&&(m.createdR.length||m.closedR.length)&&showSec('move')){
     const mmax=Math.max(1,...mv.cats.map(c=>Math.max(c.cr,c.cl)));
-    SEC.move=`<details class="sec" id="sec-move"><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${SH('sec-move')}<span class="chev">▶</span>${VL('move')}</summary>
+    SEC.move=`<details class="sec" id="sec-move"><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${RF('move')}${SH('sec-move')}<span class="chev">▶</span>${VL('move')}</summary>
       <div class="secbody">
       <div class="mvstats">
         <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${t.mv_prev(mv.crP)}</span></div>
@@ -1124,7 +1187,7 @@ function renderSections(m){
     const amax=Math.max(1,...ca.ageB.map(x=>x.n));
     const cmax=Math.max(1,...ca.cats.map(x=>x.p50),1);
     const mmix=ca.mix.slice(0,8);const mtot=ca.mix.reduce((s,x)=>s+x.n,0)||1;
-    SEC.closed=`<details class="sec" id="sec-closed"><summary><span class="si">✅</span>${t.sec_closed}${RCHIP}<span class="cnt">${ca.n}</span>${SH('sec-closed')}<span class="chev">▶</span>${VL('closed')}</summary>
+    SEC.closed=`<details class="sec" id="sec-closed"><summary><span class="si">✅</span>${t.sec_closed}${RCHIP}<span class="cnt">${ca.n}</span>${RF('closed')}${SH('sec-closed')}<span class="chev">▶</span>${VL('closed')}</summary>
       <div class="secbody">
       <div class="mvstats">
         <div class="mvstat"><span class="mvl">${t.cl_p50}<span class="defbtn" data-def="cyc">i</span></span><span class="mvv mono">${ca.p50!=null?ca.p50+'d':'·'}</span><span class="mvp mono">${ca.p50P!=null?t.mv_prev(ca.p50P+'d'):''}</span></div>
@@ -1144,8 +1207,8 @@ function renderSections(m){
   /* flow — buckets follow the range since 07.28 (7d/30d daily, 90d weekly) */
   if(showSec('flow')){
   const tblB=RANGE===30?m.wd.slice(-14):m.wd;
-  SEC.flow=`<details class="sec" id="sec-flow"><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${SH('sec-flow')}<span class="chev">▶</span>${VL('flow')}</summary>
-    <div class="secbody">${trendSVG(m.wd)}
+  SEC.flow=`<details class="sec" id="sec-flow"><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${RF('flow')}${SH('sec-flow')}<span class="chev">▶</span>${VL('flow')}</summary>
+    <div class="secbody">${HOW('hm_flow')}${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
     <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
     ${[...tblB].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
@@ -1157,8 +1220,9 @@ function renderSections(m){
   if(m.stag&&showSec('stag')){
     const sgl={wait:t.stg_wait,work:t.stg_work,open:t.stg_open};
     const cols=[t.stg_c1,t.stg_c2,t.stg_c3];
-    SEC.stag=`<details class="sec" id="sec-stag"><summary><span class="si">🧊</span>${t.sec_stag}${NCHIP}<span class="cnt">${m.stag.total}</span>${SH('sec-stag')}<span class="chev">▶</span>${VL('stag')}</summary>
+    SEC.stag=`<details class="sec" id="sec-stag"><summary><span class="si">🧊</span>${t.sec_stag}${NCHIP}<span class="cnt">${m.stag.total}</span>${RF('stag')}${SH('sec-stag')}<span class="chev">▶</span>${VL('stag')}</summary>
       <div class="secbody">
+      ${HOW('hm_stag')}
       <div style="overflow-x:auto"><table><thead><tr><th style="text-align:left"></th>${cols.map(c=>`<th>${c}</th>`).join('')}<th>${t.stg_total}</th></tr></thead><tbody>
       ${m.stag.rows.map(r=>{const rt=r.cells.reduce((s,c)=>s+c.n,0);
         return `<tr><td style="text-align:left;font-weight:600">${sgl[r.g]}</td>${r.cells.map((c,ci)=>`<td class="mono">${c.n?`<a class="lnk stgcell" data-g="${r.g}" data-ci="${ci}" href="#">${c.n}</a>`:'·'}</td>`).join('')}<td class="mono"><b>${rt}</b></td></tr>`;}).join('')}
@@ -1172,21 +1236,22 @@ function renderSections(m){
   /* members */
   const topN=8;
   const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
-  if(showSec('mem'))SEC.mem=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span>${VL('mem')}</summary>
+  if(showSec('mem'))SEC.mem=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${RF('mem')}${SH('sec-mem')}<span class="chev">▶</span>${VL('mem')}</summary>
     <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* categories (hidden when the project yields none) */
-  if(m.cats.length&&showSec('cat'))SEC.cat=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span>${VL('cat')}</summary>
+  if(m.cats.length&&showSec('cat'))SEC.cat=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${RF('cat')}${SH('sec-cat')}<span class="chev">▶</span>${VL('cat')}</summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
       ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
-  if(showSec('risk'))SEC.risk=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span>${VL('risk')}</summary>
-    <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
+  if(showSec('risk'))SEC.risk=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${RF('risk')}${SH('sec-risk')}<span class="chev">▶</span>${VL('risk')}</summary>
+    <div class="secbody"><div class="note" style="margin:0 0 12px">${t.due_cov(m.openWithDue,m.open.length,m.dueCovPct)}</div>
+    ${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
     </tbody></table></div></div></details>`;
@@ -1199,7 +1264,7 @@ function renderSections(m){
   const stLeg=m.sfull.length
     ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
     :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
-  if(showSec('status'))SEC.status=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span>${VL('status')}</summary>
+  if(showSec('status'))SEC.status=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${RF('status')}${SH('sec-status')}<span class="chev">▶</span>${VL('status')}</summary>
     <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
     <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
@@ -1329,7 +1394,12 @@ function renderAll(){
       ?`<a class="lnk" href="https://${CONF.space}/projects/${CONF.pk}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${nm} ↗</a>`
       :nm;
   }
+  /* textContent first (scope labels come from config — never interpolate them
+     into HTML), then the basis ⓘ is appended as markup */
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
+  $('#t-sub').insertAdjacentHTML('beforeend',` <span class="defbtn" data-def="basis">i</span>`);
+  /* same text, printed: an exported PDF/HTML has no ⓘ to click */
+  $('#basisbox').innerHTML=`<b>${t.basis_t}</b>${t.def_basis(META.win||120,META.today)}`;
   /* multi page only: quiet about/changelog line right under the utility cluster */
   $('#utilabout').innerHTML=(PROJECTS&&PROJECTS.length>1)?`<span id="lnk-about">ⓘ ${t.about_t}</span>`:'';
   const _al=$('#lnk-about');if(_al)_al.onclick=openAbout;
@@ -1525,7 +1595,8 @@ document.addEventListener('click',e=>{
   const old=$('#defpop');if(old)old.remove();
   const b=e.target.closest('.defbtn');if(!b)return;
   e.preventDefault();e.stopPropagation();
-  const txt=T()['def_'+b.dataset.def];if(!txt)return;
+  let txt=T()['def_'+b.dataset.def];if(!txt)return;
+  if(typeof txt==='function')txt=txt(META.win||120,META.today);
   const d=document.createElement('div');d.id='defpop';d.textContent=txt;
   document.body.appendChild(d);
   const r=b.getBoundingClientRect();
@@ -1561,6 +1632,7 @@ function exportHTML(){
   /* static snapshot: strip scripts + interactive chrome; <details> keep working
      natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
   c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov,.defbtn,#defpop').forEach(e=>e.remove());
+  const _bb=c.querySelector('#basisbox');if(_bb)_bb.style.display='block';
   const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
   const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · TLダッシュボード · ${META.today}`;
   const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});

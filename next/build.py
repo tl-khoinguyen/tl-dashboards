@@ -75,7 +75,10 @@ def load_insight():
 INS = load_insight()
 
 META = {"today": D["today"], "generated": a.built or D["generated"],
-        "generatedAt": a.built or D.get("generatedAt") or D["generated"]}
+        "generatedAt": a.built or D.get("generatedAt") or D["generated"],
+        # closed-window length, so the page can state its own aggregation basis
+        # (the ⓘ next to the subtitle + the printed basis block, 08.18)
+        "win": CFG.get("windowDays", 120)}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
 SPACE = D.get("space", CFG.get("space", ""))
 
