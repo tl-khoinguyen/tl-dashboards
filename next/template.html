@@ -61,8 +61,11 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
    footer placement was too buried) */
 .utilabout{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));right:18px;z-index:20;font-size:12.5px;}
 .utilabout:empty{display:none;}
-#lnk-about{cursor:pointer;color:var(--muted);border-bottom:1px dashed var(--border);}
+#lnk-about{cursor:pointer;color:var(--muted);border-bottom:1px dashed var(--border);font-size:12.9px;white-space:nowrap;}
+.subsep{color:var(--faint);margin:0 2px;}
 #lnk-about:hover{color:var(--text);border-bottom-color:var(--muted);}
+.abpj{margin-top:9px;}
+.abpj>b{display:block;font-size:13.4px;color:var(--accent);margin-bottom:2px;}
 /* about modal (v2 08.06) — multi page only */
 #aboutov{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;}
 #aboutov[hidden]{display:none;}
@@ -451,7 +454,7 @@ const DICT={
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
    sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
-   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_copied:"コピーしました",
+   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_pj:"このプロジェクト固有の表示",about_copied:"コピーしました",
    ai_pw:"AI分析",
    sec_stag:"滞留の内訳",stg_note:"Backlogに原因の記録は無いため、これは「どこで止まっているか」の分解です（停滞=30日以上更新なし・件数ベース）",
    stg_wait:"確認・保留など待ち状態",stg_work:"作業中のまま",stg_open:"未着手のまま",stg_unas:"担当者未設定",stg_c1:"31〜90日",stg_c2:"91日〜1年",stg_c3:"1年超",stg_total:"合計",
@@ -515,7 +518,7 @@ const DICT={
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
    sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
-   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_copied:"Copied",
+   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_pj:"Specific to this project",about_copied:"Copied",
    ai_pw:"AI analysis",
    sec_stag:"Stagnation breakdown",stg_note:"Backlog records no cause, so this decomposes WHERE items are stuck (stale = no update for 30+ days; ticket counts)",
    stg_wait:"Waiting states (review/hold)",stg_work:"In progress",stg_open:"Not started",stg_unas:"No assignee",stg_c1:"31–90d",stg_c2:"91d–1y",stg_c3:">1 year",stg_total:"Total",
@@ -579,7 +582,7 @@ const DICT={
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
    sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
-   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_copied:"Đã sao chép",
+   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_pj:"Riêng của dự án này",about_copied:"Đã sao chép",
    ai_pw:"Phân tích AI",
    sec_stag:"Phân rã tồn đọng",stg_note:"Backlog không ghi nguyên nhân, nên đây là phân rã \"đang kẹt ở đâu\" (tồn đọng = không cập nhật 30+ ngày; đếm ticket)",
    stg_wait:"Trạng thái chờ (review/treo)",stg_work:"Đang xử lý",stg_open:"Chưa bắt đầu",stg_unas:"Chưa có người nhận",stg_c1:"31–90 ngày",stg_c2:"91 ngày–1 năm",stg_c3:">1 năm",stg_total:"Tổng",
@@ -623,11 +626,15 @@ const DICT={
    lockMsg:"Nhập mật khẩu để xem",unlock:"Mở",wrongPass:"Sai mật khẩu"},
 };
 
-/* ============ About / Changelog (v2 08.06) — multi-project page only ============
+/* ============ About / Changelog (v2 08.06) — every page (08.18) ============
    Refreshed each major release: ~70% stable premise (why this exists), ~30%
    end-user-VISIBLE changes of this release (never technical/background items).
    Wording stays neutral and objective — the text is meant to be copied and
-   shared to stakeholders as-is. No project names, no person names. */
+   shared to stakeholders as-is. No project names, no person names.
+   `changes` = what every page got. `byProject` = what only that project's page
+   got, keyed by the NEUTRAL slug (this file is public — display names come from
+   the decrypted payload at render time). A standalone page holds only its own
+   project, so it shows only its own block; /all shows all of them. */
 const VERINFO={ver:'v2 preview',
  ja:{premise:[
   "本ダッシュボードは、プロジェクト状況の把握を目的とした社内向けツールです。",
@@ -637,18 +644,16 @@ const VERINFO={ver:'v2 preview',
  changes:[
   "完了チケットの分析セクションを追加（処理日数の分布・期限内完了率・完了の内訳）",
   "「滞留の内訳」セクションを追加 — どこで止まっているかを状態×放置期間で分解し、該当チケットまで辿れます",
-  "各セクションに要約の一文を常時表示 — 畳んだままでも要点が読めます",
-  "主要指標にⓘを追加 — その場で定義を確認できます",
+  "各セクションに要約の一文を常時表示し、KPIカードのクリックで該当セクションへ移動できるようにしました",
+  "指標の定義をその場で開けるⓘを追加。集計基準（対象範囲・完了チケットをどこまで遡るか・数値はチケット件数であること）も見出し横のⓘに常時表示し、PDF／HTML出力の末尾にも印字されます",
+  "推計値を扱うセクションに「参考」バッジ、図表の上に「見方」の一文を追加。期限超過には、期限が設定されているチケットの割合を併記します",
   "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
-  "KPIカードをクリックすると該当セクションへ移動できます（PCではホバーで補足を表示）",
-  "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行に移動 — 冒頭の一画面で全体が掴めます",
-  "プロジェクトの状況に応じてKPIカードを追加できるようにしました（例：期限内完了・待ち状態の滞留）",
-  "プロジェクトごとに表示内容を調整できる仕組みを導入（プロジェクトの特性に合わない指標は表示されないことがあります）",
-  "この「このダッシュボードについて」画面を追加",
-  "「参考」バッジを追加 — チケット件数から推計しているセクションを、畳んだ状態の見出しでも分かるようにしました",
-  "図表の上に「見方」の一文を追加 — 滞留の内訳とフロー＆トレンドで、縦・横・棒が何を表すかをその場で確認できます",
-  "見出し横のⓘに集計基準を追加 — 対象範囲、完了チケットをどこまで遡って集めているか、数値がチケット件数であることを明記。PDF／HTML出力にも同じ説明が末尾に印字されます",
-  "期限超過のセクションに、期限が設定されているチケットの割合を表示 — 期限のないチケットは超過に数えられないため、割合の読み違いを防ぎます"]},
+  "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行へ移動しました",
+  "この「このダッシュボードについて」画面を追加 — すべてのページの見出し下から開けます"],
+ byProject:{
+  m2:["KPIカードに「期限内完了」と「待ち状態の滞留」を追加しています"],
+  if:["「担当者×領域 従事割合」セクションを表示しています — 直近の活動を領域別の内訳で示します"],
+  ft:["カテゴリの登録がないため、「種別/カテゴリ別 進捗」セクションは表示されません"]}},
  en:{premise:[
   "This dashboard is an internal tool for keeping track of project status.",
   "Previously, status sharing relied on checking individual tickets or on documents prepared by hand for each occasion — which took time to produce, was often already outdated when shared, and gave each reader a different slice of the picture.",
@@ -656,19 +661,17 @@ const VERINFO={ver:'v2 preview',
   "All figures are approximations based on ticket counts — not working hours or effort. For individual decisions, please refer to the source data in Backlog."],
  changes:[
   "Added a closed-ticket analysis section (cycle-time distribution, on-time completion rate, completed-work mix)",
-  "Added a \"Stagnation breakdown\" section — decomposes where items are stuck (state × idle time), down to the individual tickets",
-  "Every section now shows a one-line summary even while collapsed",
-  "Added ⓘ marks with on-the-spot definitions for key metrics",
+  "Added a \"Stagnation breakdown\" section — where items are stuck, by state × idle time, down to the individual tickets",
+  "Every section now carries a one-line summary even while collapsed, and clicking a KPI card jumps to its section",
+  "Added ⓘ marks that open a metric's definition on the spot. The aggregation basis (what is covered, how far back closed tickets are collected, and that every figure is a ticket count) sits in the ⓘ beside the subtitle and is printed at the end of PDF/HTML exports",
+  "Sections built on estimates now carry a \"reference\" badge, charts carry a \"How to read\" line above them, and the overdue figure states how many tickets actually carry a due date",
   "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
-  "Click a KPI card to jump to its section (hover shows a preview on PC)",
-  "On wide screens KPI cards and the summary sit side by side, with filters moved up to the title row — the first screen tells the whole story",
-  "KPI cards can now be added per project (e.g. on-time completion, waiting-state stalls)",
-  "Introduced per-project display tuning (metrics that do not fit a project's nature may be hidden)",
-  "Added this About screen",
-  "Added a \"reference\" badge — sections whose numbers are estimated from ticket counts now say so on the heading, even while collapsed",
-  "Added a \"How to read\" line above the charts in Stagnation breakdown and Flow & trend, stating what the rows, columns and bars mean",
-  "The ⓘ beside the subtitle now states the aggregation basis — what is covered, how far back closed tickets are collected, and that every figure is a ticket count; the same note is printed at the end of PDF/HTML exports",
-  "The overdue section now shows how many open tickets actually carry a due date, so the overdue share is not misread"]},
+  "On wide screens the KPI cards and the summary sit side by side, with the filters moved up to the title row",
+  "Added this About screen — reachable from under the heading on every page"],
+ byProject:{
+  m2:["The KPI row adds \"on-time completion\" and \"waiting-state stalls\""],
+  if:["Shows the \"engagement by area\" section — recent activity broken down per area"],
+  ft:["No categories are registered, so the \"progress by type/category\" section is not shown"]}},
  vi:{premise:[
   "Dashboard này là công cụ nội bộ để theo dõi tình hình các dự án.",
   "Trước đây, việc chia sẻ tình hình dựa vào xem từng ticket hoặc các tài liệu soạn thủ công theo từng dịp — tốn công soạn, thông tin thường đã cũ ngay khi chia sẻ, và mỗi người xem một lát cắt khác nhau.",
@@ -676,21 +679,19 @@ const VERINFO={ver:'v2 preview',
   "Các con số là xấp xỉ dựa trên số lượng ticket — không phải giờ công hay khối lượng thực tế. Khi cần quyết định cụ thể, nên đối chiếu dữ liệu gốc trên Backlog."],
  changes:[
   "Thêm mục phân tích ticket đã đóng (phân bố ngày xử lý, tỷ lệ đóng đúng hạn, cơ cấu việc đã hoàn thành)",
-  "Thêm mục \"Phân rã tồn đọng\" — bóc tách đang kẹt ở đâu (trạng thái × thời gian đứng yên), truy đến từng ticket",
-  "Mỗi mục luôn hiển thị một câu tóm tắt ngay cả khi thu gọn",
-  "Thêm dấu ⓘ xem định nghĩa chỉ số ngay tại chỗ",
-  "Khi có phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
-  "Bấm thẻ KPI để nhảy đến mục tương ứng (trên PC rê chuột xem tóm tắt)",
-  "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề — một màn hình đầu nắm trọn toàn cảnh",
-  "Có thể bổ sung thẻ KPI theo từng dự án (vd. đóng đúng hạn, tồn đọng dạng chờ)",
-  "Thêm cơ chế điều chỉnh nội dung hiển thị theo từng dự án (chỉ số không phù hợp với đặc thù dự án có thể được ẩn)",
-  "Thêm màn hình giới thiệu này",
-  "Thêm nhãn \"tham khảo\" — các mục có số liệu ước lượng từ số ticket được ghi rõ ngay ở tiêu đề, kể cả khi đang thu gọn",
-  "Thêm dòng \"Cách đọc\" phía trên biểu đồ ở mục Phân rã tồn đọng và Dòng chảy & xu hướng, nói rõ hàng, cột và các cột biểu đồ thể hiện điều gì",
-  "Dấu ⓘ cạnh dòng phụ đề nay nêu cơ sở tổng hợp — phạm vi lấy dữ liệu, lấy ticket đã đóng đến đâu, và việc mọi con số đều là số ticket; cùng nội dung đó được in ở cuối bản xuất PDF/HTML",
-  "Mục ticket quá hạn hiển thị bao nhiêu ticket đang mở thực sự có ngày hạn, tránh đọc sai tỉ lệ quá hạn"]}};
+  "Thêm mục \"Phân rã tồn đọng\" — đang kẹt ở đâu, theo trạng thái × thời gian đứng yên, truy đến từng ticket",
+  "Mỗi mục luôn hiển thị một câu tóm tắt kể cả khi thu gọn; bấm thẻ KPI sẽ nhảy đến mục tương ứng",
+  "Thêm dấu ⓘ mở định nghĩa chỉ số ngay tại chỗ. Cơ sở tổng hợp (phạm vi dữ liệu, lấy ticket đã đóng đến đâu, mọi con số đều là số ticket) nằm ở ⓘ cạnh dòng phụ đề và được in ở cuối bản xuất PDF/HTML",
+  "Các mục dựa trên ước lượng có nhãn \"tham khảo\", biểu đồ có dòng \"Cách đọc\" ở phía trên, và số quá hạn ghi kèm tỷ lệ ticket thực sự có ngày hạn",
+  "Khi phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
+  "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề",
+  "Thêm màn hình giới thiệu này — mở được từ ngay dưới tiêu đề ở mọi trang"],
+ byProject:{
+  m2:["Hàng thẻ KPI có thêm \"đóng đúng hạn\" và \"tồn đọng dạng chờ\""],
+  if:["Hiển thị mục \"tỷ trọng theo mảng\" — hoạt động gần đây chia theo từng mảng"],
+  ft:["Dự án chưa đăng ký nhóm (category) nên không hiển thị mục \"tiến độ theo loại/nhóm\""]}},
+};
 
-/* ============ CONFIG — tunable thresholds & indicators (single place) ============ */
 const BASECFG={
   staleDays:30,                 // "stale" = open & untouched more than N days
   overdue:{warn:20,crit:40},    // % of open past-due → amber / red
@@ -1397,11 +1398,18 @@ function renderAll(){
   /* textContent first (scope labels come from config — never interpolate them
      into HTML), then the basis ⓘ is appended as markup */
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
-  $('#t-sub').insertAdjacentHTML('beforeend',` <span class="defbtn" data-def="basis">i</span>`);
+  $('#t-sub').insertAdjacentHTML('beforeend',
+    ` <span class="defbtn" data-def="basis">i</span> <span class="subsep">·</span> <span id="lnk-about">${t.about_t}</span>`);
   /* same text, printed: an exported PDF/HTML has no ⓘ to click */
   $('#basisbox').innerHTML=`<b>${t.basis_t}</b>${t.def_basis(META.win||120,META.today)}`;
   /* multi page only: quiet about/changelog line right under the utility cluster */
-  $('#utilabout').innerHTML=(PROJECTS&&PROJECTS.length>1)?`<span id="lnk-about">ⓘ ${t.about_t}</span>`:'';
+  /* 08.18 (operator): the About link belongs on EVERY page, not just /all. It
+     moved out of the absolute-positioned corner slot (`.utilabout`) and into the
+     subtitle line: that corner is the one the utility cluster collided with twice
+     (08.06, 08.14 rev3), and on a standalone page ≥1280px the cluster now sits in
+     the title row, which would have stranded the link on top of it. In the sub
+     line it flows at any width, on any page, next to the basis ⓘ. */
+  $('#utilabout').innerHTML='';
   const _al=$('#lnk-about');if(_al)_al.onclick=openAbout;
   $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
@@ -1513,14 +1521,25 @@ function openAbout(){
   /* rev3 (operator 08.06): compact chrome — plain one-word title, no subtitle,
      no button row; tapping the text copies the whole block, ✕ closes. */
   const t=T();const v=VERINFO[LANG]||VERINFO.ja;
+  /* per-project changes (08.18): a page shows only the projects it actually
+     holds — a standalone page holds one, /all holds them all. Display names come
+     from the decrypted payload; the template itself knows only neutral slugs. */
+  const bp=v.byProject||{};
+  const slugs=(PROJECTS&&PROJECTS.length)?PROJECTS.map(x=>x.slug):(PAGESLUG?[PAGESLUG]:[]);
+  const pjs=slugs.filter(sg=>(bp[sg]||[]).length).map(sg=>{
+    const pr=(PROJECTS||[]).find(x=>x.slug===sg);
+    return {name:(pr&&pr.name)||sg,items:bp[sg]};});
+  const pjHTML=pjs.length?`<h3>${t.about_pj}</h3>`+pjs.map(x=>
+    `<div class="abpj"><b>${x.name}</b><ul>${x.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`).join(''):'';
   $('#aboutbox').innerHTML=`<button class="aboutx" id="about-x" type="button" aria-label="close">×</button><h2>${t.about_h}</h2>
     <div id="about-txt">${v.premise.map(p=>`<p>${p}</p>`).join('')}
-    <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul></div>
+    <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul>${pjHTML}</div>
 `;
   $('#aboutov').hidden=false;
   $('#about-x').onclick=()=>{$('#aboutov').hidden=true;};
   $('#about-txt').onclick=()=>{
-    const txt=[t.about_t,'',...v.premise,'',t.about_ch+':',...v.changes.map(c=>'- '+c)].join('\n');
+    const txt=[t.about_t,'',...v.premise,'',t.about_ch+':',...v.changes.map(c=>'- '+c),
+      ...(pjs.length?['',t.about_pj+':',...pjs.flatMap(x=>['['+x.name+']',...x.items.map(i=>'- '+i)])]:[])].join('\n');
     const done=()=>toast('✓ '+t.about_copied);
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>prompt('',txt));
     else prompt('',txt);
