@@ -28,7 +28,7 @@
      status colors from the API override these at runtime (loadProject) */
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
   /* categorical palette for the AREA dimension (validated, distinct from status) */
-  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#7c5cd6;
   --shadow:0 1px 2px rgba(20,30,50,.05),0 2px 8px rgba(20,30,50,.05);
   --radius:14px;
 }
@@ -39,7 +39,7 @@ html[data-theme="dark"]{
   --green:#3DD3A0; --green-soft:#123528; --amber:#F5B463; --amber-soft:#3A2A12;
   --red:#F87171; --red-soft:#3A1B1E; --grid:#1B2A45;
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
-  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#8b6fe6;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -210,6 +210,13 @@ tr:last-child td{border-bottom:none;}
 .abar i{font-style:normal;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;}
 .abar i b{font-size:10.5px;color:#fff;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.4);}
 .arow.hid{display:none;}
+/* area drill-down (09.10): every segment is clickable → ticket list under its row;
+   その他 above the config threshold prints its Backlog-category breakdown */
+.abar i.aseg{cursor:pointer;}
+.abar i.aseg.on{box-shadow:inset 0 0 0 2px var(--text),inset -1.5px 0 0 0 var(--panel);}
+.abd{font-size:13.2px;color:var(--muted);margin-top:5px;}
+.alist{display:none;margin:4px 0 10px;padding:6px 10px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);}
+.alist.on{display:block;}
 .asep{border-top:2px solid var(--border);margin:16px 0 14px;}
 .bar{display:flex;align-items:center;gap:8px;}
 .bar .tk{flex:1;height:8px;border-radius:5px;background:var(--grid);overflow:hidden;}
@@ -449,6 +456,7 @@ const DICT={
    ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
    area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   area_bd:"その他の内訳",area_uncat:"カテゴリ未設定",area_click:"区分をクリックすると該当チケットの一覧が開きます",area_upd:"更新",
    sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了（差分順）",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",plan_chip:"計画",
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
@@ -513,6 +521,7 @@ const DICT={
    ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
    area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   area_bd:"Other, by Backlog category",area_uncat:"no category",area_click:"click a segment to list its tickets",area_upd:"updated",
    sec_move:"Movement in period",mv_bycat:"New vs closed by type/category (sorted by net)",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",plan_chip:"plan",
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
@@ -577,6 +586,7 @@ const DICT={
    ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
    area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   area_bd:"Khác gồm",area_uncat:"chưa gắn nhóm",area_click:"bấm vào một đoạn màu để xem danh sách ticket",area_upd:"cập nhật",
    sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm (xếp theo chênh lệch)",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",plan_chip:"KH",
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
@@ -649,10 +659,12 @@ const VERINFO={ver:'v2 preview',
   "推計値を扱うセクションに「参考」バッジ、図表の上に「見方」の一文を追加。期限超過には、期限が設定されているチケットの割合を併記します",
   "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
   "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行へ移動しました",
-  "この「このダッシュボードについて」画面を追加 — すべてのページの見出し下から開けます"],
+  "この「このダッシュボードについて」画面を追加 — すべてのページの見出し下から開けます",
+  "「担当者×領域 従事割合」の各区分をクリックすると、該当チケットの一覧（カテゴリ・状態・更新日）がその行の下に開きます",
+  "「その他」が一定の割合を超える行には、その内訳（Backlog のカテゴリ別）を棒の下に表示します"],
  byProject:{
   m2:["KPIカードに「期限内完了」と「待ち状態の滞留」を追加しています"],
-  if:["「担当者×領域 従事割合」セクションを表示しています — 直近の活動を領域別の内訳で示します"],
+  if:["「担当者×領域 従事割合」セクションを表示しています — 直近の活動を領域別の内訳で示します","領域を3区分から6区分に見直しました（区分名は凡例のとおり）。「その他」はカテゴリ未設定のチケットのみです"],
   ft:["カテゴリの登録がないため、「種別/カテゴリ別 進捗」セクションは表示されません"]}},
  en:{premise:[
   "This dashboard is an internal tool for keeping track of project status.",
@@ -667,10 +679,12 @@ const VERINFO={ver:'v2 preview',
   "Sections built on estimates now carry a \"reference\" badge, charts carry a \"How to read\" line above them, and the overdue figure states how many tickets actually carry a due date",
   "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
   "On wide screens the KPI cards and the summary sit side by side, with the filters moved up to the title row",
-  "Added this About screen — reachable from under the heading on every page"],
+  "Added this About screen — reachable from under the heading on every page",
+  "In \"Engagement by area\", clicking a segment opens the tickets behind it (category, status, last update) under that row",
+  "When \"Other\" exceeds a set share of a row, its breakdown by Backlog category is printed under the bar"],
  byProject:{
   m2:["The KPI row adds \"on-time completion\" and \"waiting-state stalls\""],
-  if:["Shows the \"engagement by area\" section — recent activity broken down per area"],
+  if:["Shows the \"engagement by area\" section — recent activity broken down per area","Areas revised from three to six (names as in the legend). \"Other\" now holds only tickets with no category"],
   ft:["No categories are registered, so the \"progress by type/category\" section is not shown"]}},
  vi:{premise:[
   "Dashboard này là công cụ nội bộ để theo dõi tình hình các dự án.",
@@ -685,10 +699,12 @@ const VERINFO={ver:'v2 preview',
   "Các mục dựa trên ước lượng có nhãn \"tham khảo\", biểu đồ có dòng \"Cách đọc\" ở phía trên, và số quá hạn ghi kèm tỷ lệ ticket thực sự có ngày hạn",
   "Khi phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
   "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề",
-  "Thêm màn hình giới thiệu này — mở được từ ngay dưới tiêu đề ở mọi trang"],
+  "Thêm màn hình giới thiệu này — mở được từ ngay dưới tiêu đề ở mọi trang",
+  "Ở mục \"Tỷ trọng theo mảng\", bấm vào một đoạn màu sẽ mở danh sách ticket phía sau nó (nhóm, trạng thái, ngày cập nhật) ngay dưới hàng đó",
+  "Khi phần \"Khác\" của một hàng vượt ngưỡng đặt trước, cơ cấu của nó theo nhóm Backlog được in dưới thanh"],
  byProject:{
   m2:["Hàng thẻ KPI có thêm \"đóng đúng hạn\" và \"tồn đọng dạng chờ\""],
-  if:["Hiển thị mục \"tỷ trọng theo mảng\" — hoạt động gần đây chia theo từng mảng"],
+  if:["Hiển thị mục \"tỷ trọng theo mảng\" — hoạt động gần đây chia theo từng mảng","Chia lại từ 3 thành 6 mảng (tên mảng như trong chú giải). \"Khác\" chỉ còn ticket chưa gắn nhóm"],
   ft:["Dự án chưa đăng ký nhóm (category) nên không hiển thị mục \"tiến độ theo loại/nhóm\""]}},
 };
 
@@ -756,6 +772,12 @@ const fmtDate=d=>`${d.getUTCFullYear()}/${String(d.getUTCMonth()+1).padStart(2,'
    SMAP is injected per project (pull.py heuristic + config overrides). */
 let SMAP={};
 const bkt=i=>SMAP[i.stId]||'Open';
+/* area rule set (09.10): `rulesNext` is read by this preview build only — production keeps
+   reading `rules` until promote, so a config edit cannot change the live split unreviewed. */
+const AREARULES=()=>(PCFG.areas&&(PCFG.areas.rulesNext||PCFG.areas.rules))||[];
+const areaLabel=id=>{const A=PCFG.areas||{};if(id==='_other')return (A.other||{})[LANG]||(A.other||{}).en||'—';
+  const r=AREARULES().find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
+const areaColor=id=>{const ix=AREARULES().findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,6)})`:'var(--faint)';};
 const BORDER={Open:'var(--st-open)',InProgress:'var(--st-inprog)',Resolved:'var(--st-resolved)',Pending:'var(--st-pending)',Closed:'var(--st-closed)'};
 /* category of an issue — mode from per-project config:
    'issueType' = Backlog issue type; 'bracket2' = 2nd 【…】 tag in the title; 'none' */
@@ -834,21 +856,25 @@ function compute(){
   // areas (per-project config: category → business area) — engagement share per
   // assignee ≈ tickets ACTIVE (updated) within the selected range, any status
   let areas=null;
-  if(PCFG.areas&&PCFG.areas.rules){
-    const rules=PCFG.areas.rules.map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
-    /* an issue's area — two passes: ① exact signals (category / issue type),
-       ② title patterns as fallback. So a typed issue never gets stolen by a
-       title keyword belonging to a later rule. */
+  if(AREARULES().length){
+    const rules=AREARULES().map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
+    /* an issue's area — three passes: ① exact signals (category / issue type),
+       ② title patterns as fallback, ③ `weakMatch` categories (09.10) — a category
+       a team uses as its default for everything, so it only counts when neither
+       an exact category nor the title said anything. Rule order = priority inside
+       each pass, so a typed issue never gets stolen by a later rule's title keyword. */
     const areaOf=i=>{const cs=i.category||[];const ty=i.type||'';const s=i.summary||'';
       let r=rules.find(r=>((r.match||[]).length&&cs.some(c=>r.match.includes(c)))||(r.typeMatch||[]).includes(ty));
       if(!r)r=rules.find(r=>r._re.some(re=>re.test(s)));
+      if(!r)r=rules.find(r=>(r.weakMatch||[]).length&&cs.some(c=>r.weakMatch.includes(c)));
       return r?r.id:'_other';};
     const act=scoped.filter(i=>i.assignee&&D(i.updated)&&D(i.updated)>=start);
-    const AM={},ALL={total:0,by:{}};
-    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};const k=areaOf(i);
-      a.total++;a.by[k]=(a.by[k]||0)+1;ALL.total++;ALL.by[k]=(ALL.by[k]||0)+1;});
+    const AM={},ALL={total:0,by:{},items:{}};
+    // items per area are kept (09.10) so a segment click can list them — counts, not hours
+    const put=(a,k,i)=>{a.total++;a.by[k]=(a.by[k]||0)+1;(a.items[k]=a.items[k]||[]).push(i);};
+    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{},items:{}};const k=areaOf(i);put(a,k,i);put(ALL,k,i);});
     areas={ids:[...rules.map(r=>r.id),'_other'],all:ALL,
-      members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by})).sort((a,b)=>b.total-a.total)};
+      members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by,items:v.items})).sort((a,b)=>b.total-a.total)};
   }
   // members
   const M={};
@@ -968,8 +994,7 @@ function verdicts(m){
   v.area='';
   if(m.areas&&m.areas.all.total){
     const eid=Object.entries(m.areas.all.by).sort((a,b)=>b[1]-a[1])[0][0];
-    const r=((PCFG.areas||{}).rules||[]).find(x=>x.id===eid);
-    v.area=t.vd_area_top(eid==='_other'?(((PCFG.areas||{}).other||{})[LANG]||'—'):(r?(r[LANG]||r.en||r.id):eid));
+    v.area=t.vd_area_top(areaLabel(eid));
   }
   const sc=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
   v.cat=sc?t.vd_cat_dwell(sc.name,sc.med):'';
@@ -1135,24 +1160,29 @@ function renderSections(m){
      Layout: prominent aggregate row + legend + note → strong separator → members
      (paginated, +10 per click). */
   if(m.areas&&m.areas.members.length&&showSec('area')){
-    const rules=PCFG.areas.rules;
-    const aColor=id=>{const ix=rules.findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,5)})`:'var(--faint)';};
-    const aLabel=id=>{if(id==='_other')return (PCFG.areas.other||{})[LANG]||(PCFG.areas.other||{}).en||'—';
-      const r=rules.find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
-    const rowHTML=(x,big)=>{
+    const aColor=areaColor, aLabel=areaLabel;
+    const hx=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    /* その他 breakdown (09.10): when the unclassified share of a row reaches
+       `areas.breakdownPct`, print what it is made of — the tickets' own Backlog
+       categories — so a large "other" reads as a data-hygiene fact, not a gap */
+    const bdPct=+((PCFG.areas||{}).breakdownPct||0);
+    const bdHTML=x=>{const n=x.by._other||0;if(!bdPct||!n||n/x.total*100<bdPct)return '';
+      const C={};(x.items&&x.items._other||[]).forEach(i=>{const k=(i.category||[])[0]||'';C[k]=(C[k]||0)+1;});
+      return `<div class="abd">${t.area_bd}: ${Object.entries(C).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${k?hx(k):t.area_uncat} <b class="mono">${n}</b>`).join(' · ')}</div>`;};
+    const rowHTML=(x,big,rid)=>{
         const th=big?9:14,h=big?24:15;
         const segs=m.areas.ids.filter(id=>x.by[id]).map(id=>{const p=x.by[id]/x.total*100;
-          return `<i style="width:${p}%;background:${aColor(id)}" title="${aLabel(id)} ${Math.round(p)}% (${x.by[id]})">${p>=th?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
+          return `<i class="aseg" data-row="${rid}" data-aid="${id}" style="width:${p}%;background:${aColor(id)}" title="${hx(aLabel(id))} ${Math.round(p)}% (${x.by[id]})">${p>=th?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
         return `<div class="arow${x.hid?' hid':''}" style="margin-bottom:${big?6:11}px"><div style="display:flex;justify-content:space-between;font-size:${big?15.5:14.9}px;margin-bottom:4px"><span style="font-weight:${big?800:600}">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
-        <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div></div>`;};
+        <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div>${bdHTML(x)}<div class="alist" id="alist-${rid}"></div></div>`;};
     const STEP=10, mem=m.areas.members;
     SEC.area=`<details class="sec" id="sec-area"><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${RF('area')}${SH('sec-area')}<span class="chev">▶</span>${VL('area')}</summary>
       <div class="secbody">
-      ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by},true)}
+      ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by,items:m.areas.all.items},true,'all')}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
-      <div class="note" style="margin-top:6px">${t.area_note(RANGE)}</div>
+      <div class="note" style="margin-top:6px">${t.area_note(RANGE)} · ${t.area_click}</div>
       <div class="asep"></div>
-      ${mem.map((x,ix)=>rowHTML({...x,link:assigneeLink(x.name),hid:ix>=STEP})).join('')}
+      ${mem.map((x,ix)=>rowHTML({...x,link:assigneeLink(x.name),hid:ix>=STEP},false,String(ix))).join('')}
       ${mem.length>STEP?`<button class="morebtn" id="areamore">${t.area_more(mem.length-STEP)}</button>`:''}
       </div></details>`;
   }
@@ -1302,6 +1332,24 @@ function renderSections(m){
     hid.slice(0,10).forEach(e=>e.classList.remove('hid'));
     const left=hid.length-10;
     if(left>0)ab.textContent=t.area_more(left); else ab.remove();};
+  /* area segment click (09.10) → the tickets behind that segment, under its own row.
+     Same segment again closes it; a different segment on the same row replaces it.
+     Ticket titles come from the decrypted payload already in the page — nothing new leaves. */
+  if(m.areas)document.querySelectorAll('#sec-area .aseg').forEach(el=>el.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    const rid=el.dataset.row,aid=el.dataset.aid;
+    const x=rid==='all'?m.areas.all:m.areas.members[+rid];
+    const box=document.getElementById('alist-'+rid);if(!x||!box)return;
+    const same=box.dataset.aid===aid&&box.classList.contains('on');
+    el.closest('.arow').querySelectorAll('.aseg.on').forEach(s=>s.classList.remove('on'));
+    if(same){box.classList.remove('on');box.innerHTML='';box.dataset.aid='';return;}
+    const hx=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const stName=i=>{const s=SFULL.find(s=>s.id===i.stId);return s?s.name:bkt(i);};
+    const items=((x.items||{})[aid]||[]).slice().sort((a,b)=>String(b.updated||'').localeCompare(String(a.updated||'')));
+    el.classList.add('on');box.dataset.aid=aid;box.classList.add('on');
+    box.innerHTML=`<div style="font-weight:700;font-size:14px;margin:4px 0 6px"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${areaColor(aid)};vertical-align:middle;margin-right:6px"></i>${hx(areaLabel(aid))} · ${items.length}</div>
+      <div style="overflow-x:auto"><table><tbody>${items.map(i=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(i.key,i.key+' '+(i.summary||''))}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${hx((i.category||[]).join(', ')||t.area_uncat)}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${hx(stName(i))}</td><td class="mono" style="font-size:13px;white-space:nowrap" title="${t.area_upd}">${String(i.updated||'').slice(5)}</td></tr>`).join('')}</tbody></table></div>`;
+  });
 }
 
 /* ============ controls ============ */
