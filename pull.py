@@ -28,7 +28,13 @@ _NOW = datetime.datetime.now(_TZ)
 _TODAY = _NOW.date()
 TODAY = _TODAY.isoformat()
 GEN_AT = _NOW.strftime("%Y-%m-%d %H:%M")   # shown as the "updated" stamp (2x daily builds)
-WIDE = (_TODAY - datetime.timedelta(days=int(CFG.get("windowDays", 120)))).isoformat()
+# Closed-ticket window: `windowDays` back, and — when `windowFromYearStart` is set
+# (09.10, for the 年初来 range) — at least back to Jan 1 of the current year,
+# whichever is earlier. Sliding: the year-start bound moves every Jan 1.
+_WIDE_D = _TODAY - datetime.timedelta(days=int(CFG.get("windowDays", 120)))
+if CFG.get("windowFromYearStart"):
+    _WIDE_D = min(_WIDE_D, datetime.date(_TODAY.year, 1, 1))
+WIDE = _WIDE_D.isoformat()
 
 def get(path, params=None):
     params = dict(params or {}); params["apiKey"] = KEY; pairs = []

@@ -441,12 +441,12 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
 const DICT={
  ja:{title:"バックログ・ダッシュボード",scope:"スコープ",range:"期間",lang:"言語",
    sub:s=>`スコープ: ${s.scopeName} ／ 未完了 ${s.open}件 ／ 抽出 ${s.date}`,
-   r7:"直近7日",r30:"直近30日",r90:"直近90日",
+   r7:"直近7日",r30:"直近30日",r90:"直近90日",r180:"直近180日",rytd:y=>`${y}年初来`,month:"月",mon_:m=>`${m}月`,r_in:n=>`直近${n}日で`,rytd_in:y=>`${y}年に入ってから`,rp_days:n=>`直近${n}日`,rp_ytd:y=>`${y}年初来`,
    allopen:"全未完了",highp:"優先度：高",overdueScope:"期限超過のみ",
    ms:n=>`マイルストーン: ${n}`,
    k_open:"未完了チケット",k_trend:"バックログ増減",k_over:"期限超過",k_stale:"停滞(30日+)",k_health:"健全度",
-   m_open:s=>`現在オープン中。直近${s.r}日で 新規${s.created}・完了${s.closed}`,
-   m_trend:s=>s.planned?`新規${s.created}件（計画起票 ${s.crPlan}・その他 ${s.crOther}）・完了${s.closed}件`:(s.net>0?`増加中：${s.r}日で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.r}日で ${s.net}（消化が進行）`:`横ばい`),
+   m_open:s=>`現在オープン中。${s.rl}で 新規${s.created}・完了${s.closed}`,
+   m_trend:s=>s.planned?`新規${s.created}件（計画起票 ${s.crPlan}・その他 ${s.crOther}）・完了${s.closed}件`:(s.net>0?`増加中：${s.rl}で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.rl}で ${s.net}（消化が進行）`:`横ばい`),
    m_over:s=>`${s.overdue}件が期限超過（オープンの${s.overduePct}%）`,
    m_stale:s=>`${s.stale}件が30日以上未更新（${s.stalePct}%）`,
    m_health:s=>s.rate==null?`期間内の流入・処理なし`:`処理 ${s.closed}件 ／ 流入 ${s.inflow}件${s.planned?'（計画外）':''} ＝ 処理率 ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?`（前期 ${s.rateP>=999?'∞':s.rateP+'%'}）`:''}`,
@@ -455,7 +455,7 @@ const DICT={
    ins_ai:"AIインサイト",ins_asof:d=>`${d}時点`,ins_cross:"横断メモ",
    ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
-   area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:p=>`${p}に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
    area_bd:"その他の内訳",area_uncat:"カテゴリ未設定",area_click:"区分をクリックすると該当チケットの一覧が開きます",area_upd:"更新",
    sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了（差分順）",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",plan_chip:"計画",
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
@@ -479,7 +479,7 @@ const DICT={
    def_over:"期限超過 = 期限日を過ぎたオープンチケットの、全オープンに対する割合",
    def_stale:"停滞 = 30日以上更新のないオープンチケットの、全オープンに対する割合",
    def_cyc:"処理日数 = 作成日から最終更新日（完了日の近似）までの日数。チケット件数ベースで、工数ではありません",
-   def_basis:(w,d)=>`対象＝このBacklogプロジェクトのチケット。未完了は全件、完了は直近${w}日以内に更新されたもののみ（それ以前の完了は含まれません）。数値はすべてチケット件数で、工数（時間）やコストではありません。完了日は最終更新日による近似。上部のスコープ・期間フィルターが効くのは「期間」チップの付いたセクションだけで、「現時点」チップのセクションは常に全体を表します。抽出時点＝${d}。`,
+   def_basis:(w,d)=>`対象＝このBacklogプロジェクトのチケット。未完了は全件、完了は直近${w}日以内に更新されたもののみ（期間フィルターで180日・年初来を選んだときはその期間まで遡ります。それ以前の完了は含まれません）。数値はすべてチケット件数で、工数（時間）やコストではありません。完了日は最終更新日による近似。上部のスコープ・期間フィルターが効くのは「期間」チップの付いたセクションだけで、「現時点」チップのセクションは常に全体を表します。抽出時点＝${d}。`,
    basis_t:"集計範囲・算出について",howto:"見方",
    ref_chip:"参考",ref_why:"参考値 — チケット件数ベースの近似であり、工数（時間）の実績ではありません",
    due_cov:(w,o,p)=>`期限が設定されているのはオープン${o}件中${w}件（${p}%）。期限のないチケットは超過に数えられないため、超過率は実態より低めに出ます。`,
@@ -506,12 +506,12 @@ const DICT={
    lockMsg:"パスワードを入力して表示",unlock:"開く",wrongPass:"パスワードが違います"},
  en:{title:"Backlog Dashboard",scope:"Scope",range:"Range",lang:"Lang",
    sub:s=>`Scope: ${s.scopeName} · ${s.open} open · as of ${s.date}`,
-   r7:"Last 7d",r30:"Last 30d",r90:"Last 90d",
+   r7:"Last 7d",r30:"Last 30d",r90:"Last 90d",r180:"Last 180d",rytd:y=>`YTD ${y}`,month:"Month",mon_:m=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1],r_in:n=>`last ${n}d:`,rytd_in:y=>`since Jan ${y}:`,rp_days:n=>`in the last ${n}d`,rp_ytd:y=>`since Jan ${y}`,
    allopen:"All open",highp:"Priority: High",overdueScope:"Overdue only",
    ms:n=>`Milestone: ${n}`,
    k_open:"Open tickets",k_trend:"Backlog change",k_over:"Overdue",k_stale:"Stale (30d+)",k_health:"Health",
-   m_open:s=>`Currently open. Last ${s.r}d: ${s.created} new / ${s.closed} closed`,
-   m_trend:s=>s.planned?`New ${s.created} (planned ${s.crPlan} / other ${s.crOther}) · closed ${s.closed}`:(s.net>0?`Growing: +${s.net} over ${s.r}d (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} over ${s.r}d`:`Flat`),
+   m_open:s=>`Currently open. ${s.rl}: ${s.created} new / ${s.closed} closed`,
+   m_trend:s=>s.planned?`New ${s.created} (planned ${s.crPlan} / other ${s.crOther}) · closed ${s.closed}`:(s.net>0?`Growing: +${s.net} ${s.rl} (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} ${s.rl}`:`Flat`),
    m_over:s=>`${s.overdue} past due (${s.overduePct}% of open)`,
    m_stale:s=>`${s.stale} untouched 30d+ (${s.stalePct}%)`,
    m_health:s=>s.rate==null?`No inflow/outflow in period`:`Closed ${s.closed} / inflow ${s.inflow}${s.planned?' (unplanned)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (prev ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
@@ -520,7 +520,7 @@ const DICT={
    ins_ai:"AI Insight",ins_asof:d=>`as of ${d}`,ins_cross:"Cross-project",
    ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
-   area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:p=>`Approximation from tickets updated ${p} (ticket counts, not hours)`,sec_cat:"Progress by type/category",
    area_bd:"Other, by Backlog category",area_uncat:"no category",area_click:"click a segment to list its tickets",area_upd:"updated",
    sec_move:"Movement in period",mv_bycat:"New vs closed by type/category (sorted by net)",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",plan_chip:"plan",
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
@@ -544,7 +544,7 @@ const DICT={
    def_over:"Overdue = open tickets past their due date, as a share of all open",
    def_stale:"Stale = open tickets untouched for 30+ days, as a share of all open",
    def_cyc:"Cycle time = days from creation to last update (approximation of close date). Ticket counts, not hours",
-   def_basis:(w,d)=>`Scope = tickets in this Backlog project. All open tickets; closed tickets only where updated within the last ${w} days (earlier completions are not included). Every number is a ticket count — never hours or cost. Close date is approximated by the last update. The scope/period filters at the top act only on sections carrying the period chip; sections marked "now" always show the whole picture. Data as of ${d}.`,
+   def_basis:(w,d)=>`Scope = tickets in this Backlog project. All open tickets; closed tickets only where updated within the last ${w} days — or within the selected period when the 180d / YTD filter reaches further (earlier completions are not included). Every number is a ticket count — never hours or cost. Close date is approximated by the last update. The scope/period filters at the top act only on sections carrying the period chip; sections marked "now" always show the whole picture. Data as of ${d}.`,
    basis_t:"Basis & method",howto:"How to read",
    ref_chip:"reference",ref_why:"Reference only — approximated from ticket counts, not recorded effort (hours)",
    due_cov:(w,o,p)=>`${w} of ${o} open tickets carry a due date (${p}%). A ticket without one can never count as overdue, so the overdue rate reads lower than reality.`,
@@ -571,12 +571,12 @@ const DICT={
    lockMsg:"Enter password to view",unlock:"Unlock",wrongPass:"Wrong password"},
  vi:{title:"Bảng điều khiển Backlog",scope:"Phạm vi",range:"Khoảng",lang:"Ngôn ngữ",
    sub:s=>`Phạm vi: ${s.scopeName} · ${s.open} đang mở · tính đến ${s.date}`,
-   r7:"7 ngày",r30:"30 ngày",r90:"90 ngày",
+   r7:"7 ngày",r30:"30 ngày",r90:"90 ngày",r180:"180 ngày",rytd:y=>`Từ đầu ${y}`,month:"Tháng",mon_:m=>`T${m}`,r_in:n=>`${n} ngày qua`,rytd_in:y=>`từ đầu ${y}`,rp_days:n=>`trong ${n} ngày`,rp_ytd:y=>`từ đầu ${y}`,
    allopen:"Tất cả đang mở",highp:"Ưu tiên: Cao",overdueScope:"Chỉ quá hạn",
    ms:n=>`Milestone: ${n}`,
    k_open:"Ticket đang mở",k_trend:"Biến động backlog",k_over:"Quá hạn",k_stale:"Đình trệ (30d+)",k_health:"Sức khỏe",
-   m_open:s=>`Đang mở. ${s.r} ngày qua: ${s.created} mới / ${s.closed} đóng`,
-   m_trend:s=>s.planned?`Tạo ${s.created} (kế hoạch ${s.crPlan} / khác ${s.crOther}) · đóng ${s.closed}`:(s.net>0?`Đang phình: +${s.net} trong ${s.r}d (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} trong ${s.r}d`:`Đi ngang`),
+   m_open:s=>`Đang mở. ${s.rl}: ${s.created} mới / ${s.closed} đóng`,
+   m_trend:s=>s.planned?`Tạo ${s.created} (kế hoạch ${s.crPlan} / khác ${s.crOther}) · đóng ${s.closed}`:(s.net>0?`Đang phình: +${s.net} ${s.rl} (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} ${s.rl}`:`Đi ngang`),
    m_over:s=>`${s.overdue} quá hạn (${s.overduePct}% số mở)`,
    m_stale:s=>`${s.stale} không đụng 30d+ (${s.stalePct}%)`,
    m_health:s=>s.rate==null?`Kỳ này không có dòng vào/ra`:`Đóng ${s.closed} / vào ${s.inflow}${s.planned?' (ngoài kế hoạch)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (kỳ trước ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
@@ -585,7 +585,7 @@ const DICT={
    ins_ai:"Nhận định AI",ins_asof:d=>`tại ${d}`,ins_cross:"Liên dự án",
    ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
-   area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:p=>`Ước lượng theo số ticket có cập nhật ${p} (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
    area_bd:"Khác gồm",area_uncat:"chưa gắn nhóm",area_click:"bấm vào một đoạn màu để xem danh sách ticket",area_upd:"cập nhật",
    sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm (xếp theo chênh lệch)",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",plan_chip:"KH",
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
@@ -609,7 +609,7 @@ const DICT={
    def_over:"Quá hạn = ticket mở đã quá ngày hạn, tính trên tổng số đang mở",
    def_stale:"Tồn đọng = ticket mở không được cập nhật 30+ ngày, tính trên tổng số đang mở",
    def_cyc:"Ngày xử lý = số ngày từ lúc tạo đến lần cập nhật cuối (xấp xỉ ngày đóng). Đếm ticket, không phải giờ công",
-   def_basis:(w,d)=>`Phạm vi = ticket của project Backlog này. Lấy toàn bộ ticket đang mở; ticket đã đóng chỉ lấy phần được cập nhật trong ${w} ngày gần nhất (các ticket đóng trước đó không có trong số liệu). Mọi con số đều là số ticket — không phải giờ công hay chi phí. Ngày đóng là xấp xỉ theo lần cập nhật cuối. Bộ lọc phạm vi/kỳ ở đầu trang chỉ tác động lên các mục có chip kỳ; mục gắn chip "hiện tại" luôn hiển thị toàn bộ. Dữ liệu tính đến ${d}.`,
+   def_basis:(w,d)=>`Phạm vi = ticket của project Backlog này. Lấy toàn bộ ticket đang mở; ticket đã đóng chỉ lấy phần được cập nhật trong ${w} ngày gần nhất, hoặc trong kỳ đã chọn khi bộ lọc 180 ngày / từ đầu năm dài hơn (các ticket đóng trước đó không có trong số liệu). Mọi con số đều là số ticket — không phải giờ công hay chi phí. Ngày đóng là xấp xỉ theo lần cập nhật cuối. Bộ lọc phạm vi/kỳ ở đầu trang chỉ tác động lên các mục có chip kỳ; mục gắn chip "hiện tại" luôn hiển thị toàn bộ. Dữ liệu tính đến ${d}.`,
    basis_t:"Phạm vi tổng hợp & cách tính",howto:"Cách đọc",
    ref_chip:"tham khảo",ref_why:"Chỉ để tham khảo — ước lượng theo số ticket, không phải giờ công thực tế",
    due_cov:(w,o,p)=>`Chỉ ${w}/${o} ticket đang mở có ngày hạn (${p}%). Ticket không có hạn thì không bao giờ bị tính quá hạn, nên tỉ lệ quá hạn thấp hơn thực tế.`,
@@ -661,7 +661,8 @@ const VERINFO={ver:'v2 preview',
   "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行へ移動しました",
   "この「このダッシュボードについて」画面を追加 — すべてのページの見出し下から開けます",
   "「担当者×領域 従事割合」の各区分をクリックすると、該当チケットの一覧（カテゴリ・状態・更新日）がその行の下に開きます",
-  "「その他」が一定の割合を超える行には、その内訳（Backlog のカテゴリ別）を棒の下に表示します"],
+  "「その他」が一定の割合を超える行には、その内訳（Backlog のカテゴリ別）を棒の下に表示します",
+  "期間フィルターに「直近180日」と「年初来（1月1日〜）」を追加しました。長い期間では推移グラフと表が月単位になり、年初来には前期との比較がありません"],
  byProject:{
   m2:["KPIカードに「期限内完了」と「待ち状態の滞留」を追加しています"],
   if:["「担当者×領域 従事割合」セクションを表示しています — 直近の活動を領域別の内訳で示します","領域を3区分から6区分に見直しました（区分名は凡例のとおり）。「その他」はカテゴリ未設定のチケットのみです"],
@@ -681,7 +682,8 @@ const VERINFO={ver:'v2 preview',
   "On wide screens the KPI cards and the summary sit side by side, with the filters moved up to the title row",
   "Added this About screen — reachable from under the heading on every page",
   "In \"Engagement by area\", clicking a segment opens the tickets behind it (category, status, last update) under that row",
-  "When \"Other\" exceeds a set share of a row, its breakdown by Backlog category is printed under the bar"],
+  "When \"Other\" exceeds a set share of a row, its breakdown by Backlog category is printed under the bar",
+  "Added \"Last 180d\" and \"YTD\" (from Jan 1) to the period filter. Long periods chart and tabulate by month; YTD has no previous-period comparison"],
  byProject:{
   m2:["The KPI row adds \"on-time completion\" and \"waiting-state stalls\""],
   if:["Shows the \"engagement by area\" section — recent activity broken down per area","Areas revised from three to six (names as in the legend). \"Other\" now holds only tickets with no category"],
@@ -701,7 +703,8 @@ const VERINFO={ver:'v2 preview',
   "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề",
   "Thêm màn hình giới thiệu này — mở được từ ngay dưới tiêu đề ở mọi trang",
   "Ở mục \"Tỷ trọng theo mảng\", bấm vào một đoạn màu sẽ mở danh sách ticket phía sau nó (nhóm, trạng thái, ngày cập nhật) ngay dưới hàng đó",
-  "Khi phần \"Khác\" của một hàng vượt ngưỡng đặt trước, cơ cấu của nó theo nhóm Backlog được in dưới thanh"],
+  "Khi phần \"Khác\" của một hàng vượt ngưỡng đặt trước, cơ cấu của nó theo nhóm Backlog được in dưới thanh",
+  "Thêm mốc \"180 ngày\" và \"Từ đầu năm\" (từ 01/01) vào bộ lọc kỳ. Kỳ dài vẽ biểu đồ và bảng theo tháng; từ đầu năm không so sánh với kỳ trước"],
  byProject:{
   m2:["Hàng thẻ KPI có thêm \"đóng đúng hạn\" và \"tồn đọng dạng chờ\""],
   if:["Hiển thị mục \"tỷ trọng theo mảng\" — hoạt động gần đây chia theo từng mảng","Chia lại từ 3 thành 6 mảng (tên mảng như trong chú giải). \"Khác\" chỉ còn ticket chưa gắn nhóm"],
@@ -750,7 +753,15 @@ let HEROTIP={};
 /* language is a VIEWER preference: persisted per device (07.28), never carried in
    shared links — each viewer sees their own choice (default ja on first visit) */
 let LANG=(()=>{try{const v=localStorage.getItem('tl_dash_lang');if(v&&DICT[v])return v;}catch(e){}return 'ja';})();
-let SCOPE='all', RANGE=30, A2ID={}, PI=0;
+let SCOPE='all', RKEY='30', RANGE=30, A2ID={}, PI=0;
+/* range (09.10): RKEY is the filter button ('7'|'30'|'90'|'180'|'ytd'); RANGE stays the
+   numeric day count every metric uses, refreshed from RKEY at the top of compute().
+   'ytd' = from Jan 1 of the current year, and has no previous-period comparison —
+   the span before Jan 1 is last year's, not the same kind of period. */
+function rangeInfo(){const y=TODAY.getUTCFullYear();
+  if(RKEY==='ytd'){const s=new Date(Date.UTC(y,0,1));return{key:'ytd',days:Math.max(1,days(s,TODAY)),start:s,prev:false};}
+  const n=+RKEY;const s=new Date(TODAY);s.setUTCDate(s.getUTCDate()-n);return{key:RKEY,days:n,start:s,prev:true};}
+const rangeLabel=t=>RKEY==='ytd'?t.rytd(TODAY.getUTCFullYear()):t['r'+RKEY];
 /* tab title carries the page/project slug so multiple open tabs are tellable apart */
 const PAGESLUG=(()=>{try{const seg=location.pathname.split('/').filter(s=>s&&!/^index\.html?$/i.test(s));return seg[seg.length-1]||'';}catch(e){return '';}})();
 if(PAGESLUG)document.title=PAGESLUG+' · TLダッシュボード';
@@ -815,11 +826,18 @@ function scopeName(id){
 
 /* ============ compute ============ */
 function compute(){
+  const RI=rangeInfo();RANGE=RI.days;
   const f=scopeFilter(SCOPE);
-  const scoped=RAW.filter(f);
+  /* closed-ticket cap (09.10): closed items count only within META.closedWin days back,
+     unless the selected range (plus its previous period) reaches further — so the
+     7/30/90 views keep the basis they always had while the pull window itself grew
+     for 180d / 年初来. Applied to `scoped`, so status and category totals follow too. */
+  const cwDays=Math.max(META.closedWin||META.win||120,RI.prev?RANGE*2:RANGE);
+  const cwStart=new Date(TODAY);cwStart.setUTCDate(cwStart.getUTCDate()-cwDays);
+  const scoped=RAW.filter(f).filter(i=>!isDone(i)||(D(i.updated)&&D(i.updated)>=cwStart));
   const open=scoped.filter(i=>!isDone(i));
   const closedAll=scoped.filter(isDone);
-  const start=new Date(TODAY);start.setUTCDate(start.getUTCDate()-RANGE);
+  const start=RI.start;
   const createdR=scoped.filter(i=>D(i.created)&&D(i.created)>=start);
   const closedR=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=start);
   const overdue=open.filter(i=>i.dueDate&&D(i.dueDate)<TODAY);
@@ -843,8 +861,8 @@ function compute(){
   const crOther=createdR.length-crPlan;
   // previous window (health trend arrow + move section comparisons)
   const pstart=new Date(TODAY);pstart.setUTCDate(pstart.getUTCDate()-RANGE*2);
-  const createdP=scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start);
-  const closedP=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start);
+  const createdP=RI.prev?scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start):[];
+  const closedP=RI.prev?closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start):[];
   // health (V1 07.31 — redesigned): the signal is inflow vs throughput
   // (処理率 = closed ÷ unplanned inflow, %). Stale/overdue have their own
   // cards and no longer vote here; 999 = no inflow, null = no flow at all.
@@ -913,6 +931,13 @@ function compute(){
   if(RANGE<=30){
     wd=[];for(let k=RANGE-1;k>=0;k--){const d0=new Date(TODAY);d0.setUTCDate(d0.getUTCDate()-k);
       wd.push(bucketStat(d0,d0,`${d0.getUTCMonth()+1}/${d0.getUTCDate()}`,RANGE===7||d0.getUTCDay()===1));}
+  }else if(RANGE>=180){
+    /* long ranges (09.10): one bucket per calendar month from the range start;
+       first and last buckets are partial months (the table says which month) */
+    wd=[];
+    for(let d=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth(),1));d<=TODAY;d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1))){
+      const from=d<start?start:d;const mend=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));const to=mend>TODAY?TODAY:mend;
+      wd.push(bucketStat(from,to,T().mon_(d.getUTCMonth()+1),true));}
   }else{
     wd=[];for(let w=12;w>=0;w--){const wk=monday(TODAY);wk.setUTCDate(wk.getUTCDate()-w*7);
       const end=new Date(wk);end.setUTCDate(end.getUTCDate()+6);
@@ -921,7 +946,7 @@ function compute(){
   // in-period movement (07.28): what actually happened inside RANGE — created vs
   // closed per type/category, top finishers, median cycle time (vs previous
   // window — createdP/closedP computed above with the health trend)
-  const cycOf=list=>median(list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null));
+  const cycOf=list=>{const xs=list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null);return xs.length?median(xs):null;};
   const MV={};
   createdR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cr++;});
   closedR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cl++;});
@@ -970,7 +995,7 @@ function compute(){
     rows:['wait','work','open'].map(g=>({g,cells:SGR[g].map(a=>({n:a.length,
       top:[...a].sort((x,z)=>idleD(z)-idleD(x)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i),st:(SFULL.find(s=>s.id===i.stId)||{}).name||bkt(i)}))}))})),
     unasTop:[...unasL].sort((a,b)=>idleD(b)-idleD(a)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i)}))};
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,openWithDue,dueCovPct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,openWithDue,dueCovPct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag,prev:RI.prev};
 }
 
 /* ============ verdict engine (v2.1 08.06 — PM feedback ①) ============
@@ -1041,7 +1066,8 @@ function renderHero(m){
   const t=T();const r=RANGE;
   const s={r,created:m.createdR.length,closed:m.closedR.length,net:m.net,open:m.open.length,
     overdue:m.overdue.length,overduePct:m.overduePct,stale:m.stale.length,stalePct:m.stalePct,forecast:m.forecast,
-    planned:m.planned,crPlan:m.crPlan,crOther:m.crOther,rate:m.rate,rateP:m.rateP,inflow:m.crOther};
+    planned:m.planned,crPlan:m.crPlan,crOther:m.crOther,rate:m.rate,rateP:m.rateP,inflow:m.crOther,
+    rl:RKEY==='ytd'?t.rp_ytd(TODAY.getUTCFullYear()):t.rp_days(RANGE)};
   const lvl=c=>c==='r'?t.crit:c==='a'?t.warn:t.good;
   /* V1 07.31: growth is not framed as bad by default — amber only when the
      UNPLANNED inflow alone outpaces closing; planned-driven growth stays neutral */
@@ -1106,10 +1132,11 @@ function renderInsight(m){
      the dwell story — fall back to the raw top only if nothing clears it */
   const stagCat=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
   const overCat=m.move&&m.move.over&&m.move.over.net>0?m.move.over:null;
+  const RIN=RKEY==='ytd'?T().rytd_in(TODAY.getUTCFullYear()):T().r_in(RANGE);
   const p1=`<span class="hl">${scopeName(SCOPE)}</span>: ${m.open.length}${LANG==='ja'?'件オープン':LANG==='vi'?' đang mở':' open'}, `+
-    (LANG==='ja'?`直近${RANGE}日で新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
-    :LANG==='vi'?`${RANGE} ngày qua tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
-    :`last ${RANGE}d: ${m.createdR.length} new / ${m.closedR.length} closed (backlog <span class="hl">${dir}</span>).`);
+    (LANG==='ja'?`${RIN}新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
+    :LANG==='vi'?`${RIN} tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
+    :`${RIN} ${m.createdR.length} new / ${m.closedR.length} closed (backlog <span class="hl">${dir}</span>).`);
   const p2=m.forecast?(LANG==='ja'?`現ペースなら約 <span class="hl">${m.forecast}</span> で消化。`:LANG==='vi'?`Tốc độ hiện tại ước hoàn tất ~<span class="hl">${m.forecast}</span>.`:`At current pace, clears ~<span class="hl">${m.forecast}</span>.`)
     :(LANG==='ja'?`現ペースでは<span class="hl">${t.noconv}</span>（完了が滞留）。`:LANG==='vi'?`Ở tốc độ hiện tại <span class="hl">${t.noconv}</span>.`:`<span class="hl">${t.noconv}</span> at current pace.`);
   const bullets=[
@@ -1155,7 +1182,8 @@ function renderSections(m){
   };
   /* period-scoped sections wear the accent range chip; snapshot sections wear a
      grey 現時点 chip — so the reader always knows which knob moves which box */
-  const RCHIP=`<span class="cnt rchip">${t['r'+RANGE]||RANGE+'d'}</span>`;
+  const RCHIP=`<span class="cnt rchip">${rangeLabel(t)||RANGE+'d'}</span>`;
+  const RPH=RKEY==='ytd'?t.rp_ytd(TODAY.getUTCFullYear()):t.rp_days(RANGE);
   const NCHIP=`<span class="cnt nchip">${t.now_}</span>`;
   /* 参考 badge on the collapsed header + 見方 line above the box (08.18) */
   const RF=id=>isRef(id)?`<span class="cnt rfchip" title="${t.ref_why}">${t.ref_chip}</span>`:'';
@@ -1186,7 +1214,7 @@ function renderSections(m){
       <div class="secbody">
       ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by,items:m.areas.all.items},true,'all')}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
-      <div class="note" style="margin-top:6px">${t.area_note(RANGE)} · ${t.area_click}</div>
+      <div class="note" style="margin-top:6px">${t.area_note(RPH)} · ${t.area_click}</div>
       <div class="asep"></div>
       ${mem.map((x,ix)=>rowHTML({...x,link:assigneeLink(x.name),hid:ix>=STEP},false,String(ix))).join('')}
       ${mem.length>STEP?`<button class="morebtn" id="areamore">${t.area_more(mem.length-STEP)}</button>`:''}
@@ -1200,8 +1228,8 @@ function renderSections(m){
     SEC.move=`<details class="sec" id="sec-move"><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${RF('move')}${SH('sec-move')}<span class="chev">▶</span>${VL('move')}</summary>
       <div class="secbody">
       <div class="mvstats">
-        <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${t.mv_prev(mv.crP)}</span></div>
-        <div class="mvstat"><span class="mvl">${t.closed}</span><span class="mvv mono g">${m.closedR.length}</span><span class="mvp mono">${t.mv_prev(mv.clP)}</span></div>
+        <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${m.prev?t.mv_prev(mv.crP):''}</span></div>
+        <div class="mvstat"><span class="mvl">${t.closed}</span><span class="mvv mono g">${m.closedR.length}</span><span class="mvp mono">${m.prev?t.mv_prev(mv.clP):''}</span></div>
         <div class="mvstat"><span class="mvl">${t.mv_cyc}</span><span class="mvv mono">${mv.cyc!=null?mv.cyc+'d':'·'}</span><span class="mvp mono">${mv.cycP!=null?t.mv_prev(mv.cycP+'d'):''}</span></div>
       </div>
       ${mv.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.mv_bycat}</div>
@@ -1247,7 +1275,7 @@ function renderSections(m){
   SEC.flow=`<details class="sec" id="sec-flow"><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${RF('flow')}${SH('sec-flow')}<span class="chev">▶</span>${VL('flow')}</summary>
     <div class="secbody">${HOW('hm_flow')}${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
-    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
+    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:RANGE>=180?t.month:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
     ${[...tblB].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
     </tbody></table></div>${tblB.length<m.wd.length?`<div class="note">${t.flow_tbl(tblB.length)}</div>`:''}</div></details>`;
   }
@@ -1368,7 +1396,7 @@ function buildControls(){
   const opts=[['all',t.allopen],...tagOpts,['highp',t.highp],['overdue',t.overdueScope],...topMs.map(n=>['ms:'+n,t.ms(n)])];
   $('#sel-scope').innerHTML=opts.map(([v,l])=>`<option value="${v}"${v===SCOPE?' selected':''}>${l}</option>`).join('');
   // range seg
-  $('#seg-range').innerHTML=[[7,t.r7],[30,t.r30],[90,t.r90]].map(([v,l])=>`<button data-range="${v}" class="${v===RANGE?'on':''}">${l}</button>`).join('');
+  $('#seg-range').innerHTML=[['7',t.r7],['30',t.r30],['90',t.r90],['180',t.r180],['ytd',t.rytd(TODAY.getUTCFullYear())]].map(([v,l])=>`<button data-range="${v}" class="${v===RKEY?'on':''}">${l}</button>`).join('');
   // labels
   $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;
   document.querySelectorAll('#btn-lang svg').forEach(s=>s.classList.toggle('on',s.dataset.l===LANG));
@@ -1455,7 +1483,7 @@ function renderAll(){
   $('#t-sub').insertAdjacentHTML('beforeend',
     ` <span class="defbtn" data-def="basis">i</span> <span class="subsep">·</span> <span id="lnk-about">${t.about_t}</span>`);
   /* same text, printed: an exported PDF/HTML has no ⓘ to click */
-  $('#basisbox').innerHTML=`<b>${t.basis_t}</b>${t.def_basis(META.win||120,META.today)}`;
+  $('#basisbox').innerHTML=`<b>${t.basis_t}</b>${t.def_basis(META.closedWin||META.win||120,META.today)}`;
   /* multi page only: quiet about/changelog line right under the utility cluster */
   /* 08.18 (operator): the About link belongs on EVERY page, not just /all. It
      moved out of the absolute-positioned corner slot (`.utilabout`) and into the
@@ -1484,7 +1512,7 @@ function parseHash(){
 }
 
 $('#sel-scope').addEventListener('change',e=>{SCOPE=e.target.value;renderAll();});
-$('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RANGE=+b.dataset.range;renderAll();});
+$('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RKEY=b.dataset.range;renderAll();});
 $('#btn-lang').addEventListener('click',()=>{const L=['ja','en','vi'];
   LANG=L[(L.indexOf(LANG)+1)%L.length];
   try{localStorage.setItem('tl_dash_lang',LANG);}catch(e){} renderAll();});
@@ -1669,7 +1697,7 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('.defbtn');if(!b)return;
   e.preventDefault();e.stopPropagation();
   let txt=T()['def_'+b.dataset.def];if(!txt)return;
-  if(typeof txt==='function')txt=txt(META.win||120,META.today);
+  if(typeof txt==='function')txt=txt(META.closedWin||META.win||120,META.today);
   const d=document.createElement('div');d.id='defpop';d.textContent=txt;
   document.body.appendChild(d);
   const r=b.getBoundingClientRect();

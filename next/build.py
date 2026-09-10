@@ -78,7 +78,12 @@ META = {"today": D["today"], "generated": a.built or D["generated"],
         "generatedAt": a.built or D.get("generatedAt") or D["generated"],
         # closed-window length, so the page can state its own aggregation basis
         # (the ⓘ next to the subtitle + the printed basis block, 08.18)
-        "win": CFG.get("windowDays", 120)}
+        "win": CFG.get("windowDays", 120),
+        # closed-analysis cap (09.10): the page counts closed tickets only this far
+        # back unless the selected range (180d / 年初来) reaches further; the pull
+        # window itself may be wider (windowDays + windowFromYearStart)
+        "closedWin": CFG.get("closedWindowDays", CFG.get("windowDays", 120)),
+        "yearStart": bool(CFG.get("windowFromYearStart"))}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
 SPACE = D.get("space", CFG.get("space", ""))
 
