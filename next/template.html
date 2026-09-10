@@ -777,7 +777,13 @@ const bkt=i=>SMAP[i.stId]||'Open';
 const AREARULES=()=>(PCFG.areas&&(PCFG.areas.rulesNext||PCFG.areas.rules))||[];
 const areaLabel=id=>{const A=PCFG.areas||{};if(id==='_other')return (A.other||{})[LANG]||(A.other||{}).en||'—';
   const r=AREARULES().find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
-const areaColor=id=>{const ix=AREARULES().findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,6)})`:'var(--faint)';};
+/* display order ≠ classification priority (operator 09.10): `areas.displayOrder` lists the
+   ids as the bar and legend show them; rule order stays the matching priority. A rule may
+   pin its own `color`; otherwise the colour follows the display position (--a1…--a6). */
+const AREAORDER=()=>{const rs=AREARULES();const o=(PCFG.areas&&PCFG.areas.displayOrder)||[];
+  const ids=o.filter(id=>rs.some(r=>r.id===id));rs.forEach(r=>{if(!ids.includes(r.id))ids.push(r.id);});return ids;};
+const areaColor=id=>{const r=AREARULES().find(r=>r.id===id);if(r&&r.color)return r.color;
+  const ix=AREAORDER().indexOf(id);return ix>=0?`var(--a${Math.min(ix+1,6)})`:'var(--faint)';};
 const BORDER={Open:'var(--st-open)',InProgress:'var(--st-inprog)',Resolved:'var(--st-resolved)',Pending:'var(--st-pending)',Closed:'var(--st-closed)'};
 /* category of an issue — mode from per-project config:
    'issueType' = Backlog issue type; 'bracket2' = 2nd 【…】 tag in the title; 'none' */
@@ -873,7 +879,7 @@ function compute(){
     // items per area are kept (09.10) so a segment click can list them — counts, not hours
     const put=(a,k,i)=>{a.total++;a.by[k]=(a.by[k]||0)+1;(a.items[k]=a.items[k]||[]).push(i);};
     act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{},items:{}};const k=areaOf(i);put(a,k,i);put(ALL,k,i);});
-    areas={ids:[...rules.map(r=>r.id),'_other'],all:ALL,
+    areas={ids:[...AREAORDER(),'_other'],all:ALL,
       members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by,items:v.items})).sort((a,b)=>b.total-a.total)};
   }
   // members
