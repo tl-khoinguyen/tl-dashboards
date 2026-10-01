@@ -75,7 +75,15 @@ def load_insight():
 INS = load_insight()
 
 META = {"today": D["today"], "generated": a.built or D["generated"],
-        "generatedAt": a.built or D.get("generatedAt") or D["generated"]}
+        "generatedAt": a.built or D.get("generatedAt") or D["generated"],
+        # closed-window length, so the page can state its own aggregation basis
+        # (the ⓘ next to the subtitle + the printed basis block, 08.18)
+        "win": CFG.get("windowDays", 120),
+        # closed-analysis cap (09.10): the page counts closed tickets only this far
+        # back unless the selected range (180d / 年初来) reaches further; the pull
+        # window itself may be wider (windowDays + windowFromYearStart)
+        "closedWin": CFG.get("closedWindowDays", CFG.get("windowDays", 120)),
+        "yearStart": bool(CFG.get("windowFromYearStart"))}
 BUILD = {"updateUrl": CFG.get("updateUrl", "")}
 SPACE = D.get("space", CFG.get("space", ""))
 
@@ -83,8 +91,16 @@ SPACE = D.get("space", CFG.get("space", ""))
 # from Secrets), never from config. Embedded ONLY in encrypted payloads: the
 # verifier is what stops strangers from spamming subscriptions, so it must stay
 # behind the passphrase. Missing env → push UI simply absent.
+# Preview builds carry NO push config (08.07): /next/ has its own service-worker
+# scope, so a device opted in on production silently gains a SECOND subscription
+# the moment it opens the preview (the self-heal re-subscribes on any page whose
+# localStorage flag is set — same origin, different scope). That is how one phone
+# got two pings at 14:54 on 08.06 (registry went 1 → 3 subs in a day). Push is a
+# production-only feature; the preview simply hides the bell.
 PUSH = None
-if all(os.environ.get(k) for k in ("PUSH_VERIFIER", "PUSH_WORKER_URL", "VAPID_PUBLIC")):
+if a.variant:
+    pass
+elif all(os.environ.get(k) for k in ("PUSH_VERIFIER", "PUSH_WORKER_URL", "VAPID_PUBLIC")):
     PUSH = {"v": os.environ["PUSH_VERIFIER"].strip(),
             "url": os.environ["PUSH_WORKER_URL"].strip().rstrip("/"),
             "pub": os.environ["VAPID_PUBLIC"].strip()}
@@ -99,9 +115,12 @@ def payload(pc):
         sys.exit(f"no pulled data for slug '{slug}' — run pull.py")
     p = D["pulls"][slug]
     ins = None
-    if INS and slug in INS.get("pages", {}):
+    _sec = (INS.get("sections") or {}).get(slug) if INS else None
+    if INS and (slug in INS.get("pages", {}) or _sec):
+        # v2.1 (08.06): optional per-section AI remarks ride along; the client
+        # decides freshness (≤3d normal, ≤7d greyed, older = base verdicts only)
         ins = {"date": INS.get("date"), "week": INS.get("week"),
-               "items": INS["pages"][slug]}
+               "items": INS.get("pages", {}).get(slug), "sections": _sec}
     return {"slug": slug, "name": pc.get("name", pc["key"]),
         "conf": {"space": SPACE, "pk": pc["key"], "pid": p.get("pid")},
         "SMAP": p["SMAP"], "RAW": p["RAW"], "insight": ins,
@@ -113,6 +132,7 @@ def payload(pc):
                 "catNormalize": pc.get("catNormalize", {}),
                 "planned": pc.get("plannedCategories", []),
                 "thresholds": pc.get("thresholds", {}),
+                "display": pc.get("display", {}),
                 "note": pc.get("note", None)}}
 
 def encrypt(obj, passes):

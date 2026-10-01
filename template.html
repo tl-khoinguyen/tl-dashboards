@@ -28,7 +28,7 @@
      status colors from the API override these at runtime (loadProject) */
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
   /* categorical palette for the AREA dimension (validated, distinct from status) */
-  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4;
+  --a1:#2a78d6; --a2:#eb6834; --a3:#1baf7a; --a4:#eda100; --a5:#e87ba4; --a6:#7c5cd6;
   --shadow:0 1px 2px rgba(20,30,50,.05),0 2px 8px rgba(20,30,50,.05);
   --radius:14px;
 }
@@ -39,7 +39,7 @@ html[data-theme="dark"]{
   --green:#3DD3A0; --green-soft:#123528; --amber:#F5B463; --amber-soft:#3A2A12;
   --red:#F87171; --red-soft:#3A1B1E; --grid:#1B2A45;
   --st-open:#ed8077; --st-inprog:#4488c5; --st-resolved:#5eb5a6; --st-pending:#eda62a; --st-closed:#b0be3c;
-  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181;
+  --a1:#3987e5; --a2:#d95926; --a3:#199e70; --a4:#c98500; --a5:#d55181; --a6:#8b6fe6;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -56,6 +56,69 @@ body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Hiragino Kaku Gothic
 .projnav button{font:inherit;font-size:15px;font-weight:700;padding:9px 18px;border:1px solid var(--border);background:var(--panel);color:var(--muted);border-radius:10px;cursor:pointer;transition:all .12s;}
 .projnav button:hover{border-color:var(--accent);color:var(--text);}
 .projnav button.on{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:var(--shadow);}
+/* about = a deliberately low-key text line right under the utility cluster
+   (08.06 — operator; a button in the tab bar collided with the cluster, and the
+   footer placement was too buried) */
+.utilabout{position:absolute;top:calc(64px + env(safe-area-inset-top,0px));right:18px;z-index:20;font-size:12.5px;}
+.utilabout:empty{display:none;}
+#lnk-about{cursor:pointer;color:var(--muted);border-bottom:1px dashed var(--border);font-size:12.9px;white-space:nowrap;}
+.subsep{color:var(--faint);margin:0 2px;}
+#lnk-about:hover{color:var(--text);border-bottom-color:var(--muted);}
+.abpj{margin-top:9px;}
+.abpj>b{display:block;font-size:13.4px;color:var(--accent);margin-bottom:2px;}
+/* about modal (v2 08.06) — multi page only */
+#aboutov{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;}
+#aboutov[hidden]{display:none;}
+.aboutbox{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:14px;max-width:620px;width:100%;max-height:86vh;overflow-y:auto;padding:16px 20px 14px;box-shadow:var(--shadow);}
+.aboutbox h2{font-size:15.5px;margin:0 30px 8px 0;}
+.aboutbox p{font-size:14px;line-height:1.6;margin-bottom:7px;color:var(--text);}
+.aboutbox h3{font-size:14px;margin:11px 0 5px;}
+.aboutbox ul{margin:0 0 2px 17px;}
+.aboutbox li{font-size:13.8px;line-height:1.55;margin-bottom:3px;}
+#about-txt{cursor:copy;}
+.aboutx{position:absolute;top:8px;right:9px;width:30px;height:30px;border:none;background:none;font-size:21px;line-height:1;color:var(--muted);cursor:pointer;border-radius:8px;}
+.aboutx:hover{background:var(--panel2);color:var(--text);}
+/* verdict lines on section strips (v2.1) — a collapsed row still tells its story */
+.sec>summary{flex-wrap:wrap;}
+.vline{flex-basis:100%;font-size:13.6px;font-weight:500;color:var(--muted);line-height:1.5;margin-top:3px;}
+.aibdg{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:7px;padding:1px 7px;margin-right:7px;vertical-align:1px;white-space:nowrap;}
+.vline.ai{color:var(--text);}
+.vline.ai.old,.aibdg.old,.ailist.old{color:var(--muted);filter:grayscale(1);opacity:.85;}
+/* ⓘ definition popovers (v2.1) — the manual lives at the point of doubt */
+.defbtn{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-left:5px;border:1px solid var(--border);border-radius:50%;font-size:10.5px;color:var(--muted);cursor:help;vertical-align:1px;}
+.defbtn:hover{color:var(--accent);border-color:var(--accent);}
+#defpop{position:absolute;max-width:320px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow);z-index:95;line-height:1.65;}
+/* KPI card interactions (v2.2): click = jump to its section, hover = preview */
+.kcard{cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s;}
+.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+#cardtip{position:absolute;max-width:340px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow);z-index:95;line-height:1.6;}
+#cardtip .ctvd{color:var(--muted);margin-top:5px;border-top:1px dashed var(--border);padding-top:5px;}
+#cardtip .cthint{color:var(--accent);font-size:12px;margin-top:6px;}
+details.sec.flash{box-shadow:0 0 0 3px var(--accent-soft);transition:box-shadow .3s;}
+/* v2.2 rev2 (operator 08.06 — the title|insight side-by-side made things worse):
+   wide layout = KPI cards LEFT | remark RIGHT (two tall variable blocks balance
+   each other), and the filter bar rides up into the title row (JS relocates it;
+   the stuck state becomes position:fixed there, sentinel logic unchanged).
+   Narrow screens keep today's exact stacked order. */
+.bodygrid{display:block;}
+@media (min-width:1280px){
+  .bodygrid{display:grid;grid-template-columns:minmax(420px,44%) 1fr;gap:18px;align-items:start;margin:18px 0;}
+  .bodygrid .hero{grid-template-columns:1fr 1fr;margin:0;}
+  .bodygrid .insight{margin:0;}
+  .h1row .controls{border-top:none;padding:0;margin-left:auto;position:static;}
+  .h1row .controls .ctl>label{display:none;}
+  .controls.stuck{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;}
+  /* v2.2 rev3 (08.14 — operator spotted the collision): on a STANDALONE page the
+     tab row is absent, so the title row rides up into the exact band the absolute
+     utility cluster owns (top-right) and the filter bar's last button sat under
+     the lang/theme/install buttons. Wide + no tabs => the cluster joins the row as
+     a flex item and flex keeps them apart. /all is untouched: there the tab row
+     holds that band, so the cluster stays in its corner (JS decides, see place()). */
+  .h1row .util{position:static;margin-left:10px;}
+  /* stuck = the filter bar goes position:fixed and leaves the row; without this
+     the cluster would slide back next to the title */
+  .h1row .controls.stuck~.util{margin-left:auto;}
+}
 .top{display:flex;flex-direction:column;gap:14px;margin-bottom:16px;}
 .controls{padding-top:12px;border-top:1px solid var(--border);}
 .brand{display:flex;flex-direction:column;gap:2px;}
@@ -147,6 +210,13 @@ tr:last-child td{border-bottom:none;}
 .abar i{font-style:normal;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;}
 .abar i b{font-size:10.5px;color:#fff;font-weight:700;text-shadow:0 1px 1px rgba(0,0,0,.4);}
 .arow.hid{display:none;}
+/* area drill-down (09.10): every segment is clickable → ticket list under its row;
+   その他 above the config threshold prints its Backlog-category breakdown */
+.abar i.aseg{cursor:pointer;}
+.abar i.aseg.on{box-shadow:inset 0 0 0 2px var(--text),inset -1.5px 0 0 0 var(--panel);}
+.abd{font-size:13.2px;color:var(--muted);margin-top:5px;}
+.alist{display:none;margin:4px 0 10px;padding:6px 10px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);}
+.alist.on{display:block;}
 .asep{border-top:2px solid var(--border);margin:16px 0 14px;}
 .bar{display:flex;align-items:center;gap:8px;}
 .bar .tk{flex:1;height:8px;border-radius:5px;background:var(--grid);overflow:hidden;}
@@ -176,6 +246,7 @@ tr:last-child td{border-bottom:none;}
    a compact full-width card when stuck */
 @media (max-width:680px){
   .util{position:static;justify-content:flex-end;margin-bottom:6px;}
+  .utilabout{position:static;text-align:right;margin:-2px 0 6px;}
   .controls .cbar{align-items:flex-start;}
   .controls .cgroup{gap:8px;flex-wrap:wrap;min-width:0;}
   .controls.stuck .cbar{width:100%;max-width:100%;border-radius:16px;padding:9px 10px;}
@@ -194,6 +265,20 @@ tr:last-child td{border-bottom:none;}
 .stalebar a{color:inherit;font-weight:700;text-decoration:underline;}
 .foot{margin-top:26px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;}
 .note{font-size:13.2px;color:var(--faint);margin-top:8px;}
+/* 参考 / 見方 / 基準 (08.18 — adopted from the JP monthly IT report):
+   (a) a section whose numbers approximate effort from ticket counts says so on
+   its COLLAPSED header, because every section starts closed and a caveat in the
+   body is read only by someone already inside it;
+   (b) .howto sits ABOVE the box it explains — a legend under a chart arrives
+   after the misreading;
+   (c) .basisbox is the printed "what this document is" block: on screen the
+   basis lives behind the ⓘ next to the subtitle, but an exported PDF/HTML
+   travels without its ⓘ, so the same text is printed at the foot. */
+details.sec>summary .cnt.rfchip{background:transparent;color:var(--faint);border:1px dashed var(--border);font-weight:600;cursor:help;}
+.howto{font-size:13.4px;color:var(--muted);line-height:1.62;margin:0 0 13px;padding:9px 12px;background:var(--panel2);border-radius:9px;}
+.howto b{color:var(--text);font-weight:700;margin-right:7px;}
+.basisbox{display:none;margin-top:22px;padding-top:14px;border-top:1px solid var(--border);font-size:12.6px;color:var(--faint);line-height:1.66;}
+.basisbox b{display:block;font-size:13.2px;color:var(--muted);margin-bottom:5px;}
 .ailist{margin:4px 0 8px;padding-left:20px;}
 .ailist li{margin:7px 0;line-height:1.68;font-size:14.6px;}
 /* period vs snapshot signalling (07.28) */
@@ -255,7 +340,8 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
    stripped; the per-assignee area list prints its FIRST page only (.hid rows
    stay hidden by design — operator decision). Colors kept via print-color-adjust. */
 @media print{
-  .util,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap{display:none!important;}
+  .util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.share,.morebtn,.expwrap,#aboutov,.defbtn,#defpop{display:none!important;}
+  .basisbox{display:block!important;}
   body{background:#fff;font-size:13.5px;}
   .wrap{max-width:100%;padding:0;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-shadow:none!important;}
@@ -297,7 +383,9 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
     <button class="btn iconbtn" id="btn-push" style="display:none"
       title="毎朝の更新通知 / Update notifications / Thông báo cập nhật"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 5-2 6.5-2 6.5h16S18 13 18 8"/><path d="M10.3 19a2 2 0 0 0 3.4 0"/></svg></button>
   </div>
+  <div class="utilabout" id="utilabout"></div>
   <div class="projnav" id="projnav"></div>
+  <div id="aboutov" hidden><div class="aboutbox" id="aboutbox"></div></div>
   <div class="top">
     <div class="brand">
       <span class="ey" id="t-ey">Backlog</span>
@@ -327,12 +415,18 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
   </div>
 
   <div class="stalebar" id="stalebar"></div>
-  <div class="hero" id="hero"></div>
-  <div class="insight" id="insight"></div>
+  <!-- bodygrid (v2.2 rev2): wide screens = KPI cards left | remark right (two
+       tall blocks balance each other); narrow = block flow, original order -->
+  <div class="bodygrid" id="bodygrid">
+    <div class="hero" id="hero"></div>
+    <div class="insight" id="insight"></div>
+  </div>
   <div id="sections"></div>
 
   <div id="pushtoast" role="status"></div>
   <button id="totop" title="top" aria-label="back to top">↑</button>
+
+  <div class="basisbox" id="basisbox"></div>
 
   <div class="foot">
     <span id="f-left"></span>
@@ -347,12 +441,12 @@ a.lnk:hover{color:var(--accent);border-color:var(--accent);}
 const DICT={
  ja:{title:"バックログ・ダッシュボード",scope:"スコープ",range:"期間",lang:"言語",
    sub:s=>`スコープ: ${s.scopeName} ／ 未完了 ${s.open}件 ／ 抽出 ${s.date}`,
-   r7:"直近7日",r30:"直近30日",r90:"直近90日",
+   r7:"直近7日",r30:"直近30日",r90:"直近90日",r180:"直近180日",rytd:y=>`${y}年初来`,month:"月",mon_:m=>`${m}月`,r_in:n=>`直近${n}日で`,rytd_in:y=>`${y}年に入ってから`,rp_days:n=>`直近${n}日`,rp_ytd:y=>`${y}年初来`,
    allopen:"全未完了",highp:"優先度：高",overdueScope:"期限超過のみ",
    ms:n=>`マイルストーン: ${n}`,
    k_open:"未完了チケット",k_trend:"バックログ増減",k_over:"期限超過",k_stale:"停滞(30日+)",k_health:"健全度",
-   m_open:s=>`現在オープン中。直近${s.r}日で 新規${s.created}・完了${s.closed}`,
-   m_trend:s=>s.planned?`新規${s.created}件（計画起票 ${s.crPlan}・その他 ${s.crOther}）・完了${s.closed}件`:(s.net>0?`増加中：${s.r}日で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.r}日で ${s.net}（消化が進行）`:`横ばい`),
+   m_open:s=>`現在オープン中。${s.rl}で 新規${s.created}・完了${s.closed}`,
+   m_trend:s=>s.planned?`新規${s.created}件（計画起票 ${s.crPlan}・その他 ${s.crOther}）・完了${s.closed}件`:(s.net>0?`増加中：${s.rl}で +${s.net}（作成が完了を上回る）`:s.net<0?`減少中：${s.rl}で ${s.net}（消化が進行）`:`横ばい`),
    m_over:s=>`${s.overdue}件が期限超過（オープンの${s.overduePct}%）`,
    m_stale:s=>`${s.stale}件が30日以上未更新（${s.stalePct}%）`,
    m_health:s=>s.rate==null?`期間内の流入・処理なし`:`処理 ${s.closed}件 ／ 流入 ${s.inflow}件${s.planned?'（計画外）':''} ＝ 処理率 ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?`（前期 ${s.rateP>=999?'∞':s.rateP+'%'}）`:''}`,
@@ -361,11 +455,42 @@ const DICT={
    ins_ai:"AIインサイト",ins_asof:d=>`${d}時点`,ins_cross:"横断メモ",
    ins_ai_note:"AI生成の週次分析メモ（運用者レビュー済み）。チケット件数ベースの近似です。",
    sec_flow:"フロー＆トレンド",sec_mem:"担当者別 負荷・リードタイム",sec_area:"担当者×領域 従事割合",
-   area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:n=>`直近${n}日に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   area_all:"全体",area_more:n=>`さらに10人表示（残り${n}）`,area_note:p=>`${p}に更新のあったチケット件数ベースの近似（工数実績ではありません）`,sec_cat:"種別/カテゴリ別 進捗",
+   area_bd:"その他の内訳",area_uncat:"カテゴリ未設定",area_click:"区分をクリックすると該当チケットの一覧が開きます",area_upd:"更新",
    sec_move:"期間内の動き",mv_bycat:"種別/カテゴリ別の新規・完了（差分順）",mv_fin:"期間内の完了 上位",mv_cyc:"処理日数 中央値",mv_prev:v=>`前期 ${v}`,now_:"現時点",plan_chip:"計画",
    snap_div:"現時点の全体像 — 期間フィルターの対象外",flow_tbl:n=>`表は直近${n}日分`,day_:"日",
    push_on:"🔔 通知ON — 毎朝の更新時に届きます",push_off:"通知をオフにしました",push_err:"通知の設定に失敗しました — もう一度お試しください",push_denied:"ブラウザ側で通知がブロックされています",
    sec_risk:"期限超過チケット",sec_status:"ステータス構成",
+   sec_closed:"完了チケットの分析",cl_p50:"処理日数 中央値",cl_p85:"処理日数 85%タイル",cl_ontime:"期限内完了",cl_due_d:(ok,n)=>`期限あり ${n}件中 ${ok}件`,cl_nodue:"期限つき完了なし",cl_age:"作成から完了までの日数",cl_bycat:"種別/カテゴリ別の中央値",cl_items:"件",cl_mix:"完了の内訳（種別/カテゴリ）",cl_note:"完了日は最終更新日による近似・チケット件数ベース（工数ではありません）",cl_b1:"7日以内",cl_b2:"8〜30日",cl_b3:"31〜90日",cl_b4:"90日超",cl_other:"未分類",
+   about_t:"このダッシュボードについて",about_h:"説明",about_ch:"今回の主な変更",about_pj:"このプロジェクト固有の表示",about_copied:"コピーしました",
+   ai_pw:"AI分析",
+   sec_stag:"滞留の内訳",stg_note:"Backlogに原因の記録は無いため、これは「どこで止まっているか」の分解です（停滞=30日以上更新なし・件数ベース）",
+   stg_wait:"確認・保留など待ち状態",stg_work:"作業中のまま",stg_open:"未着手のまま",stg_unas:"担当者未設定",stg_c1:"31〜90日",stg_c2:"91日〜1年",stg_c3:"1年超",stg_total:"合計",
+   vd_cl_none:"期間内の完了はありません",vd_cl_late:(ok,n)=>`期限どおりの完了は少数派です（期限あり${n}件中${ok}件）`,vd_cl_slow:(a,b)=>`処理日数が延びています（中央値${a}日・前期${b}日）`,vd_cl_fast:(a,b)=>`処理が速くなっています（中央値${a}日・前期${b}日）`,vd_cl_base:(n,p)=>`${n}件完了・処理日数の中央値${p}日`,
+   vd_fl_in:n=>`流入が消化を上回っています(純増+${n})`,vd_fl_out:n=>`消化が流入を上回っています(純減${n})`,vd_fl_flat:"流入と消化はほぼ拮抗しています",
+   vd_mv_over:(c,n)=>`「${c}」の新規が完了を+${n}件上回ります`,vd_mv_base:(cr,cl)=>`新規${cr}件・完了${cl}件`,
+   vd_st_none:"30日以上停滞しているチケットはありません",vd_st_unas:n=>`担当者未設定のまま停滞しているチケットが${n}件あります`,vd_st_wait:(w,t2)=>`停滞${t2}件の過半（${w}件）は確認・保留などの待ち状態側です`,vd_st_base:(t2,o)=>`停滞${t2}件・うち1年超は${o}件`,
+   vd_mem_top:(p,n)=>`未完了の${p}%が担当上位${n}名に集中しています`,
+   vd_area_top:a=>`直近の活動は「${a}」領域が中心です`,
+   vd_cat_dwell:(c,d)=>`滞留最長は「${c}」（経過中央値${d}日）`,
+   vd_risk:(n,d)=>`期限超過${n}件・最長${d}日超過`,vd_risk_none:"期限超過はありません",
+   vd_status_top:(s,n)=>`最多ステータスは「${s}」（${n}件）`,
+   def_health:"処理率 = 期間内の完了件数 ÷ 計画外の新規件数。100%以上なら消化が流入に追いついています。矢印は前期との比較",
+   def_over:"期限超過 = 期限日を過ぎたオープンチケットの、全オープンに対する割合",
+   def_stale:"停滞 = 30日以上更新のないオープンチケットの、全オープンに対する割合",
+   def_cyc:"処理日数 = 作成日から最終更新日（完了日の近似）までの日数。チケット件数ベースで、工数ではありません",
+   def_basis:(w,d)=>`対象＝このBacklogプロジェクトのチケット。未完了は全件、完了は直近${w}日以内に更新されたもののみ（期間フィルターで180日・年初来を選んだときはその期間まで遡ります。それ以前の完了は含まれません）。数値はすべてチケット件数で、工数（時間）やコストではありません。完了日は最終更新日による近似。上部のスコープ・期間フィルターが効くのは「期間」チップの付いたセクションだけで、「現時点」チップのセクションは常に全体を表します。抽出時点＝${d}。`,
+   basis_t:"集計範囲・算出について",howto:"見方",
+   ref_chip:"参考",ref_why:"参考値 — チケット件数ベースの近似であり、工数（時間）の実績ではありません",
+   due_cov:(w,o,p)=>`期限が設定されているのはオープン${o}件中${w}件（${p}%）。期限のないチケットは超過に数えられないため、超過率は実態より低めに出ます。`,
+   m_over_cov:p=>`期限設定は${p}%`,
+   hm_stag:"縦＝止まっている状態（待ち／作業中／未着手）、横＝最終更新からの経過。数字はチケット件数で、クリックすると該当チケットが開きます。",
+   hm_flow:"棒＝新規（灰）と完了（緑）の件数、破線＝その時点の停滞率。完了の棒が新規を上回る日が続けばバックログは減ります。",
+   k_cyc:"処理日数(中央値)",m_cyc:s=>s.n?`直近の完了${s.n}件の中央値${s.pp?`（前期 ${s.pp}日）`:''}`:'期間内の完了なし',
+   k_ontime:"期限内完了",m_ontime:s=>s.n?`期限つき完了${s.n}件中 ${s.ok}件が期限内`:'期限つきの完了なし',
+   k_unas:"担当者未設定",m_unas:s=>`オープンのうち担当者未設定が${s.n}件`,
+   k_wait:"待ち状態の滞留",m_wait:s=>`停滞${s.t}件のうち確認・保留などの待ちが${s.w}件`,
+   card_go:"クリックでセクションへ移動",
    th_name:"担当者",th_open:"未完了",th_over:"超過",th_stale:"停滞",th_age:"経過中央値",th_dist:"内訳",th_risk:"滞留度",
    th_cat:"カテゴリ",th_done:"完了",th_prog:"進行",th_todo:"未着手",
    th_ticket:"件名",th_due:"期限",th_days:"超過日数",
@@ -381,12 +506,12 @@ const DICT={
    lockMsg:"パスワードを入力して表示",unlock:"開く",wrongPass:"パスワードが違います"},
  en:{title:"Backlog Dashboard",scope:"Scope",range:"Range",lang:"Lang",
    sub:s=>`Scope: ${s.scopeName} · ${s.open} open · as of ${s.date}`,
-   r7:"Last 7d",r30:"Last 30d",r90:"Last 90d",
+   r7:"Last 7d",r30:"Last 30d",r90:"Last 90d",r180:"Last 180d",rytd:y=>`YTD ${y}`,month:"Month",mon_:m=>['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1],r_in:n=>`last ${n}d:`,rytd_in:y=>`since Jan ${y}:`,rp_days:n=>`in the last ${n}d`,rp_ytd:y=>`since Jan ${y}`,
    allopen:"All open",highp:"Priority: High",overdueScope:"Overdue only",
    ms:n=>`Milestone: ${n}`,
    k_open:"Open tickets",k_trend:"Backlog change",k_over:"Overdue",k_stale:"Stale (30d+)",k_health:"Health",
-   m_open:s=>`Currently open. Last ${s.r}d: ${s.created} new / ${s.closed} closed`,
-   m_trend:s=>s.planned?`New ${s.created} (planned ${s.crPlan} / other ${s.crOther}) · closed ${s.closed}`:(s.net>0?`Growing: +${s.net} over ${s.r}d (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} over ${s.r}d`:`Flat`),
+   m_open:s=>`Currently open. ${s.rl}: ${s.created} new / ${s.closed} closed`,
+   m_trend:s=>s.planned?`New ${s.created} (planned ${s.crPlan} / other ${s.crOther}) · closed ${s.closed}`:(s.net>0?`Growing: +${s.net} ${s.rl} (creation outpaces closing)`:s.net<0?`Shrinking: ${s.net} ${s.rl}`:`Flat`),
    m_over:s=>`${s.overdue} past due (${s.overduePct}% of open)`,
    m_stale:s=>`${s.stale} untouched 30d+ (${s.stalePct}%)`,
    m_health:s=>s.rate==null?`No inflow/outflow in period`:`Closed ${s.closed} / inflow ${s.inflow}${s.planned?' (unplanned)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (prev ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
@@ -395,11 +520,42 @@ const DICT={
    ins_ai:"AI Insight",ins_asof:d=>`as of ${d}`,ins_cross:"Cross-project",
    ins_ai_note:"AI-generated weekly analysis (operator-reviewed). Approximation based on ticket counts.",
    sec_flow:"Flow & trend",sec_mem:"Assignee load & lead time",sec_area:"Engagement by area (per assignee)",
-   area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:n=>`Approximation from tickets updated in the last ${n}d (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   area_all:"All",area_more:n=>`Show 10 more (${n} left)`,area_note:p=>`Approximation from tickets updated ${p} (ticket counts, not hours)`,sec_cat:"Progress by type/category",
+   area_bd:"Other, by Backlog category",area_uncat:"no category",area_click:"click a segment to list its tickets",area_upd:"updated",
    sec_move:"Movement in period",mv_bycat:"New vs closed by type/category (sorted by net)",mv_fin:"Top finishers in period",mv_cyc:"Median cycle time",mv_prev:v=>`prev ${v}`,now_:"Now",plan_chip:"plan",
    snap_div:"Current snapshot — not affected by the period filter",flow_tbl:n=>`Table: last ${n} days`,day_:"Day",
    push_on:"🔔 Notifications ON — you'll get the daily update ping",push_off:"Notifications turned off",push_err:"Could not enable notifications — please try again",push_denied:"Notifications are blocked in the browser settings",
    sec_risk:"Overdue tickets",sec_status:"Status breakdown",
+   sec_closed:"Closed-ticket analysis",cl_p50:"Cycle time median",cl_p85:"Cycle time p85",cl_ontime:"Closed on time",cl_due_d:(ok,n)=>`${ok} of ${n} with a due date`,cl_nodue:"no closed tickets with a due date",cl_age:"Days from creation to close",cl_bycat:"Median by type/category",cl_items:"",cl_mix:"Completed mix (type/category)",cl_note:"Close date ≈ last update (approximation); ticket counts, not hours",cl_b1:"≤7d",cl_b2:"8–30d",cl_b3:"31–90d",cl_b4:">90d",cl_other:"Uncategorized",
+   about_t:"About this dashboard",about_h:"About",about_ch:"What's new in this release",about_pj:"Specific to this project",about_copied:"Copied",
+   ai_pw:"AI analysis",
+   sec_stag:"Stagnation breakdown",stg_note:"Backlog records no cause, so this decomposes WHERE items are stuck (stale = no update for 30+ days; ticket counts)",
+   stg_wait:"Waiting states (review/hold)",stg_work:"In progress",stg_open:"Not started",stg_unas:"No assignee",stg_c1:"31–90d",stg_c2:"91d–1y",stg_c3:">1 year",stg_total:"Total",
+   vd_cl_none:"No tickets closed in this period",vd_cl_late:(ok,n)=>`On-time completion is the minority (${ok} of ${n} with a due date)`,vd_cl_slow:(a,b)=>`Cycle time is stretching (median ${a}d vs ${b}d prev)`,vd_cl_fast:(a,b)=>`Cycle time is improving (median ${a}d vs ${b}d prev)`,vd_cl_base:(n,p)=>`${n} closed · median cycle ${p}d`,
+   vd_fl_in:n=>`Inflow outpaces closing (net +${n})`,vd_fl_out:n=>`Closing outpaces inflow (net −${n})`,vd_fl_flat:"Inflow and closing are roughly balanced",
+   vd_mv_over:(c,n)=>`"${c}" gains +${n} (new exceeds closed)`,vd_mv_base:(cr,cl)=>`${cr} new · ${cl} closed`,
+   vd_st_none:"No tickets stalled over 30 days",vd_st_unas:n=>`${n} stalled tickets have no assignee`,vd_st_wait:(w,t2)=>`Most of the ${t2} stalled items (${w}) sit in waiting states (review/hold)`,vd_st_base:(t2,o)=>`${t2} stalled · ${o} over a year`,
+   vd_mem_top:(p,n)=>`${p}% of open work sits with the top ${n} assignees`,
+   vd_area_top:a=>`Recent activity centers on "${a}"`,
+   vd_cat_dwell:(c,d)=>`Longest-dwelling: "${c}" (median ${d}d)`,
+   vd_risk:(n,d)=>`${n} overdue · worst ${d}d past due`,vd_risk_none:"Nothing overdue",
+   vd_status_top:(s,n)=>`Largest status: "${s}" (${n})`,
+   def_health:"Throughput rate = closed in period ÷ unplanned new. 100%+ means closing keeps up with inflow. Arrow compares to the previous period",
+   def_over:"Overdue = open tickets past their due date, as a share of all open",
+   def_stale:"Stale = open tickets untouched for 30+ days, as a share of all open",
+   def_cyc:"Cycle time = days from creation to last update (approximation of close date). Ticket counts, not hours",
+   def_basis:(w,d)=>`Scope = tickets in this Backlog project. All open tickets; closed tickets only where updated within the last ${w} days — or within the selected period when the 180d / YTD filter reaches further (earlier completions are not included). Every number is a ticket count — never hours or cost. Close date is approximated by the last update. The scope/period filters at the top act only on sections carrying the period chip; sections marked "now" always show the whole picture. Data as of ${d}.`,
+   basis_t:"Basis & method",howto:"How to read",
+   ref_chip:"reference",ref_why:"Reference only — approximated from ticket counts, not recorded effort (hours)",
+   due_cov:(w,o,p)=>`${w} of ${o} open tickets carry a due date (${p}%). A ticket without one can never count as overdue, so the overdue rate reads lower than reality.`,
+   m_over_cov:p=>`due dates set on ${p}%`,
+   hm_stag:"Rows = the state it is stuck in (waiting / in progress / untouched), columns = time since the last update. Numbers are ticket counts; click one to list those tickets.",
+   hm_flow:"Bars = created (grey) vs closed (green); the dashed line = stale share at that point. The backlog shrinks only while green stays above grey.",
+   k_cyc:"Cycle time (median)",m_cyc:s=>s.n?`Median of ${s.n} recent completions${s.pp?` (prev ${s.pp}d)`:''}`:'No completions in period',
+   k_ontime:"Closed on time",m_ontime:s=>s.n?`${s.ok} of ${s.n} due-dated completions on time`:'No due-dated completions',
+   k_unas:"No assignee",m_unas:s=>`${s.n} open tickets without an assignee`,
+   k_wait:"Waiting-state stalls",m_wait:s=>`${s.w} of ${s.t} stalled sit in waiting states`,
+   card_go:"Click to open the section",
    th_name:"Assignee",th_open:"Open",th_over:"Over",th_stale:"Stale",th_age:"Median age",th_dist:"Mix",th_risk:"Dwell",
    th_cat:"Category",th_done:"Done",th_prog:"In prog",th_todo:"To-do",
    th_ticket:"Title",th_due:"Due",th_days:"Days over",
@@ -415,12 +571,12 @@ const DICT={
    lockMsg:"Enter password to view",unlock:"Unlock",wrongPass:"Wrong password"},
  vi:{title:"Bảng điều khiển Backlog",scope:"Phạm vi",range:"Khoảng",lang:"Ngôn ngữ",
    sub:s=>`Phạm vi: ${s.scopeName} · ${s.open} đang mở · tính đến ${s.date}`,
-   r7:"7 ngày",r30:"30 ngày",r90:"90 ngày",
+   r7:"7 ngày",r30:"30 ngày",r90:"90 ngày",r180:"180 ngày",rytd:y=>`Từ đầu ${y}`,month:"Tháng",mon_:m=>`T${m}`,r_in:n=>`${n} ngày qua`,rytd_in:y=>`từ đầu ${y}`,rp_days:n=>`trong ${n} ngày`,rp_ytd:y=>`từ đầu ${y}`,
    allopen:"Tất cả đang mở",highp:"Ưu tiên: Cao",overdueScope:"Chỉ quá hạn",
    ms:n=>`Milestone: ${n}`,
    k_open:"Ticket đang mở",k_trend:"Biến động backlog",k_over:"Quá hạn",k_stale:"Đình trệ (30d+)",k_health:"Sức khỏe",
-   m_open:s=>`Đang mở. ${s.r} ngày qua: ${s.created} mới / ${s.closed} đóng`,
-   m_trend:s=>s.planned?`Tạo ${s.created} (kế hoạch ${s.crPlan} / khác ${s.crOther}) · đóng ${s.closed}`:(s.net>0?`Đang phình: +${s.net} trong ${s.r}d (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} trong ${s.r}d`:`Đi ngang`),
+   m_open:s=>`Đang mở. ${s.rl}: ${s.created} mới / ${s.closed} đóng`,
+   m_trend:s=>s.planned?`Tạo ${s.created} (kế hoạch ${s.crPlan} / khác ${s.crOther}) · đóng ${s.closed}`:(s.net>0?`Đang phình: +${s.net} ${s.rl} (tạo nhanh hơn đóng)`:s.net<0?`Đang co: ${s.net} ${s.rl}`:`Đi ngang`),
    m_over:s=>`${s.overdue} quá hạn (${s.overduePct}% số mở)`,
    m_stale:s=>`${s.stale} không đụng 30d+ (${s.stalePct}%)`,
    m_health:s=>s.rate==null?`Kỳ này không có dòng vào/ra`:`Đóng ${s.closed} / vào ${s.inflow}${s.planned?' (ngoài kế hoạch)':''} = ${s.rate>=999?'∞':s.rate+'%'}${s.rateP!=null?` (kỳ trước ${s.rateP>=999?'∞':s.rateP+'%'})`:''}`,
@@ -429,11 +585,42 @@ const DICT={
    ins_ai:"Nhận định AI",ins_asof:d=>`tại ${d}`,ins_cross:"Liên dự án",
    ins_ai_note:"Phân tích tuần do AI tạo (người vận hành đã duyệt). Ước lượng theo số ticket.",
    sec_flow:"Dòng chảy & xu hướng",sec_mem:"Tải & lead time theo người",sec_area:"Tỷ trọng theo mảng (từng người)",
-   area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:n=>`Ước lượng theo số ticket có cập nhật trong ${n} ngày (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   area_all:"Tổng",area_more:n=>`Hiện thêm 10 (còn ${n})`,area_note:p=>`Ước lượng theo số ticket có cập nhật ${p} (đếm ticket, không phải giờ công)`,sec_cat:"Tiến độ theo loại/nhóm",
+   area_bd:"Khác gồm",area_uncat:"chưa gắn nhóm",area_click:"bấm vào một đoạn màu để xem danh sách ticket",area_upd:"cập nhật",
    sec_move:"Chuyển động trong kỳ",mv_bycat:"Mới vs đóng theo loại/nhóm (xếp theo chênh lệch)",mv_fin:"Hoàn thành nhiều nhất trong kỳ",mv_cyc:"Ngày xử lý trung vị",mv_prev:v=>`kỳ trước ${v}`,now_:"Hiện tại",plan_chip:"KH",
    snap_div:"Ảnh chụp hiện trạng — không theo bộ lọc kỳ",flow_tbl:n=>`Bảng: ${n} ngày gần nhất`,day_:"Ngày",
    push_on:"🔔 Đã bật thông báo — sẽ báo mỗi sáng khi có dữ liệu mới",push_off:"Đã tắt thông báo",push_err:"Không bật được thông báo — thử lại giúp nhé",push_denied:"Trình duyệt đang chặn thông báo cho trang này",
    sec_risk:"Ticket quá hạn",sec_status:"Phân bố trạng thái",
+   sec_closed:"Phân tích ticket đã đóng",cl_p50:"Ngày xử lý trung vị",cl_p85:"Ngày xử lý p85",cl_ontime:"Đóng đúng hạn",cl_due_d:(ok,n)=>`${ok}/${n} ticket có hạn`,cl_nodue:"không có ticket đóng kèm hạn",cl_age:"Số ngày từ tạo đến đóng",cl_bycat:"Trung vị theo loại/nhóm",cl_items:"",cl_mix:"Cơ cấu đã hoàn thành (loại/nhóm)",cl_note:"Ngày đóng ≈ lần cập nhật cuối (xấp xỉ); đếm ticket, không phải giờ công",cl_b1:"≤7 ngày",cl_b2:"8–30 ngày",cl_b3:"31–90 ngày",cl_b4:">90 ngày",cl_other:"Chưa phân loại",
+   about_t:"Về dashboard này",about_h:"Giới thiệu",about_ch:"Thay đổi chính trong bản này",about_pj:"Riêng của dự án này",about_copied:"Đã sao chép",
+   ai_pw:"Phân tích AI",
+   sec_stag:"Phân rã tồn đọng",stg_note:"Backlog không ghi nguyên nhân, nên đây là phân rã \"đang kẹt ở đâu\" (tồn đọng = không cập nhật 30+ ngày; đếm ticket)",
+   stg_wait:"Trạng thái chờ (review/treo)",stg_work:"Đang xử lý",stg_open:"Chưa bắt đầu",stg_unas:"Chưa có người nhận",stg_c1:"31–90 ngày",stg_c2:"91 ngày–1 năm",stg_c3:">1 năm",stg_total:"Tổng",
+   vd_cl_none:"Không có ticket đóng trong kỳ",vd_cl_late:(ok,n)=>`Đóng đúng hạn là thiểu số (${ok}/${n} ticket có hạn)`,vd_cl_slow:(a,b)=>`Ngày xử lý đang dài ra (trung vị ${a}d, kỳ trước ${b}d)`,vd_cl_fast:(a,b)=>`Xử lý đang nhanh lên (trung vị ${a}d, kỳ trước ${b}d)`,vd_cl_base:(n,p)=>`${n} đã đóng · trung vị ${p} ngày`,
+   vd_fl_in:n=>`Phát sinh vượt tiêu hoá (tăng ròng +${n})`,vd_fl_out:n=>`Tiêu hoá vượt phát sinh (giảm ròng ${n})`,vd_fl_flat:"Phát sinh và tiêu hoá đang cân bằng",
+   vd_mv_over:(c,n)=>`"${c}" tạo vượt đóng +${n}`,vd_mv_base:(cr,cl)=>`${cr} mới · ${cl} đóng`,
+   vd_st_none:"Không có ticket tồn đọng quá 30 ngày",vd_st_unas:n=>`${n} ticket tồn đọng chưa có người nhận`,vd_st_wait:(w,t2)=>`Quá nửa trong ${t2} ticket tồn đọng (${w}) nằm ở trạng thái chờ (review/treo)`,vd_st_base:(t2,o)=>`${t2} tồn đọng · ${o} quá 1 năm`,
+   vd_mem_top:(p,n)=>`${p}% việc đang mở dồn vào ${n} người nhận nhiều nhất`,
+   vd_area_top:a=>`Hoạt động gần đây tập trung ở mảng "${a}"`,
+   vd_cat_dwell:(c,d)=>`Đọng lâu nhất: "${c}" (trung vị ${d} ngày)`,
+   vd_risk:(n,d)=>`${n} quá hạn · lâu nhất trễ ${d} ngày`,vd_risk_none:"Không có ticket quá hạn",
+   vd_status_top:(s,n)=>`Trạng thái đông nhất: "${s}" (${n})`,
+   def_health:"Tỷ lệ xử lý = số đóng trong kỳ ÷ số mới ngoài kế hoạch. Từ 100% nghĩa là tiêu hoá theo kịp phát sinh. Mũi tên so với kỳ trước",
+   def_over:"Quá hạn = ticket mở đã quá ngày hạn, tính trên tổng số đang mở",
+   def_stale:"Tồn đọng = ticket mở không được cập nhật 30+ ngày, tính trên tổng số đang mở",
+   def_cyc:"Ngày xử lý = số ngày từ lúc tạo đến lần cập nhật cuối (xấp xỉ ngày đóng). Đếm ticket, không phải giờ công",
+   def_basis:(w,d)=>`Phạm vi = ticket của project Backlog này. Lấy toàn bộ ticket đang mở; ticket đã đóng chỉ lấy phần được cập nhật trong ${w} ngày gần nhất, hoặc trong kỳ đã chọn khi bộ lọc 180 ngày / từ đầu năm dài hơn (các ticket đóng trước đó không có trong số liệu). Mọi con số đều là số ticket — không phải giờ công hay chi phí. Ngày đóng là xấp xỉ theo lần cập nhật cuối. Bộ lọc phạm vi/kỳ ở đầu trang chỉ tác động lên các mục có chip kỳ; mục gắn chip "hiện tại" luôn hiển thị toàn bộ. Dữ liệu tính đến ${d}.`,
+   basis_t:"Phạm vi tổng hợp & cách tính",howto:"Cách đọc",
+   ref_chip:"tham khảo",ref_why:"Chỉ để tham khảo — ước lượng theo số ticket, không phải giờ công thực tế",
+   due_cov:(w,o,p)=>`Chỉ ${w}/${o} ticket đang mở có ngày hạn (${p}%). Ticket không có hạn thì không bao giờ bị tính quá hạn, nên tỉ lệ quá hạn thấp hơn thực tế.`,
+   m_over_cov:p=>`${p}% có ngày hạn`,
+   hm_stag:"Hàng = trạng thái đang mắc (chờ / đang làm / chưa động), cột = thời gian từ lần cập nhật cuối. Số là số ticket; bấm vào để xem danh sách.",
+   hm_flow:"Cột = số tạo mới (xám) và số đóng (xanh); đường đứt nét = tỉ lệ đình trệ tại thời điểm đó. Backlog chỉ giảm khi cột xanh liên tục cao hơn cột xám.",
+   k_cyc:"Ngày xử lý (trung vị)",m_cyc:s=>s.n?`Trung vị của ${s.n} ticket đóng gần đây${s.pp?` (kỳ trước ${s.pp}d)`:''}`:'Không có ticket đóng trong kỳ',
+   k_ontime:"Đóng đúng hạn",m_ontime:s=>s.n?`${s.ok}/${s.n} ticket có hạn đóng đúng hạn`:'Không có ticket đóng kèm hạn',
+   k_unas:"Chưa có người nhận",m_unas:s=>`${s.n} ticket mở chưa có người nhận`,
+   k_wait:"Tồn đọng dạng chờ",m_wait:s=>`${s.w}/${s.t} ticket tồn đọng nằm ở trạng thái chờ`,
+   card_go:"Bấm để mở mục tương ứng",
    th_name:"Người phụ trách",th_open:"Mở",th_over:"Quá hạn",th_stale:"Đình trệ",th_age:"Tuổi trung vị",th_dist:"Cơ cấu",th_risk:"Độ đọng",
    th_cat:"Nhóm",th_done:"Xong",th_prog:"Đang làm",th_todo:"Chưa làm",
    th_ticket:"Tiêu đề",th_due:"Hạn",th_days:"Số ngày trễ",
@@ -449,7 +636,81 @@ const DICT={
    lockMsg:"Nhập mật khẩu để xem",unlock:"Mở",wrongPass:"Sai mật khẩu"},
 };
 
-/* ============ CONFIG — tunable thresholds & indicators (single place) ============ */
+/* ============ About / Changelog (v2 08.06) — every page (08.18) ============
+   Refreshed each major release: ~70% stable premise (why this exists), ~30%
+   end-user-VISIBLE changes of this release (never technical/background items).
+   Wording stays neutral and objective — the text is meant to be copied and
+   shared to stakeholders as-is. No project names, no person names.
+   `changes` = what every page got. `byProject` = what only that project's page
+   got, keyed by the NEUTRAL slug (this file is public — display names come from
+   the decrypted payload at render time). A standalone page holds only its own
+   project, so it shows only its own block; /all shows all of them. */
+const VERINFO={ver:'v2 preview',
+ ja:{premise:[
+  "本ダッシュボードは、プロジェクト状況の把握を目的とした社内向けツールです。",
+  "従来、状況の共有は個別チケットの確認や、その都度作成されるファイル資料に依存していました。この方法には、作成に手間がかかる、共有された時点で情報が古くなっている、見る人によって参照している断面が異なる、といった制約がありました。",
+  "本ダッシュボードは Backlog のデータから1日2回自動生成され、誰が見ても同じ最新の断面を、同じ定義の指標で確認できることを目指しています。",
+  "数値はチケット件数にもとづく近似であり、作業時間や工数そのものではありません。個別の判断にあたっては、元データ（Backlog）の確認を推奨します。"],
+ changes:[
+  "完了チケットの分析セクションを追加（処理日数の分布・期限内完了率・完了の内訳）",
+  "「滞留の内訳」セクションを追加 — どこで止まっているかを状態×放置期間で分解し、該当チケットまで辿れます",
+  "各セクションに要約の一文を常時表示し、KPIカードのクリックで該当セクションへ移動できるようにしました",
+  "指標の定義をその場で開けるⓘを追加。集計基準（対象範囲・完了チケットをどこまで遡るか・数値はチケット件数であること）も見出し横のⓘに常時表示し、PDF／HTML出力の末尾にも印字されます",
+  "推計値を扱うセクションに「参考」バッジ、図表の上に「見方」の一文を追加。期限超過には、期限が設定されているチケットの割合を併記します",
+  "AI分析が新しい間は要約・所見が強化されます（⚡表示・古くなると自動的に通常表示へ戻ります）",
+  "ワイド画面ではKPIカードとサマリーを左右に並べ、フィルターをタイトル行へ移動しました",
+  "この「このダッシュボードについて」画面を追加 — すべてのページの見出し下から開けます",
+  "「担当者×領域 従事割合」の各区分をクリックすると、該当チケットの一覧（カテゴリ・状態・更新日）がその行の下に開きます",
+  "「その他」が一定の割合を超える行には、その内訳（Backlog のカテゴリ別）を棒の下に表示します",
+  "期間フィルターに「直近180日」と「年初来（1月1日〜）」を追加しました。長い期間では推移グラフと表が月単位になり、年初来には前期との比較がありません"],
+ byProject:{
+  m2:["KPIカードに「期限内完了」と「待ち状態の滞留」を追加しています"],
+  if:["「担当者×領域 従事割合」セクションを表示しています — 直近の活動を領域別の内訳で示します","領域を3区分から6区分に見直しました（区分名は凡例のとおり）。「その他」はカテゴリ未設定のチケットのみです","「社内ITサポート」は PC・ソフトウェア・事務所機器の対応で、2026年7月15日以降はコーポレートITチームの担当です"],
+  ft:["カテゴリの登録がないため、「種別/カテゴリ別 進捗」セクションは表示されません"]}},
+ en:{premise:[
+  "This dashboard is an internal tool for keeping track of project status.",
+  "Previously, status sharing relied on checking individual tickets or on documents prepared by hand for each occasion — which took time to produce, was often already outdated when shared, and gave each reader a different slice of the picture.",
+  "The dashboard is generated automatically from Backlog data twice a day, so everyone sees the same up-to-date snapshot with the same metric definitions.",
+  "All figures are approximations based on ticket counts — not working hours or effort. For individual decisions, please refer to the source data in Backlog."],
+ changes:[
+  "Added a closed-ticket analysis section (cycle-time distribution, on-time completion rate, completed-work mix)",
+  "Added a \"Stagnation breakdown\" section — where items are stuck, by state × idle time, down to the individual tickets",
+  "Every section now carries a one-line summary even while collapsed, and clicking a KPI card jumps to its section",
+  "Added ⓘ marks that open a metric's definition on the spot. The aggregation basis (what is covered, how far back closed tickets are collected, and that every figure is a ticket count) sits in the ⓘ beside the subtitle and is printed at the end of PDF/HTML exports",
+  "Sections built on estimates now carry a \"reference\" badge, charts carry a \"How to read\" line above them, and the overdue figure states how many tickets actually carry a due date",
+  "While an AI analysis is fresh it enriches the summaries (⚡ tag); it reverts to the standard view as it ages",
+  "On wide screens the KPI cards and the summary sit side by side, with the filters moved up to the title row",
+  "Added this About screen — reachable from under the heading on every page",
+  "In \"Engagement by area\", clicking a segment opens the tickets behind it (category, status, last update) under that row",
+  "When \"Other\" exceeds a set share of a row, its breakdown by Backlog category is printed under the bar",
+  "Added \"Last 180d\" and \"YTD\" (from Jan 1) to the period filter. Long periods chart and tabulate by month; YTD has no previous-period comparison"],
+ byProject:{
+  m2:["The KPI row adds \"on-time completion\" and \"waiting-state stalls\""],
+  if:["Shows the \"engagement by area\" section — recent activity broken down per area","Areas revised from three to six (names as in the legend). \"Other\" now holds only tickets with no category","\"In-house IT support\" covers PCs, software and office equipment; from 15 July 2026 it is the Corporate IT team's work"],
+  ft:["No categories are registered, so the \"progress by type/category\" section is not shown"]}},
+ vi:{premise:[
+  "Dashboard này là công cụ nội bộ để theo dõi tình hình các dự án.",
+  "Trước đây, việc chia sẻ tình hình dựa vào xem từng ticket hoặc các tài liệu soạn thủ công theo từng dịp — tốn công soạn, thông tin thường đã cũ ngay khi chia sẻ, và mỗi người xem một lát cắt khác nhau.",
+  "Dashboard được tạo tự động từ dữ liệu Backlog 2 lần mỗi ngày, để mọi người cùng xem một ảnh chụp mới nhất với cùng một định nghĩa chỉ số.",
+  "Các con số là xấp xỉ dựa trên số lượng ticket — không phải giờ công hay khối lượng thực tế. Khi cần quyết định cụ thể, nên đối chiếu dữ liệu gốc trên Backlog."],
+ changes:[
+  "Thêm mục phân tích ticket đã đóng (phân bố ngày xử lý, tỷ lệ đóng đúng hạn, cơ cấu việc đã hoàn thành)",
+  "Thêm mục \"Phân rã tồn đọng\" — đang kẹt ở đâu, theo trạng thái × thời gian đứng yên, truy đến từng ticket",
+  "Mỗi mục luôn hiển thị một câu tóm tắt kể cả khi thu gọn; bấm thẻ KPI sẽ nhảy đến mục tương ứng",
+  "Thêm dấu ⓘ mở định nghĩa chỉ số ngay tại chỗ. Cơ sở tổng hợp (phạm vi dữ liệu, lấy ticket đã đóng đến đâu, mọi con số đều là số ticket) nằm ở ⓘ cạnh dòng phụ đề và được in ở cuối bản xuất PDF/HTML",
+  "Các mục dựa trên ước lượng có nhãn \"tham khảo\", biểu đồ có dòng \"Cách đọc\" ở phía trên, và số quá hạn ghi kèm tỷ lệ ticket thực sự có ngày hạn",
+  "Khi phân tích AI còn mới, phần nhận định được tăng cường (nhãn ⚡); cũ đi sẽ tự trở về hiển thị thường",
+  "Trên màn hình rộng, thẻ KPI và phần tóm tắt nằm cạnh nhau, bộ lọc dời lên hàng tiêu đề",
+  "Thêm màn hình giới thiệu này — mở được từ ngay dưới tiêu đề ở mọi trang",
+  "Ở mục \"Tỷ trọng theo mảng\", bấm vào một đoạn màu sẽ mở danh sách ticket phía sau nó (nhóm, trạng thái, ngày cập nhật) ngay dưới hàng đó",
+  "Khi phần \"Khác\" của một hàng vượt ngưỡng đặt trước, cơ cấu của nó theo nhóm Backlog được in dưới thanh",
+  "Thêm mốc \"180 ngày\" và \"Từ đầu năm\" (từ 01/01) vào bộ lọc kỳ. Kỳ dài vẽ biểu đồ và bảng theo tháng; từ đầu năm không so sánh với kỳ trước"],
+ byProject:{
+  m2:["Hàng thẻ KPI có thêm \"đóng đúng hạn\" và \"tồn đọng dạng chờ\""],
+  if:["Hiển thị mục \"tỷ trọng theo mảng\" — hoạt động gần đây chia theo từng mảng","Chia lại từ 3 thành 6 mảng (tên mảng như trong chú giải). \"Khác\" chỉ còn ticket chưa gắn nhóm","\"IT support nội bộ\" là việc về PC, phần mềm và thiết bị văn phòng; từ 15.07.2026 do team IT Doanh nghiệp phụ trách"],
+  ft:["Dự án chưa đăng ký nhóm (category) nên không hiển thị mục \"tiến độ theo loại/nhóm\""]}},
+};
+
 const BASECFG={
   staleDays:30,                 // "stale" = open & untouched more than N days
   overdue:{warn:20,crit:40},    // % of open past-due → amber / red
@@ -465,12 +726,42 @@ function mergeCFG(o){
   for(const k in o){ if(o[k]&&typeof o[k]==='object')Object.assign(c[k]=c[k]||{},o[k]); else c[k]=o[k]; }
   return c;
 }
+/* per-project display config (v2 — internal fine-tuning only, end users see no
+   settings): PCFG.display = {kpis:[...ids], sections:{id:false,...}}.
+   Absent/partial → everything shown, in default order — a config-less project
+   renders exactly as before this knob existed. Section ids: ai (AI override of
+   the summary slot), summary, area, move, closed, stag, flow, mem, cat, risk,
+   status. KPI ids: open, trend, over, stale, health. */
+const showSec=id=>{const s=(PCFG.display||{}).sections;return !s||s[id]!==false;};
+/* 参考 sections (08.18): numbers that approximate EFFORT from ticket counts.
+   Per-project override via display.reference; the default covers the two
+   workload views, which is exactly where a reader assumes hours. */
+const REF_DEF=['area','mem'];
+const isRef=id=>{const r=(PCFG.display||{}).reference;return (Array.isArray(r)?r:REF_DEF).includes(id);};
+/* KPI cards: CORE = the default five; the extended pool (v2.2) is opt-in per
+   project via display.kpis — "wide shows more" only when the project has more
+   to say, never unconditionally. */
+const KPI_CORE=['open','trend','over','stale','health'];
+const KPI_ORDER=[...KPI_CORE,'cyc','ontime','unas','wait'];
+const kpiSel=()=>{const k=(PCFG.display||{}).kpis;return Array.isArray(k)?k.filter(x=>KPI_ORDER.includes(x)):KPI_CORE;};
+/* card → section jump map + which verdict feeds the hover tooltip */
+const KMAP={open:'sec-status',trend:'sec-flow',over:'sec-risk',stale:'sec-stag',health:'sec-flow',cyc:'sec-closed',ontime:'sec-closed',unas:'sec-stag',wait:'sec-stag'};
+const KVD={open:'status',trend:'flow',over:'risk',stale:'stag',health:'flow',cyc:'closed',ontime:'closed',unas:'stag',wait:'stag'};
+let HEROTIP={};
 
 /* ============ state ============ */
 /* language is a VIEWER preference: persisted per device (07.28), never carried in
    shared links — each viewer sees their own choice (default ja on first visit) */
 let LANG=(()=>{try{const v=localStorage.getItem('tl_dash_lang');if(v&&DICT[v])return v;}catch(e){}return 'ja';})();
-let SCOPE='all', RANGE=30, A2ID={}, PI=0;
+let SCOPE='all', RKEY='30', RANGE=30, A2ID={}, PI=0;
+/* range (09.10): RKEY is the filter button ('7'|'30'|'90'|'180'|'ytd'); RANGE stays the
+   numeric day count every metric uses, refreshed from RKEY at the top of compute().
+   'ytd' = from Jan 1 of the current year, and has no previous-period comparison —
+   the span before Jan 1 is last year's, not the same kind of period. */
+function rangeInfo(){const y=TODAY.getUTCFullYear();
+  if(RKEY==='ytd'){const s=new Date(Date.UTC(y,0,1));return{key:'ytd',days:Math.max(1,days(s,TODAY)),start:s,prev:false};}
+  const n=+RKEY;const s=new Date(TODAY);s.setUTCDate(s.getUTCDate()-n);return{key:RKEY,days:n,start:s,prev:true};}
+const rangeLabel=t=>RKEY==='ytd'?t.rytd(TODAY.getUTCFullYear()):t['r'+RKEY];
 /* tab title carries the page/project slug so multiple open tabs are tellable apart */
 const PAGESLUG=(()=>{try{const seg=location.pathname.split('/').filter(s=>s&&!/^index\.html?$/i.test(s));return seg[seg.length-1]||'';}catch(e){return '';}})();
 if(PAGESLUG)document.title=PAGESLUG+' · TLダッシュボード';
@@ -492,6 +783,18 @@ const fmtDate=d=>`${d.getUTCFullYear()}/${String(d.getUTCMonth()+1).padStart(2,'
    SMAP is injected per project (pull.py heuristic + config overrides). */
 let SMAP={};
 const bkt=i=>SMAP[i.stId]||'Open';
+/* area rule set (09.10): `rulesNext` is read by this preview build only — production keeps
+   reading `rules` until promote, so a config edit cannot change the live split unreviewed. */
+const AREARULES=()=>(PCFG.areas&&(PCFG.areas.rulesNext||PCFG.areas.rules))||[];
+const areaLabel=id=>{const A=PCFG.areas||{};if(id==='_other')return (A.other||{})[LANG]||(A.other||{}).en||'—';
+  const r=AREARULES().find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
+/* display order ≠ classification priority (operator 09.10): `areas.displayOrder` lists the
+   ids as the bar and legend show them; rule order stays the matching priority. A rule may
+   pin its own `color`; otherwise the colour follows the display position (--a1…--a6). */
+const AREAORDER=()=>{const rs=AREARULES();const o=(PCFG.areas&&PCFG.areas.displayOrder)||[];
+  const ids=o.filter(id=>rs.some(r=>r.id===id));rs.forEach(r=>{if(!ids.includes(r.id))ids.push(r.id);});return ids;};
+const areaColor=id=>{const r=AREARULES().find(r=>r.id===id);if(r&&r.color)return r.color;
+  const ix=AREAORDER().indexOf(id);return ix>=0?`var(--a${Math.min(ix+1,6)})`:'var(--faint)';};
 const BORDER={Open:'var(--st-open)',InProgress:'var(--st-inprog)',Resolved:'var(--st-resolved)',Pending:'var(--st-pending)',Closed:'var(--st-closed)'};
 /* category of an issue — mode from per-project config:
    'issueType' = Backlog issue type; 'bracket2' = 2nd 【…】 tag in the title; 'none' */
@@ -523,11 +826,18 @@ function scopeName(id){
 
 /* ============ compute ============ */
 function compute(){
+  const RI=rangeInfo();RANGE=RI.days;
   const f=scopeFilter(SCOPE);
-  const scoped=RAW.filter(f);
+  /* closed-ticket cap (09.10): closed items count only within META.closedWin days back,
+     unless the selected range (plus its previous period) reaches further — so the
+     7/30/90 views keep the basis they always had while the pull window itself grew
+     for 180d / 年初来. Applied to `scoped`, so status and category totals follow too. */
+  const cwDays=Math.max(META.closedWin||META.win||120,RI.prev?RANGE*2:RANGE);
+  const cwStart=new Date(TODAY);cwStart.setUTCDate(cwStart.getUTCDate()-cwDays);
+  const scoped=RAW.filter(f).filter(i=>!isDone(i)||(D(i.updated)&&D(i.updated)>=cwStart));
   const open=scoped.filter(i=>!isDone(i));
   const closedAll=scoped.filter(isDone);
-  const start=new Date(TODAY);start.setUTCDate(start.getUTCDate()-RANGE);
+  const start=RI.start;
   const createdR=scoped.filter(i=>D(i.created)&&D(i.created)>=start);
   const closedR=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=start);
   const overdue=open.filter(i=>i.dueDate&&D(i.dueDate)<TODAY);
@@ -536,6 +846,10 @@ function compute(){
   const perDay=closedR.length/RANGE;
   const forecast=(perDay>0&&net<0)?(()=>{const d=new Date(TODAY);d.setUTCDate(d.getUTCDate()+Math.round(open.length/perDay));return fmtDate(d);})():null;
   const overduePct=open.length?Math.round(overdue.length/open.length*100):0;
+  /* denominator disclosure (08.18): a ticket with no due date can never be
+     overdue, so overduePct silently understates wherever due dates are thin */
+  const openWithDue=open.filter(i=>i.dueDate).length;
+  const dueCovPct=open.length?Math.round(openWithDue/open.length*100):0;
   const stalePct=open.length?Math.round(stale.length/open.length*100):0;
   const medAge=median(open.map(age).filter(x=>x!=null));
   // planned intake (V1 07.31 — stakeholder feedback): categories declared in
@@ -547,8 +861,8 @@ function compute(){
   const crOther=createdR.length-crPlan;
   // previous window (health trend arrow + move section comparisons)
   const pstart=new Date(TODAY);pstart.setUTCDate(pstart.getUTCDate()-RANGE*2);
-  const createdP=scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start);
-  const closedP=closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start);
+  const createdP=RI.prev?scoped.filter(i=>D(i.created)&&D(i.created)>=pstart&&D(i.created)<start):[];
+  const closedP=RI.prev?closedAll.filter(i=>D(i.updated)&&D(i.updated)>=pstart&&D(i.updated)<start):[];
   // health (V1 07.31 — redesigned): the signal is inflow vs throughput
   // (処理率 = closed ÷ unplanned inflow, %). Stale/overdue have their own
   // cards and no longer vote here; 999 = no inflow, null = no flow at all.
@@ -566,21 +880,25 @@ function compute(){
   // areas (per-project config: category → business area) — engagement share per
   // assignee ≈ tickets ACTIVE (updated) within the selected range, any status
   let areas=null;
-  if(PCFG.areas&&PCFG.areas.rules){
-    const rules=PCFG.areas.rules.map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
-    /* an issue's area — two passes: ① exact signals (category / issue type),
-       ② title patterns as fallback. So a typed issue never gets stolen by a
-       title keyword belonging to a later rule. */
+  if(AREARULES().length){
+    const rules=AREARULES().map(r=>({...r,_re:(r.titleMatch||[]).map(p=>new RegExp(p,'i'))}));
+    /* an issue's area — three passes: ① exact signals (category / issue type),
+       ② title patterns as fallback, ③ `weakMatch` categories (09.10) — a category
+       a team uses as its default for everything, so it only counts when neither
+       an exact category nor the title said anything. Rule order = priority inside
+       each pass, so a typed issue never gets stolen by a later rule's title keyword. */
     const areaOf=i=>{const cs=i.category||[];const ty=i.type||'';const s=i.summary||'';
       let r=rules.find(r=>((r.match||[]).length&&cs.some(c=>r.match.includes(c)))||(r.typeMatch||[]).includes(ty));
       if(!r)r=rules.find(r=>r._re.some(re=>re.test(s)));
+      if(!r)r=rules.find(r=>(r.weakMatch||[]).length&&cs.some(c=>r.weakMatch.includes(c)));
       return r?r.id:'_other';};
     const act=scoped.filter(i=>i.assignee&&D(i.updated)&&D(i.updated)>=start);
-    const AM={},ALL={total:0,by:{}};
-    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{}};const k=areaOf(i);
-      a.total++;a.by[k]=(a.by[k]||0)+1;ALL.total++;ALL.by[k]=(ALL.by[k]||0)+1;});
-    areas={ids:[...rules.map(r=>r.id),'_other'],all:ALL,
-      members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by})).sort((a,b)=>b.total-a.total)};
+    const AM={},ALL={total:0,by:{},items:{}};
+    // items per area are kept (09.10) so a segment click can list them — counts, not hours
+    const put=(a,k,i)=>{a.total++;a.by[k]=(a.by[k]||0)+1;(a.items[k]=a.items[k]||[]).push(i);};
+    act.forEach(i=>{const a=AM[i.assignee]=AM[i.assignee]||{total:0,by:{},items:{}};const k=areaOf(i);put(a,k,i);put(ALL,k,i);});
+    areas={ids:[...AREAORDER(),'_other'],all:ALL,
+      members:Object.entries(AM).map(([n,v])=>({name:n,total:v.total,by:v.by,items:v.items})).sort((a,b)=>b.total-a.total)};
   }
   // members
   const M={};
@@ -613,6 +931,13 @@ function compute(){
   if(RANGE<=30){
     wd=[];for(let k=RANGE-1;k>=0;k--){const d0=new Date(TODAY);d0.setUTCDate(d0.getUTCDate()-k);
       wd.push(bucketStat(d0,d0,`${d0.getUTCMonth()+1}/${d0.getUTCDate()}`,RANGE===7||d0.getUTCDay()===1));}
+  }else if(RANGE>=180){
+    /* long ranges (09.10): one bucket per calendar month from the range start;
+       first and last buckets are partial months (the table says which month) */
+    wd=[];
+    for(let d=new Date(Date.UTC(start.getUTCFullYear(),start.getUTCMonth(),1));d<=TODAY;d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1))){
+      const from=d<start?start:d;const mend=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));const to=mend>TODAY?TODAY:mend;
+      wd.push(bucketStat(from,to,T().mon_(d.getUTCMonth()+1),true));}
   }else{
     wd=[];for(let w=12;w>=0;w--){const wk=monday(TODAY);wk.setUTCDate(wk.getUTCDate()-w*7);
       const end=new Date(wk);end.setUTCDate(end.getUTCDate()+6);
@@ -621,7 +946,7 @@ function compute(){
   // in-period movement (07.28): what actually happened inside RANGE — created vs
   // closed per type/category, top finishers, median cycle time (vs previous
   // window — createdP/closedP computed above with the health trend)
-  const cycOf=list=>median(list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null));
+  const cycOf=list=>{const xs=list.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null);return xs.length?median(xs):null;};
   const MV={};
   createdR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cr++;});
   closedR.forEach(i=>{const k=sub(i);if(k==='—')return;(MV[k]=MV[k]||{cr:0,cl:0}).cl++;});
@@ -636,7 +961,78 @@ function compute(){
   // delayed list
   const delayed=[...overdue].sort((a,b)=>D(a.dueDate)-D(b.dueDate)).slice(0,10)
     .map(i=>({name:i.assignee||'—',key:i.key,status:bkt(i),title:i.summary||'',due:i.dueDate?fmtDate(D(i.dueDate)):'—',over:days(D(i.dueDate),TODAY)}));
-  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed};
+  // closed-side analysis (v2 08.06): everything from closedR — tickets CLOSED
+  // within the selected range. Close date ≈ last update (the pull carries no
+  // status-change history) — the section note states the approximation.
+  const cycAges=closedR.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null).sort((a,b)=>a-b);
+  const cycAgesP=closedP.map(i=>D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null).filter(x=>x!=null);
+  const pctl=(a,p)=>a.length?a[Math.min(a.length-1,Math.floor(a.length*p))]:null;
+  const CB={};
+  closedR.forEach(i=>{const k=sub(i);if(k==='—')return;const c=D(i.created)&&D(i.updated)?days(D(i.created),D(i.updated)):null;if(c!=null)(CB[k]=CB[k]||[]).push(c);});
+  const closedCats=Object.entries(CB).filter(([,xs])=>xs.length>=3).map(([n,xs])=>({name:n,n:xs.length,p50:median(xs)})).sort((a,b)=>b.n-a.n).slice(0,6);
+  const ageB=[[0,7],[8,30],[31,90],[91,Infinity]].map(([lo,hi])=>({n:cycAges.filter(x=>x>=lo&&x<=hi).length}));
+  const withDue=closedR.filter(i=>i.dueDate);
+  const onTimeOk=withDue.filter(i=>i.updated&&i.updated<=i.dueDate).length;
+  // mix keeps EVERY closed ticket — uncategorized ones fold into a grey "—"
+  // bucket so the shares are of all closed, never of the categorized few
+  const MIX={};closedR.forEach(i=>{const k=sub(i);MIX[k==='—'?'_none':k]=(MIX[k==='—'?'_none':k]||0)+1;});
+  const closedA={n:closedR.length,p50:median(cycAges),p85:pctl(cycAges,0.85),p50P:cycAgesP.length?median(cycAgesP):null,
+    cats:closedCats,ageB,due:{n:withDue.length,ok:onTimeOk},
+    mix:Object.entries(MIX).map(([n,v])=>({name:n,n:v})).sort((a,b)=>(a.name==='_none')-(b.name==='_none')||b.n-a.n)};
+  // stagnation decomposition (v2.1 08.06 — PM feedback): the stale set split by
+  // state-group × idle-time + the unassigned. Backlog records no CAUSE — this is
+  // the honest proxy: WHERE an item is stuck. Waiting states (Pending + Resolved
+  // buckets = held / done-awaiting-confirmation) hint at dependencies; the
+  // dashboard never attributes delay to a person.
+  const idleD=i=>D(i.updated)?days(D(i.updated),TODAY):0;
+  const sgrp=i=>{const b=bkt(i);return (b==='Pending'||b==='Resolved')?'wait':b==='InProgress'?'work':'open';};
+  const SGR={wait:[[],[],[]],work:[[],[],[]],open:[[],[],[]]};
+  let y1=0;
+  stale.forEach(i=>{const d=idleD(i);const ci=d<=90?0:d<=365?1:2;if(ci===2)y1++;SGR[sgrp(i)][ci].push(i);});
+  const unasL=open.filter(i=>!i.assignee);
+  const stag={total:stale.length,y1,unas:unasL.length,
+    wait:SGR.wait[0].length+SGR.wait[1].length+SGR.wait[2].length,
+    rows:['wait','work','open'].map(g=>({g,cells:SGR[g].map(a=>({n:a.length,
+      top:[...a].sort((x,z)=>idleD(z)-idleD(x)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i),st:(SFULL.find(s=>s.id===i.stId)||{}).name||bkt(i)}))}))})),
+    unasTop:[...unasL].sort((a,b)=>idleD(b)-idleD(a)).slice(0,8).map(i=>({key:i.key,title:i.summary||'',d:idleD(i)}))};
+  return{scoped,open,closedAll,createdR,closedR,overdue,stale,net,perDay,forecast,overduePct,openWithDue,dueCovPct,stalePct,medAge,health,rate,rateP,hTrend,crPlan,crOther,planned:PSET.size>0,status,sfull,areas,members,cats,catAge,wd,move,delayed,closedA,stag,prev:RI.prev};
+}
+
+/* ============ verdict engine (v2.1 08.06 — PM feedback ①) ============
+   Rule-based one-line judgements per section: computed numbers × thresholds pick
+   a sentence template (DICT, trilingual) deterministically. No AI required —
+   these run on every build; AI remarks (INSW.sections) REPLACE them in the same
+   slot when fresh. Rules are ordered most-specific first; last = neutral fact. */
+function verdicts(m){
+  const t=T(),v={};
+  const ca=m.closedA;
+  v.closed=!ca||!ca.n?t.vd_cl_none
+    :(ca.due.n>=10&&ca.due.ok/ca.due.n<0.3)?t.vd_cl_late(ca.due.ok,ca.due.n)
+    :(ca.p50P>0&&ca.p50>=ca.p50P*1.25)?t.vd_cl_slow(ca.p50,ca.p50P)
+    :(ca.p50P>0&&ca.p50<=ca.p50P*0.75)?t.vd_cl_fast(ca.p50,ca.p50P)
+    :t.vd_cl_base(ca.n,ca.p50==null?'–':ca.p50);
+  v.flow=(m.net>0&&m.crOther>m.closedR.length)?t.vd_fl_in(m.net):m.net<0?t.vd_fl_out(Math.abs(m.net)):t.vd_fl_flat;
+  const oc=m.move&&m.move.over&&m.move.over.net>0?m.move.over:null;
+  v.move=oc?t.vd_mv_over(oc.name,oc.net):t.vd_mv_base(m.createdR.length,m.closedR.length);
+  const sg=m.stag;
+  v.stag=!sg||!sg.total?t.vd_st_none
+    :sg.unas>=10?t.vd_st_unas(sg.unas)
+    :(sg.wait>sg.total/2)?t.vd_st_wait(sg.wait,sg.total)
+    :t.vd_st_base(sg.total,sg.y1);
+  const tot=m.open.length||1;const topN=Math.min(3,m.members.length);
+  const top3=m.members.slice(0,topN).reduce((s,x)=>s+x.open,0);
+  v.mem=m.members.length?t.vd_mem_top(Math.round(top3/tot*100),topN):'';
+  v.area='';
+  if(m.areas&&m.areas.all.total){
+    const eid=Object.entries(m.areas.all.by).sort((a,b)=>b[1]-a[1])[0][0];
+    v.area=t.vd_area_top(areaLabel(eid));
+  }
+  const sc=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
+  v.cat=sc?t.vd_cat_dwell(sc.name,sc.med):'';
+  v.risk=m.overdue.length?t.vd_risk(m.overdue.length,m.delayed.length?m.delayed[0].over:0):t.vd_risk_none;
+  const bt=(m.sfull&&m.sfull.length)?[...m.sfull].filter(s=>SMAP[s.id]!=='Closed'&&SMAP[String(s.id)]!=='Closed').sort((a,b)=>b.n-a.n)[0]:null;
+  v.status=bt?t.vd_status_top(bt.name,bt.n):'';
+  return v;
 }
 
 /* ============ render ============ */
@@ -670,7 +1066,8 @@ function renderHero(m){
   const t=T();const r=RANGE;
   const s={r,created:m.createdR.length,closed:m.closedR.length,net:m.net,open:m.open.length,
     overdue:m.overdue.length,overduePct:m.overduePct,stale:m.stale.length,stalePct:m.stalePct,forecast:m.forecast,
-    planned:m.planned,crPlan:m.crPlan,crOther:m.crOther,rate:m.rate,rateP:m.rateP,inflow:m.crOther};
+    planned:m.planned,crPlan:m.crPlan,crOther:m.crOther,rate:m.rate,rateP:m.rateP,inflow:m.crOther,
+    rl:RKEY==='ytd'?t.rp_ytd(TODAY.getUTCFullYear()):t.rp_days(RANGE)};
   const lvl=c=>c==='r'?t.crit:c==='a'?t.warn:t.good;
   /* V1 07.31: growth is not framed as bad by default — amber only when the
      UNPLANNED inflow alone outpaces closing; planned-driven growth stays neutral */
@@ -681,21 +1078,53 @@ function renderHero(m){
   const hEmoji=hCls==='r'?'🔴':hCls==='a'?'🟡':'🟢';
   const hArr=m.hTrend==='up'?' ↗':m.hTrend==='down'?' ↘':m.hTrend==='flat'?' →':'';
   const hTxt=(m.health==='crit'?t.crit:m.health==='warn'?t.warn:t.good)+hArr;
-  const cards=[
-    {tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
-    {tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
-    {tone:overCls,emoji:'⏰',lbl:t.k_over,val:m.overduePct,unit:'%',mean:t.m_over(s),chip:lvl(overCls)},
-    {tone:staleCls,emoji:'🕒',lbl:t.k_stale,val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
-    {tone:hCls,emoji:'🩺',lbl:t.k_health,pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
-  ];
-  $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}"><div class="top-dot dot-${c.tone}"></div>
-    <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
+  const ca2=m.closedA||{},sg2=m.stag||{};
+  const dn=ca2.due?ca2.due.n:0,otPct=dn?Math.round(ca2.due.ok/dn*100):null;
+  const CARDS={
+    open:{tone:'b',emoji:'📋',lbl:t.k_open,val:m.open.length,unit:'',mean:t.m_open(s),chip:''},
+    trend:{tone:trendCls,emoji:m.net>0?'📈':m.net<0?'📉':'▬',lbl:t.k_trend,val:(m.net>0?'+':'')+m.net,unit:m.net>0?'▲':m.net<0?'▼':'',mean:t.m_trend(s),chip:m.net>0?t.up:m.net<0?t.down:t.flat},
+    over:{tone:overCls,emoji:'⏰',lbl:t.k_over,def:'over',val:m.overduePct,unit:'%',
+      mean:t.m_over(s)+(m.dueCovPct<60?` · ${t.m_over_cov(m.dueCovPct)}`:''),chip:lvl(overCls)},
+    stale:{tone:staleCls,emoji:'🕒',lbl:t.k_stale,def:'stale',val:m.stalePct,unit:'%',mean:t.m_stale(s),chip:lvl(staleCls)},
+    health:{tone:hCls,emoji:'🩺',lbl:t.k_health,def:'health',pill:`<span class="hpill bg-${hCls}">${hEmoji} ${hTxt}</span>`,mean:t.m_health(s),chip:''},
+    /* extended pool (v2.2) — shown only when display.kpis lists them */
+    cyc:{tone:(ca2.p50P>0&&ca2.p50>=ca2.p50P*1.25)?'a':'b',emoji:'⏱',lbl:t.k_cyc,def:'cyc',val:ca2.p50!=null?ca2.p50:'–',unit:ca2.p50!=null?'d':'',mean:t.m_cyc({p:ca2.p50,pp:ca2.p50P,n:ca2.n||0}),chip:''},
+    ontime:{tone:otPct==null?'b':otPct>=70?'g':otPct>=30?'a':'r',emoji:'🎯',lbl:t.k_ontime,val:otPct==null?'–':otPct,unit:otPct==null?'':'%',mean:t.m_ontime({ok:dn?ca2.due.ok:0,n:dn}),chip:otPct==null?'':lvl(otPct>=70?'g':otPct>=30?'a':'r')},
+    unas:{tone:sg2.unas>=30?'r':sg2.unas>=10?'a':'g',emoji:'👤',lbl:t.k_unas,val:sg2.unas||0,unit:'',mean:t.m_unas({n:sg2.unas||0}),chip:''},
+    wait:{tone:(sg2.total&&sg2.wait>sg2.total/2)?'a':'b',emoji:'⏸',lbl:t.k_wait,val:sg2.wait||0,unit:'',mean:t.m_wait({w:sg2.wait||0,t:sg2.total||0}),chip:''},
+  };
+  const cards=kpiSel().map(k=>CARDS[k]?{...CARDS[k],k}:null).filter(Boolean);
+  /* hover tooltip data: the card's meaning line + the target section's verdict */
+  const V=verdicts(m);HEROTIP={};
+  cards.forEach(c=>{HEROTIP[c.k]={mean:c.mean,vd:V[KVD[c.k]]||''};});
+  $('#hero').style.display=cards.length?'':'none';
+  $('#hero').innerHTML=cards.map(c=>`<div class="kcard tone-${c.tone}" data-k="${c.k}"><div class="top-dot dot-${c.tone}"></div>
+    <div class="klbl"><span class="kem">${c.emoji}</span>${c.lbl}${c.def?`<span class="defbtn" data-def="${c.def}">i</span>`:''}${c.chip?`<span class="ktag bg-${c.tone}">${c.chip}</span>`:''}</div>
     ${c.pill?`<div class="kpill">${c.pill}</div>`:`<div class="kval mono ${c.tone}">${c.val}${c.unit?`<span class="kunit">${c.unit}</span>`:''}</div>`}
     <div class="kmean">${c.mean}</div></div>`).join('');
 }
 
 function renderInsight(m){
-  const t=T();const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
+  /* display-config gate — reset style both ways: /all switches projects in place */
+  const _el=$('#insight');
+  if(!showSec('summary')){_el.innerHTML='';_el.style.display='none';return;}
+  _el.style.display='';
+  const t=T();
+  /* one slot, one content (v2.1): a fresh AI summary REPLACES the mechanical one
+     in this same box (⚡ tag + as-of date). Client staleness: ≤3d normal · ≤7d
+     greyed · older → the mechanical summary below takes over again. */
+  const AGE=(INSW&&INSW.date)?Math.floor((Date.now()-new Date(INSW.date+'T00:00:00Z').getTime())/864e5):null;
+  const aiItems=INSW&&INSW.items&&(INSW.items[LANG]||INSW.items.ja||INSW.items.en);
+  if(aiItems&&aiItems.length&&AGE!=null&&AGE<=7&&showSec('ai')){
+    const old=AGE>3;
+    const crossItems=(PROJECTS&&PROJECTS.length>1&&typeof CROSS!=='undefined'&&CROSS)?(CROSS[LANG]||CROSS.ja||CROSS.en):null;
+    _el.innerHTML=`<h2>💡 ${t.ins_title} <span class="aibdg${old?' old':''}">⚡ ${t.ai_pw} · ${t.ins_asof(INSW.date)}</span></h2>
+      <ul class="ailist${old?' old':''}">${aiItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>
+      ${crossItems&&crossItems.length?`<div class="asep" style="margin:12px 0 10px"></div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px">🧭 ${t.ins_cross}</div><ul class="ailist${old?' old':''}">${crossItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>`:''}
+      <div class="note">${t.ins_ai_note}</div>`;
+    return;
+  }
+  const dir=m.net>0?t.up:m.net<0?t.down:t.flat;
   /* V1 07.31 (stakeholder feedback): summary bullets carry actionable angles —
      longest-dwelling category + new-exceeds-closed category. No personal names
      in this layer (names live in the operational tables below). */
@@ -703,10 +1132,11 @@ function renderInsight(m){
      the dwell story — fall back to the raw top only if nothing clears it */
   const stagCat=(m.catAge||[]).filter(c=>c.n>=3)[0]||(m.catAge||[])[0];
   const overCat=m.move&&m.move.over&&m.move.over.net>0?m.move.over:null;
+  const RIN=RKEY==='ytd'?T().rytd_in(TODAY.getUTCFullYear()):T().r_in(RANGE);
   const p1=`<span class="hl">${scopeName(SCOPE)}</span>: ${m.open.length}${LANG==='ja'?'件オープン':LANG==='vi'?' đang mở':' open'}, `+
-    (LANG==='ja'?`直近${RANGE}日で新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
-    :LANG==='vi'?`${RANGE} ngày qua tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
-    :`last ${RANGE}d: ${m.createdR.length} new / ${m.closedR.length} closed (backlog <span class="hl">${dir}</span>).`);
+    (LANG==='ja'?`${RIN}新規${m.createdR.length}・完了${m.closedR.length}（バックログ<span class="hl">${dir}</span>）。`
+    :LANG==='vi'?`${RIN} tạo ${m.createdR.length}/đóng ${m.closedR.length} (backlog <span class="hl">${dir}</span>).`
+    :`${RIN} ${m.createdR.length} new / ${m.closedR.length} closed (backlog <span class="hl">${dir}</span>).`);
   const p2=m.forecast?(LANG==='ja'?`現ペースなら約 <span class="hl">${m.forecast}</span> で消化。`:LANG==='vi'?`Tốc độ hiện tại ước hoàn tất ~<span class="hl">${m.forecast}</span>.`:`At current pace, clears ~<span class="hl">${m.forecast}</span>.`)
     :(LANG==='ja'?`現ペースでは<span class="hl">${t.noconv}</span>（完了が滞留）。`:LANG==='vi'?`Ở tốc độ hiện tại <span class="hl">${t.noconv}</span>.`:`<span class="hl">${t.noconv}</span> at current pace.`);
   const bullets=[
@@ -738,58 +1168,68 @@ function trendSVG(wd){
 function renderSections(m){
   const t=T();let H='';
   const SH=id=>`<button class="share" type="button" data-sec="${id}" title="copy link">🔗</button>`;
+  /* v2.1 remark slots: ONE content per slot — base verdict (rule engine), replaced
+     by the AI remark when fresh. Client-side staleness vs the remark date:
+     ≤3d normal · ≤7d greyed · older → base verdict only. */
+  const SEC={},V=verdicts(m);
+  const AGE=(INSW&&INSW.date)?Math.floor((Date.now()-new Date(INSW.date+'T00:00:00Z').getTime())/864e5):null;
+  const VL=k=>{
+    const s=INSW&&INSW.sections&&INSW.sections[k];
+    const txt=s?(s[LANG]||s.ja||s.en):null;
+    if(txt&&AGE!=null&&AGE<=7){const old=AGE>3;
+      return `<span class="vline ai${old?' old':''}"><span class="aibdg${old?' old':''}" title="${t.ins_asof(INSW.date)}">⚡ ${t.ai_pw}</span>${mdIns(txt)}</span>`;}
+    return V[k]?`<span class="vline">${V[k]}</span>`:'';
+  };
   /* period-scoped sections wear the accent range chip; snapshot sections wear a
      grey 現時点 chip — so the reader always knows which knob moves which box */
-  const RCHIP=`<span class="cnt rchip">${t['r'+RANGE]||RANGE+'d'}</span>`;
+  const RCHIP=`<span class="cnt rchip">${rangeLabel(t)||RANGE+'d'}</span>`;
+  const RPH=RKEY==='ytd'?t.rp_ytd(TODAY.getUTCFullYear()):t.rp_days(RANGE);
   const NCHIP=`<span class="cnt nchip">${t.now_}</span>`;
-  /* AI insight — weekly narrative (operator-reviewed, embedded at build time).
-     Optional by design: no insight in the build → the whole section is absent.
-     Cross-project block renders only on the multi page (/all — operator+CEO). */
-  const insItems=INSW&&INSW.items&&(INSW.items[LANG]||INSW.items.ja||INSW.items.en);
-  if(insItems&&insItems.length){
-    const crossItems=(PROJECTS&&PROJECTS.length>1&&typeof CROSS!=='undefined'&&CROSS)?(CROSS[LANG]||CROSS.ja||CROSS.en):null;
-    H+=`<details class="sec" id="sec-ai" open><summary><span class="si">🤖</span>${t.ins_ai}<span class="cnt">${t.ins_asof(INSW.date)}</span>${SH('sec-ai')}<span class="chev">▶</span></summary>
-      <div class="secbody">
-      <ul class="ailist">${insItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>
-      ${crossItems&&crossItems.length?`<div class="asep" style="margin:12px 0 10px"></div><div style="font-weight:700;font-size:14.5px;margin-bottom:2px">🧭 ${t.ins_cross}</div><ul class="ailist">${crossItems.map(b=>`<li>${mdIns(b)}</li>`).join('')}</ul>`:''}
-      <div class="note">${t.ins_ai_note}</div>
-      </div></details>`;
-  }
-  /* areas — RANGE-scoped section, so it sits first, right under the filter bar.
+  /* 参考 badge on the collapsed header + 見方 line above the box (08.18) */
+  const RF=id=>isRef(id)?`<span class="cnt rfchip" title="${t.ref_why}">${t.ref_chip}</span>`:'';
+  const HOW=k=>`<div class="howto"><b>${t.howto}</b>${t[k]}</div>`;
+  /* (the separate AI-insight box is gone — v2.1 merges AI content into the
+     summary slot and per-section verdict lines) */
+  /* areas — RANGE-scoped section.
      Layout: prominent aggregate row + legend + note → strong separator → members
      (paginated, +10 per click). */
-  if(m.areas&&m.areas.members.length){
-    const rules=PCFG.areas.rules;
-    const aColor=id=>{const ix=rules.findIndex(r=>r.id===id);return ix>=0?`var(--a${Math.min(ix+1,5)})`:'var(--faint)';};
-    const aLabel=id=>{if(id==='_other')return (PCFG.areas.other||{})[LANG]||(PCFG.areas.other||{}).en||'—';
-      const r=rules.find(r=>r.id===id);return r?(r[LANG]||r.en||r.id):id;};
-    const rowHTML=(x,big)=>{
+  if(m.areas&&m.areas.members.length&&showSec('area')){
+    const aColor=areaColor, aLabel=areaLabel;
+    const hx=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+    /* その他 breakdown (09.10): when the unclassified share of a row reaches
+       `areas.breakdownPct`, print what it is made of — the tickets' own Backlog
+       categories — so a large "other" reads as a data-hygiene fact, not a gap */
+    const bdPct=+((PCFG.areas||{}).breakdownPct||0);
+    const bdHTML=x=>{const n=x.by._other||0;if(!bdPct||!n||n/x.total*100<bdPct)return '';
+      const C={};(x.items&&x.items._other||[]).forEach(i=>{const k=(i.category||[])[0]||'';C[k]=(C[k]||0)+1;});
+      return `<div class="abd">${t.area_bd}: ${Object.entries(C).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${k?hx(k):t.area_uncat} <b class="mono">${n}</b>`).join(' · ')}</div>`;};
+    const rowHTML=(x,big,rid)=>{
         const th=big?9:14,h=big?24:15;
         const segs=m.areas.ids.filter(id=>x.by[id]).map(id=>{const p=x.by[id]/x.total*100;
-          return `<i style="width:${p}%;background:${aColor(id)}" title="${aLabel(id)} ${Math.round(p)}% (${x.by[id]})">${p>=th?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
+          return `<i class="aseg" data-row="${rid}" data-aid="${id}" style="width:${p}%;background:${aColor(id)}" title="${hx(aLabel(id))} ${Math.round(p)}% (${x.by[id]})">${p>=th?`<b>${Math.round(p)}%</b>`:''}</i>`;}).join('');
         return `<div class="arow${x.hid?' hid':''}" style="margin-bottom:${big?6:11}px"><div style="display:flex;justify-content:space-between;font-size:${big?15.5:14.9}px;margin-bottom:4px"><span style="font-weight:${big?800:600}">${x.link||x.name}</span><span class="mono" style="color:var(--muted)">${x.total}</span></div>
-        <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div></div>`;};
+        <div class="sbar abar" style="width:100%;height:${h}px;border-radius:${big?8:6}px">${segs}</div>${bdHTML(x)}<div class="alist" id="alist-${rid}"></div></div>`;};
     const STEP=10, mem=m.areas.members;
-    H+=`<details class="sec" id="sec-area" open><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${SH('sec-area')}<span class="chev">▶</span></summary>
+    SEC.area=`<details class="sec" id="sec-area"><summary><span class="si">🗺</span>${t.sec_area}${RCHIP}<span class="cnt">${mem.length}</span>${RF('area')}${SH('sec-area')}<span class="chev">▶</span>${VL('area')}</summary>
       <div class="secbody">
-      ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by},true)}
+      ${rowHTML({name:`<span style="letter-spacing:.02em">${t.area_all}</span>`,total:m.areas.all.total,by:m.areas.all.by,items:m.areas.all.items},true,'all')}
       <div class="legend" style="margin-top:4px">${m.areas.ids.map(id=>`<span><i style="background:${aColor(id)}"></i>${aLabel(id)}</span>`).join('')}</div>
-      <div class="note" style="margin-top:6px">${t.area_note(RANGE)}</div>
+      <div class="note" style="margin-top:6px">${t.area_note(RPH)} · ${t.area_click}</div>
       <div class="asep"></div>
-      ${mem.map((x,ix)=>rowHTML({...x,link:assigneeLink(x.name),hid:ix>=STEP})).join('')}
+      ${mem.map((x,ix)=>rowHTML({...x,link:assigneeLink(x.name),hid:ix>=STEP},false,String(ix))).join('')}
       ${mem.length>STEP?`<button class="morebtn" id="areamore">${t.area_more(mem.length-STEP)}</button>`:''}
       </div></details>`;
   }
   /* in-period movement — what happened inside the selected RANGE (07.28):
      created vs closed per type/category, top finishers, median cycle time */
   const mv=m.move;
-  if(mv&&(m.createdR.length||m.closedR.length)){
+  if(mv&&(m.createdR.length||m.closedR.length)&&showSec('move')){
     const mmax=Math.max(1,...mv.cats.map(c=>Math.max(c.cr,c.cl)));
-    H+=`<details class="sec" id="sec-move" open><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${SH('sec-move')}<span class="chev">▶</span></summary>
+    SEC.move=`<details class="sec" id="sec-move"><summary><span class="si">⚡</span>${t.sec_move}${RCHIP}${RF('move')}${SH('sec-move')}<span class="chev">▶</span>${VL('move')}</summary>
       <div class="secbody">
       <div class="mvstats">
-        <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${t.mv_prev(mv.crP)}</span></div>
-        <div class="mvstat"><span class="mvl">${t.closed}</span><span class="mvv mono g">${m.closedR.length}</span><span class="mvp mono">${t.mv_prev(mv.clP)}</span></div>
+        <div class="mvstat"><span class="mvl">${t.created}</span><span class="mvv mono">${m.createdR.length}</span><span class="mvp mono">${m.prev?t.mv_prev(mv.crP):''}</span></div>
+        <div class="mvstat"><span class="mvl">${t.closed}</span><span class="mvv mono g">${m.closedR.length}</span><span class="mvp mono">${m.prev?t.mv_prev(mv.clP):''}</span></div>
         <div class="mvstat"><span class="mvl">${t.mv_cyc}</span><span class="mvv mono">${mv.cyc!=null?mv.cyc+'d':'·'}</span><span class="mvp mono">${mv.cycP!=null?t.mv_prev(mv.cycP+'d'):''}</span></div>
       </div>
       ${mv.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.mv_bycat}</div>
@@ -802,35 +1242,81 @@ function renderSections(m){
       <div class="mvfin">${mv.fin.map(f=>`<span>${assigneeLink(f.name)} <b class="mono">${f.n}</b></span>`).join('')}</div>`:''}
       </div></details>`;
   }
+  /* closed-side analysis (v2 08.06) — how work FINISHES: cycle-time distribution
+     + summary percentiles, on-time rate (with its denominator), per-category
+     median, completed mix. Counts only; close date = last-update approximation,
+     stated in the section note. */
+  const ca=m.closedA;
+  if(ca&&ca.n&&showSec('closed')){
+    const ageLbl=[t.cl_b1,t.cl_b2,t.cl_b3,t.cl_b4];
+    const amax=Math.max(1,...ca.ageB.map(x=>x.n));
+    const cmax=Math.max(1,...ca.cats.map(x=>x.p50),1);
+    const mmix=ca.mix.slice(0,8);const mtot=ca.mix.reduce((s,x)=>s+x.n,0)||1;
+    SEC.closed=`<details class="sec" id="sec-closed"><summary><span class="si">✅</span>${t.sec_closed}${RCHIP}<span class="cnt">${ca.n}</span>${RF('closed')}${SH('sec-closed')}<span class="chev">▶</span>${VL('closed')}</summary>
+      <div class="secbody">
+      <div class="mvstats">
+        <div class="mvstat"><span class="mvl">${t.cl_p50}<span class="defbtn" data-def="cyc">i</span></span><span class="mvv mono">${ca.p50!=null?ca.p50+'d':'·'}</span><span class="mvp mono">${ca.p50P!=null?t.mv_prev(ca.p50P+'d'):''}</span></div>
+        <div class="mvstat"><span class="mvl">${t.cl_p85}</span><span class="mvv mono">${ca.p85!=null?ca.p85+'d':'·'}</span><span class="mvp mono"></span></div>
+        <div class="mvstat"><span class="mvl">${t.cl_ontime}</span><span class="mvv mono">${ca.due.n?Math.round(ca.due.ok/ca.due.n*100)+'%':'·'}</span><span class="mvp mono">${ca.due.n?t.cl_due_d(ca.due.ok,ca.due.n):t.cl_nodue}</span></div>
+      </div>
+      <div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_age}</div>
+      ${ca.ageB.map((x,i)=>`<div class="bar" style="margin-bottom:8px"><span style="width:96px;font-size:14.4px;color:var(--muted)">${ageLbl[i]}</span><span class="tk"><i style="width:${x.n/amax*100}%;background:var(--st-closed)"></i></span><span class="mono" style="width:86px;text-align:right;color:var(--muted)">${x.n} · ${Math.round(x.n/(ca.n||1)*100)}%</span></div>`).join('')}
+      ${ca.cats.length?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_bycat}</div>
+      ${ca.cats.map(c=>`<div class="bar" style="margin-bottom:8px"><span style="width:130px;font-size:14.4px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}</span><span class="tk"><i style="width:${c.p50/cmax*100}%;background:var(--a2)"></i></span><span class="mono" style="width:110px;text-align:right;color:var(--muted)">${c.p50}d · ${c.n}${t.cl_items}</span></div>`).join('')}`:''}
+      ${mmix.length&&mmix.some(x=>x.name!=='_none')?`<div style="font-weight:700;font-size:14.5px;margin:14px 0 8px">${t.cl_mix}</div>
+      <div class="sbar" style="width:100%;height:16px;border-radius:8px">${mmix.map((x,i)=>`<i style="width:${x.n/mtot*100}%;background:${x.name==='_none'?'var(--faint)':`var(--a${(i%5)+1})`}" title="${x.name==='_none'?t.cl_other:x.name} ${x.n}"></i>`).join('')}</div>
+      <div class="legend" style="margin-top:10px">${mmix.map((x,i)=>`<span><i style="background:${x.name==='_none'?'var(--faint)':`var(--a${(i%5)+1})`}"></i>${x.name==='_none'?t.cl_other:x.name} · <b class="mono">${x.n}</b> (${Math.round(x.n/mtot*100)}%)</span>`).join('')}</div>`:''}
+      <div class="note" style="margin-top:10px">${t.cl_note}</div>
+      </div></details>`;
+  }
   /* flow — buckets follow the range since 07.28 (7d/30d daily, 90d weekly) */
+  if(showSec('flow')){
   const tblB=RANGE===30?m.wd.slice(-14):m.wd;
-  H+=`<details class="sec" id="sec-flow" open><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${SH('sec-flow')}<span class="chev">▶</span></summary>
-    <div class="secbody">${trendSVG(m.wd)}
+  SEC.flow=`<details class="sec" id="sec-flow"><summary><span class="si">📈</span>${t.sec_flow}${RCHIP}${RF('flow')}${SH('sec-flow')}<span class="chev">▶</span>${VL('flow')}</summary>
+    <div class="secbody">${HOW('hm_flow')}${trendSVG(m.wd)}
     <div class="legend"><span><i style="background:var(--faint);opacity:.85"></i>${t.created}</span><span><i style="background:var(--st-closed)"></i>${t.closed}</span><span><i style="background:var(--amber)"></i>${t.stalep}</span></div>
-    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
+    <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>${RANGE<=30?t.day_:RANGE>=180?t.month:t.week}</th><th>${t.created}</th><th>${t.closed}</th><th>${t.net}</th><th>${t.stalep}</th></tr></thead><tbody>
     ${[...tblB].reverse().map((w,idx)=>`<tr${idx===0?' style="background:var(--accent-soft)"':''}><td class="mono">${w.label}</td><td class="mono">${w.cr}</td><td class="mono">${w.cl}</td><td class="mono ${w.net>0?'r':'g'}">${w.net>0?'+':''}${w.net}</td><td class="mono ${w.stale>=50?'a':''}">${w.stale}%</td></tr>`).join('')}
     </tbody></table></div>${tblB.length<m.wd.length?`<div class="note">${t.flow_tbl(tblB.length)}</div>`:''}</div></details>`;
-  /* ---- everything below is a snapshot of NOW — visibly fenced off from the
-     period filter (07.28): labeled divider + grey 現時点 chips ---- */
-  H+=`<div class="snapdiv" id="snapdiv"><span>📌 ${t.snap_div}</span></div>`;
+  }
+  /* stagnation breakdown (v2.1 08.06 — PM feedback ②③): the stale set by
+     state-group × idle-time, plus the unassigned. Cells expand to ticket lists
+     (Backlog links). Explicitly labeled as WHERE-stuck, never why. */
+  if(m.stag&&showSec('stag')){
+    const sgl={wait:t.stg_wait,work:t.stg_work,open:t.stg_open};
+    const cols=[t.stg_c1,t.stg_c2,t.stg_c3];
+    SEC.stag=`<details class="sec" id="sec-stag"><summary><span class="si">🧊</span>${t.sec_stag}${NCHIP}<span class="cnt">${m.stag.total}</span>${RF('stag')}${SH('sec-stag')}<span class="chev">▶</span>${VL('stag')}</summary>
+      <div class="secbody">
+      ${HOW('hm_stag')}
+      <div style="overflow-x:auto"><table><thead><tr><th style="text-align:left"></th>${cols.map(c=>`<th>${c}</th>`).join('')}<th>${t.stg_total}</th></tr></thead><tbody>
+      ${m.stag.rows.map(r=>{const rt=r.cells.reduce((s,c)=>s+c.n,0);
+        return `<tr><td style="text-align:left;font-weight:600">${sgl[r.g]}</td>${r.cells.map((c,ci)=>`<td class="mono">${c.n?`<a class="lnk stgcell" data-g="${r.g}" data-ci="${ci}" href="#">${c.n}</a>`:'·'}</td>`).join('')}<td class="mono"><b>${rt}</b></td></tr>`;}).join('')}
+      </tbody></table></div>
+      <div id="stglist" style="margin-top:10px"></div>
+      ${m.stag.unas?`<div style="margin-top:12px;font-weight:700;font-size:14.5px">${t.stg_unas} · ${m.stag.unas}</div>
+      <div style="overflow-x:auto;margin-top:6px"><table><tbody>${m.stag.unasTop.map(x=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title||x.key)}</td><td class="mono" style="width:70px">${x.d}d</td></tr>`).join('')}</tbody></table></div>`:''}
+      <div class="note" style="margin-top:10px">${t.stg_note}</div>
+      </div></details>`;
+  }
   /* members */
   const topN=8;
   const memRows=m2=>m2.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td class="mono">${x.open}</td><td class="mono ${x.over?'r':''}">${x.over||'·'}</td><td class="mono ${x.stale?'a':''}">${x.stale||'·'}</td><td class="mono">${x.med||'·'}${x.med?'d':''}</td><td>${statusMix(x.st)}</td><td>${riskChip(x.med)}</td></tr>`).join('');
-  H+=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${SH('sec-mem')}<span class="chev">▶</span></summary>
+  if(showSec('mem'))SEC.mem=`<details class="sec" id="sec-mem"><summary><span class="si">👥</span>${t.sec_mem}${NCHIP}<span class="cnt">${m.members.length}</span>${RF('mem')}${SH('sec-mem')}<span class="chev">▶</span>${VL('mem')}</summary>
     <div class="secbody"><div style="overflow-x:auto"><table><thead><tr><th>${t.th_name}</th><th>${t.th_open}</th><th>${t.th_over}</th><th>${t.th_stale}</th><th>${t.th_age}</th><th>${t.th_dist}</th><th>${t.th_risk}</th></tr></thead>
     <tbody id="memtb">${memRows(m.members.slice(0,topN))}</tbody></table></div>
     ${m.members.length>topN?`<button class="morebtn" id="memmore" data-open="0">${t.more} (${m.members.length-topN}+)</button>`:''}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* categories (hidden when the project yields none) */
-  if(m.cats.length)H+=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${SH('sec-cat')}<span class="chev">▶</span></summary>
+  if(m.cats.length&&showSec('cat'))SEC.cat=`<details class="sec" id="sec-cat"><summary><span class="si">🏷</span>${t.sec_cat}${NCHIP}<span class="cnt">${m.cats.length}</span>${RF('cat')}${SH('sec-cat')}<span class="chev">▶</span>${VL('cat')}</summary>
     <div class="secbody">${m.cats.map(c=>{const dp=Math.round(c.done/c.total*100);return `<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:14.9px;margin-bottom:4px"><span style="font-weight:600">${c.name}</span><span class="mono" style="color:var(--muted)">${dp}% · ${c.done}/${c.total}</span></div>
       ${statusMix(c.st,'width:100%;height:9px')}</div>`;}).join('')}
     <div class="legend">${['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]}</span>`).join('')}</div></div></details>`;
   /* risk & delayed */
   const risk=[...m.members].filter(x=>x.med>0).sort((a,b)=>b.med-a.med).slice(0,8);
   const rmax=Math.max(1,...risk.map(x=>x.med));
-  H+=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${SH('sec-risk')}<span class="chev">▶</span></summary>
-    <div class="secbody">${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
+  if(showSec('risk'))SEC.risk=`<details class="sec" id="sec-risk"><summary><span class="si">⚠</span>${t.sec_risk}${NCHIP}<span class="cnt">${m.overdue.length}</span>${RF('risk')}${SH('sec-risk')}<span class="chev">▶</span>${VL('risk')}</summary>
+    <div class="secbody"><div class="note" style="margin:0 0 12px">${t.due_cov(m.openWithDue,m.open.length,m.dueCovPct)}</div>
+    ${risk.map(x=>`<div class="bar" style="margin-bottom:9px"><span style="width:120px;font-size:14.9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${assigneeLink(x.name)}</span><span class="tk"><i style="width:${x.med/rmax*100}%;background:${x.med>=CFG.riskMed.high?'var(--red)':x.med>=CFG.riskMed.mid?'var(--amber)':'var(--green)'}"></i></span><span class="mono" style="width:44px;text-align:right;color:${x.med>=CFG.riskMed.high?'var(--red)':'var(--muted)'}">${x.med}d</span></div>`).join('')}
     <div style="overflow-x:auto;margin-top:14px"><table><thead><tr><th>${t.th_name}</th><th style="text-align:left">${t.th_ticket}</th><th>${t.th_due}</th><th>${t.th_days}</th></tr></thead><tbody>
     ${m.delayed.map(x=>`<tr><td class="name">${assigneeLink(x.name)}</td><td style="text-align:left;font-size:14.4px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title)}</td><td class="mono r">${x.due}</td><td class="mono r">${x.over}d</td></tr>`).join('')}
     </tbody></table></div></div></details>`;
@@ -843,11 +1329,27 @@ function renderSections(m){
   const stLeg=m.sfull.length
     ?m.sfull.map(s=>`<span><i style="background:${s.color||'var(--faint)'}"></i>${s.name} · <b class="mono">${s.n}</b></span>`).join('')
     :['InProgress','Open','Resolved','Pending','Closed'].map(k=>`<span><i style="background:${BORDER[k]}"></i>${t.st[k]} · <b class="mono">${m.status[k]}</b></span>`).join('');
-  H+=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${SH('sec-status')}<span class="chev">▶</span></summary>
+  if(showSec('status'))SEC.status=`<details class="sec" id="sec-status"><summary><span class="si">◔</span>${t.sec_status}${NCHIP}<span class="cnt">${tot}</span>${RF('status')}${SH('sec-status')}<span class="chev">▶</span>${VL('status')}</summary>
     <div class="secbody"><div class="sbar" style="width:100%;height:18px;border-radius:8px">${stSeg}</div>
     <div class="legend" style="margin-top:14px">${stLeg}</div>
     ${(()=>{const n=PCFG.note&&(PCFG.note[LANG]||PCFG.note.en);return n?`<div class="note">${n}</div>`:'';})()}</div></details>`;
+  /* assembly (v2.1): question order — how it moves → where it stops → who → what.
+     Period-scoped first, then the NOW divider, then snapshot sections. */
+  ['closed','flow','move','area'].forEach(k=>{if(SEC[k])H+=SEC[k];});
+  if(SEC.stag||SEC.risk||SEC.mem||SEC.cat||SEC.status)H+=`<div class="snapdiv" id="snapdiv"><span>📌 ${t.snap_div}</span></div>`;
+  ['stag','risk','mem','cat','status'].forEach(k=>{if(SEC[k])H+=SEC[k];});
   $('#sections').innerHTML=H;
+  /* stagnation matrix cells → ticket list below the table */
+  if(m.stag){
+    const sgl={wait:t.stg_wait,work:t.stg_work,open:t.stg_open};
+    const cols=[t.stg_c1,t.stg_c2,t.stg_c3];
+    document.querySelectorAll('.stgcell').forEach(a=>a.onclick=e=>{
+      e.preventDefault();e.stopPropagation();
+      const cell=m.stag.rows.find(r=>r.g===a.dataset.g).cells[+a.dataset.ci];
+      $('#stglist').innerHTML=`<div style="font-weight:700;font-size:14px;margin-bottom:6px">${sgl[a.dataset.g]} · ${cols[+a.dataset.ci]} — ${t.showing(cell.top.length)} / ${cell.n}</div>
+        <div style="overflow-x:auto"><table><tbody>${cell.top.map(x=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(x.key,x.title||x.key)}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${x.st}</td><td class="mono" style="width:70px">${x.d}d</td></tr>`).join('')}</tbody></table></div>`;
+    });
+  }
   /* share buttons — copy a deep link to this section (#<slug>/<sec> on multi, #<sec> on single) */
   document.querySelectorAll('.sec .share').forEach(b=>b.onclick=e=>{
     e.preventDefault();e.stopPropagation();
@@ -864,6 +1366,24 @@ function renderSections(m){
     hid.slice(0,10).forEach(e=>e.classList.remove('hid'));
     const left=hid.length-10;
     if(left>0)ab.textContent=t.area_more(left); else ab.remove();};
+  /* area segment click (09.10) → the tickets behind that segment, under its own row.
+     Same segment again closes it; a different segment on the same row replaces it.
+     Ticket titles come from the decrypted payload already in the page — nothing new leaves. */
+  if(m.areas)document.querySelectorAll('#sec-area .aseg').forEach(el=>el.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    const rid=el.dataset.row,aid=el.dataset.aid;
+    const x=rid==='all'?m.areas.all:m.areas.members[+rid];
+    const box=document.getElementById('alist-'+rid);if(!x||!box)return;
+    const same=box.dataset.aid===aid&&box.classList.contains('on');
+    el.closest('.arow').querySelectorAll('.aseg.on').forEach(s=>s.classList.remove('on'));
+    if(same){box.classList.remove('on');box.innerHTML='';box.dataset.aid='';return;}
+    const hx=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    const stName=i=>{const s=SFULL.find(s=>s.id===i.stId);return s?s.name:bkt(i);};
+    const items=((x.items||{})[aid]||[]).slice().sort((a,b)=>String(b.updated||'').localeCompare(String(a.updated||'')));
+    el.classList.add('on');box.dataset.aid=aid;box.classList.add('on');
+    box.innerHTML=`<div style="font-weight:700;font-size:14px;margin:4px 0 6px"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${areaColor(aid)};vertical-align:middle;margin-right:6px"></i>${hx(areaLabel(aid))} · ${items.length}</div>
+      <div style="overflow-x:auto"><table><tbody>${items.map(i=>`<tr><td style="text-align:left;font-size:14.2px;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ticketLink(i.key,i.key+' '+(i.summary||''))}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${hx((i.category||[]).join(', ')||t.area_uncat)}</td><td style="font-size:13px;color:var(--muted);white-space:nowrap">${hx(stName(i))}</td><td class="mono" style="font-size:13px;white-space:nowrap" title="${t.area_upd}">${String(i.updated||'').slice(5)}</td></tr>`).join('')}</tbody></table></div>`;
+  });
 }
 
 /* ============ controls ============ */
@@ -876,7 +1396,7 @@ function buildControls(){
   const opts=[['all',t.allopen],...tagOpts,['highp',t.highp],['overdue',t.overdueScope],...topMs.map(n=>['ms:'+n,t.ms(n)])];
   $('#sel-scope').innerHTML=opts.map(([v,l])=>`<option value="${v}"${v===SCOPE?' selected':''}>${l}</option>`).join('');
   // range seg
-  $('#seg-range').innerHTML=[[7,t.r7],[30,t.r30],[90,t.r90]].map(([v,l])=>`<button data-range="${v}" class="${v===RANGE?'on':''}">${l}</button>`).join('');
+  $('#seg-range').innerHTML=[['7',t.r7],['30',t.r30],['90',t.r90],['180',t.r180],['ytd',t.rytd(TODAY.getUTCFullYear())]].map(([v,l])=>`<button data-range="${v}" class="${v===RKEY?'on':''}">${l}</button>`).join('');
   // labels
   $('#l-scope').textContent=t.scope;$('#l-range').textContent=t.range;
   document.querySelectorAll('#btn-lang svg').forEach(s=>s.classList.toggle('on',s.dataset.l===LANG));
@@ -936,7 +1456,7 @@ function loadProject(i){
   /* bucket colors = the project's real Backlog status colors (API); fallback = Backlog standard palette */
   const cols=p.colors||{}; for(const k in CVAR) document.documentElement.style.setProperty(CVAR[k],cols[k]||'');
   CFG=mergeCFG(PCFG.thresholds); SCOPE=PCFG.defaultScope||'all';
-  renderProjNav(); renderAll();
+  renderProjNav(); if(PLACE)PLACE(); renderAll();
   /* URL hash mirrors the active project tab (07.28); keep a section part if it
      belongs to this project's current hash (deep link), else reset to the slug */
   if(PROJECTS.length>1&&p.slug&&location.hash.slice(1).split('/')[0]!==p.slug)
@@ -957,7 +1477,22 @@ function renderAll(){
       ?`<a class="lnk" href="https://${CONF.space}/projects/${CONF.pk}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${nm} ↗</a>`
       :nm;
   }
+  /* textContent first (scope labels come from config — never interpolate them
+     into HTML), then the basis ⓘ is appended as markup */
   $('#t-sub').textContent=t.sub({scopeName:scopeName(SCOPE),open:m.open.length,date:META.today});
+  $('#t-sub').insertAdjacentHTML('beforeend',
+    ` <span class="defbtn" data-def="basis">i</span> <span class="subsep">·</span> <span id="lnk-about">${t.about_t}</span>`);
+  /* same text, printed: an exported PDF/HTML has no ⓘ to click */
+  $('#basisbox').innerHTML=`<b>${t.basis_t}</b>${t.def_basis(META.closedWin||META.win||120,META.today)}`;
+  /* multi page only: quiet about/changelog line right under the utility cluster */
+  /* 08.18 (operator): the About link belongs on EVERY page, not just /all. It
+     moved out of the absolute-positioned corner slot (`.utilabout`) and into the
+     subtitle line: that corner is the one the utility cluster collided with twice
+     (08.06, 08.14 rev3), and on a standalone page ≥1280px the cluster now sits in
+     the title row, which would have stranded the link on top of it. In the sub
+     line it flows at any width, on any page, next to the basis ⓘ. */
+  $('#utilabout').innerHTML='';
+  const _al=$('#lnk-about');if(_al)_al.onclick=openAbout;
   $('#f-left').textContent=t.foot_l;$('#f-right').textContent=t.foot_r({date:META.today,scopeName:scopeName(SCOPE)});
   buildControls();renderHero(m);renderInsight(m);renderSections(m);
   applyPendingSec();
@@ -977,7 +1512,7 @@ function parseHash(){
 }
 
 $('#sel-scope').addEventListener('change',e=>{SCOPE=e.target.value;renderAll();});
-$('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RANGE=+b.dataset.range;renderAll();});
+$('#seg-range').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;RKEY=b.dataset.range;renderAll();});
 $('#btn-lang').addEventListener('click',()=>{const L=['ja','en','vi'];
   LANG=L[(L.indexOf(LANG)+1)%L.length];
   try{localStorage.setItem('tl_dash_lang',LANG);}catch(e){} renderAll();});
@@ -1006,6 +1541,17 @@ function u8(b64){const s=atob(b64.replace(/-/g,'+').replace(/_/g,'/'));const a=n
    passphrase key that already lives there. Cleared on manual unsubscribe. */
 function pushCfgSave(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').put({url:PUSH.url,v:PUSH.v,pub:PUSH.pub},'push');}catch(_){}};}catch(_){}}
 function pushCfgClear(){try{const r=indexedDB.open('tlk-push',1);r.onupgradeneeded=()=>r.result.createObjectStore('cfg');r.onsuccess=()=>{try{r.result.transaction('cfg','readwrite').objectStore('cfg').delete('push');}catch(_){}};}catch(_){}}
+/* register a subscription, retiring the previous one (08.07): the registry keys
+   by endpoint, so a re-subscribe with a rotated endpoint leaves the old record
+   behind and the device gets the same ping twice. Remember what we last handed
+   over and delete it whenever a different endpoint replaces it. */
+function pushPut(sub){
+  const prev=localStorage.getItem('tl_dash_ep');
+  if(prev&&prev!==sub.endpoint)_to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
+    body:JSON.stringify({v:PUSH.v,endpoint:prev})}),8000).catch(()=>{});
+  return _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000).then(r=>{if(r.ok)localStorage.setItem('tl_dash_ep',sub.endpoint);return r;});
+}
 async function initPush(){
   if(!PUSH||!('serviceWorker' in navigator)||!('PushManager' in window)||typeof Notification==='undefined')return;
   if(!location.protocol.startsWith('http')||Notification.permission==='denied')return;
@@ -1022,9 +1568,7 @@ async function initPush(){
     if(sub&&!localStorage.getItem('tl_dash_push'))localStorage.setItem('tl_dash_push','1');
     if(localStorage.getItem('tl_dash_push')==='1'&&Notification.permission==='granted'){
       if(!sub){try{sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);}catch(_){}}
-      if(sub){pushCfgSave();
-        _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
-          body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000).catch(()=>{});}
+      if(sub){pushCfgSave();pushPut(sub).catch(()=>{});}
     }
     b.classList.toggle('on',!!sub);}catch(_){}
 }
@@ -1042,17 +1586,125 @@ $('#btn-push').addEventListener('click',async()=>{
     if(cur){
       await _to(fetch(PUSH.url+'/sub',{method:'DELETE',headers:{'content-type':'application/json'},
         body:JSON.stringify({v:PUSH.v,endpoint:cur.endpoint})}),8000).catch(()=>{});
-      await cur.unsubscribe();b.classList.remove('on');localStorage.removeItem('tl_dash_push');pushCfgClear();toast(t.push_off);return;
+      await cur.unsubscribe();b.classList.remove('on');localStorage.removeItem('tl_dash_push');localStorage.removeItem('tl_dash_ep');pushCfgClear();toast(t.push_off);return;
     }
     if(await Notification.requestPermission()!=='granted'){toast(t.push_denied);return;}
     const sub=await _to(reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(PUSH.pub)}),15000);
-    const r=await _to(fetch(PUSH.url+'/sub',{method:'POST',headers:{'content-type':'application/json'},
-      body:JSON.stringify({v:PUSH.v,sub:sub.toJSON()})}),10000);
+    const r=await pushPut(sub);
     if(r.ok){b.classList.add('on');localStorage.setItem('tl_dash_push','1');pushCfgSave();toast(t.push_on);}
     else{await sub.unsubscribe();toast(t.push_err);}
   }catch(_){toast(T().push_err);}
   finally{b.classList.remove('busy');}
 });
+/* About / Changelog modal (v2 08.06). Content = VERINFO in the current page
+   language; the copy button hands over the whole text as plain text so it can be
+   pasted into chat/mail for stakeholders unchanged. */
+function openAbout(){
+  /* rev3 (operator 08.06): compact chrome — plain one-word title, no subtitle,
+     no button row; tapping the text copies the whole block, ✕ closes. */
+  const t=T();const v=VERINFO[LANG]||VERINFO.ja;
+  /* per-project changes (08.18): a page shows only the projects it actually
+     holds — a standalone page holds one, /all holds them all. Display names come
+     from the decrypted payload; the template itself knows only neutral slugs. */
+  const bp=v.byProject||{};
+  const slugs=(PROJECTS&&PROJECTS.length)?PROJECTS.map(x=>x.slug):(PAGESLUG?[PAGESLUG]:[]);
+  const pjs=slugs.filter(sg=>(bp[sg]||[]).length).map(sg=>{
+    const pr=(PROJECTS||[]).find(x=>x.slug===sg);
+    return {name:(pr&&pr.name)||sg,items:bp[sg]};});
+  const pjHTML=pjs.length?`<h3>${t.about_pj}</h3>`+pjs.map(x=>
+    `<div class="abpj"><b>${x.name}</b><ul>${x.items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`).join(''):'';
+  $('#aboutbox').innerHTML=`<button class="aboutx" id="about-x" type="button" aria-label="close">×</button><h2>${t.about_h}</h2>
+    <div id="about-txt">${v.premise.map(p=>`<p>${p}</p>`).join('')}
+    <h3>${t.about_ch}</h3><ul>${v.changes.map(c=>`<li>${c}</li>`).join('')}</ul>${pjHTML}</div>
+`;
+  $('#aboutov').hidden=false;
+  $('#about-x').onclick=()=>{$('#aboutov').hidden=true;};
+  $('#about-txt').onclick=()=>{
+    const txt=[t.about_t,'',...v.premise,'',t.about_ch+':',...v.changes.map(c=>'- '+c),
+      ...(pjs.length?['',t.about_pj+':',...pjs.flatMap(x=>['['+x.name+']',...x.items.map(i=>'- '+i)])]:[])].join('\n');
+    const done=()=>toast('✓ '+t.about_copied);
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(done,()=>prompt('',txt));
+    else prompt('',txt);
+  };
+}
+$('#aboutov').addEventListener('click',e=>{if(e.target.id==='aboutov')$('#aboutov').hidden=true;});
+/* KPI card interactions (v2.2): click = open + scroll to the mapped section
+   (brief flash); hover (pointer devices only) = preview tooltip with the card's
+   meaning line + the target section's verdict. */
+(function(){
+  const hv=$('#hero');if(!hv)return;
+  hv.addEventListener('click',e=>{
+    if(e.target.closest('.defbtn'))return;
+    const c=e.target.closest('.kcard');if(!c)return;
+    const el=document.getElementById(KMAP[c.dataset.k]||'');if(!el)return;
+    const p=$('#cardtip');if(p)p.remove();
+    el.open=true;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+  if(matchMedia('(hover:hover)').matches){
+    hv.addEventListener('mouseover',e=>{
+      const c=e.target.closest('.kcard');if(!c)return;
+      if($('#cardtip')&&$('#cardtip').dataset.k===c.dataset.k)return;
+      const p0=$('#cardtip');if(p0)p0.remove();
+      const info=HEROTIP[c.dataset.k];if(!info)return;
+      const t=T();const d=document.createElement('div');d.id='cardtip';d.dataset.k=c.dataset.k;
+      d.innerHTML=`<div>${info.mean}</div>${info.vd?`<div class="ctvd">${info.vd}</div>`:''}<div class="cthint">→ ${t.card_go}</div>`;
+      document.body.appendChild(d);
+      const r=c.getBoundingClientRect();
+      d.style.top=(scrollY+r.bottom+6)+'px';
+      d.style.left=Math.max(8,Math.min(scrollX+r.left,scrollX+innerWidth-d.offsetWidth-12))+'px';
+    });
+    hv.addEventListener('mouseout',e=>{
+      const c=e.target.closest('.kcard');
+      if(c&&!c.contains(e.relatedTarget)){const p=$('#cardtip');if(p)p.remove();}
+    });
+  }
+})();
+/* filter bar placement (v2.2 rev2): ≥1280px the controls join the title row
+   (right of the export button); narrower puts them back in their own band.
+   The stuck sentinel stays at the ORIGINAL flow position either way. */
+var PLACE=null;   /* set by the IIFE below; loadProject() re-runs it once tabs exist */
+(function(){
+  const mq=matchMedia('(min-width:1280px)');
+  let anchor=null,uanchor=null;
+  function place(){
+    const c=$('#controls'),row=document.querySelector('.h1row');
+    if(!c||!row)return;
+    if(!anchor){anchor=document.createElement('div');anchor.style.display='none';c.parentNode.insertBefore(anchor,c);}
+    if(mq.matches){if(c.parentElement!==row)row.appendChild(c);}
+    else if(c.parentElement===row){anchor.after(c);}
+    /* rev3 (08.14): the utility cluster follows the filter bar into the title row
+       — but ONLY on a standalone page. On /all the project tabs occupy that top
+       band, the cluster does not collide with anything, and moving it would strand
+       the About link that sits right under it. Tabs exist only after a project
+       loads, so loadProject() re-runs this. */
+    const u=$('#util'); if(!u)return;
+    if(!uanchor){uanchor=document.createElement('div');uanchor.style.display='none';u.parentNode.insertBefore(uanchor,u);}
+    const solo=!document.querySelector('.projnav button');
+    if(mq.matches&&solo){if(u.parentElement!==row)row.appendChild(u);}
+    else if(u.parentElement===row){uanchor.after(u);}
+  }
+  mq.addEventListener?mq.addEventListener('change',place):mq.addListener(place);
+  /* deferred: the sticky sentinel (created later in this script) must be
+     inserted at the controls' ORIGINAL flow position before we move them */
+  setTimeout(place,0);
+  PLACE=place;
+})();
+/* ⓘ definition popovers (v2.1) — one at a time, click anywhere else to close.
+   The definition text is the "manual", delivered at the point of doubt. */
+document.addEventListener('click',e=>{
+  const old=$('#defpop');if(old)old.remove();
+  const b=e.target.closest('.defbtn');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  let txt=T()['def_'+b.dataset.def];if(!txt)return;
+  if(typeof txt==='function')txt=txt(META.closedWin||META.win||120,META.today);
+  const d=document.createElement('div');d.id='defpop';d.textContent=txt;
+  document.body.appendChild(d);
+  const r=b.getBoundingClientRect();
+  d.style.top=(scrollY+r.bottom+8)+'px';
+  d.style.left=Math.max(8,Math.min(scrollX+r.left,scrollX+innerWidth-d.offsetWidth-12))+'px';
+},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#aboutov').hidden)$('#aboutov').hidden=true;});
 $('#btn-install').addEventListener('click',async()=>{if(!_bip)return;_bip.prompt();await _bip.userChoice.catch(()=>{});_bip=null;$('#btn-install').style.display='none';});
 addEventListener('appinstalled',()=>{$('#btn-install').style.display='none';});
 /* ============ export (08.03): PDF via print + static single-file HTML ============
@@ -1080,7 +1732,8 @@ function exportHTML(){
   expRestore();
   /* static snapshot: strip scripts + interactive chrome; <details> keep working
      natively without JS. Rendered DOM only — the raw dataset is NOT embedded. */
-  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn').forEach(e=>e.remove());
+  c.querySelectorAll('script,link[rel="manifest"],#lock,.util,.utilabout,.projnav,.controls,#totop,#pushtoast,.stalebar,.expwrap,.share,.morebtn,#aboutov,.defbtn,#defpop').forEach(e=>e.remove());
+  const _bb=c.querySelector('#basisbox');if(_bb)_bb.style.display='block';
   const nm=(PROJECTS&&PROJECTS[PI]&&(PROJECTS[PI].slug||PROJECTS[PI].name))||PAGESLUG||'dashboard';
   const ti=c.querySelector('title');if(ti)ti.textContent=`${nm} · TLダッシュボード · ${META.today}`;
   const blob=new Blob(['<!DOCTYPE html>\n'+c.outerHTML],{type:'text/html;charset=utf-8'});
@@ -1117,7 +1770,7 @@ function exportHTML(){
      const ENC={v,salt,iv,iter,ct}; let PROJECTS=null;        — encrypted build
    where ENC.ct decrypts to {projects:[…]} (same shape). 1 project → nav hidden. */
 function initProjects(){
-  $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b) loadProject(+b.dataset.pi);});
+  $('#projnav').addEventListener('click',e=>{const b=e.target.closest('button'); if(b&&b.dataset.pi!==undefined) loadProject(+b.dataset.pi);});
   window.addEventListener('hashchange',()=>{
     const h=parseHash();
     if(h.sec)PENDING_SEC=h.sec;
