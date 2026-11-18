@@ -48,18 +48,21 @@ jobs:
           BACKLOG_API_KEY: ${{ secrets.BACKLOG_API_KEY }}
         run: python pull.py --config config.json --out cache/data.json
       # history accumulation (08.05): upsert today's per-project aggregate counts
-      # into history.enc (same AES-GCM envelope as the pages — counts only, but
-      # category/type vocabulary is internal) and commit it back. The pull is
+      # into history/YYYY-MM.enc (same AES-GCM envelope as the pages — counts only,
+      # but category/type vocabulary is internal) and commit it back. The pull is
       # ephemeral; trends exist only because each build leaves this trace.
+      # One file per month (11.18): only the current month is rewritten, so the
+      # repo no longer stores a full copy of the whole history on every build.
+      # The old single history.enc is split into month files once, then removed.
       - name: accumulate history
         env:
           SITE_KEY: ${{ secrets.SITE_KEY }}
         run: |
-          python history.py --config config.json --data cache/data.json --file history.enc --enc-env SITE_KEY
-          if [ -n "$(git status --porcelain history.enc)" ]; then
+          python history.py --config config.json --data cache/data.json --dir history --legacy-file history.enc --enc-env SITE_KEY
+          if [ -n "$(git status --porcelain -- history history.enc)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add history.enc
+            git add -A -- history $(git ls-files -- history.enc)   # history.enc: staged deletion on the split run only
             git commit -m "update history"
             git push origin HEAD:main || (git fetch origin main && git rebase origin/main && git push origin HEAD:main)
           else

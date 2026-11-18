@@ -13,8 +13,13 @@ Safety: an existing file that fails to decrypt ABORTS the run (never clobber
 accumulated history) — use --reset to knowingly start over.
 Side output: the decrypted JSON goes to cache/history.json (gitignored) so a
 later build step can embed it into pages without re-decrypting.
+Monthly files (2026-11-18): one encrypted file per month, history/YYYY-MM.enc.
+Ciphertext never deltas, so git stored a full copy of the single growing
+history.enc on every build (twice a day) and the repo grew quadratically. Now a
+build rewrites only the current month's file; closed months never change. A
+legacy single file (--legacy-file) is split into month files once, then removed.
 Usage: history.py --config config.json --data cache/data.json
-                  --file history.enc (--enc PASS | --enc-env VAR)
+                  --dir history [--legacy-file history.enc] (--enc PASS | --enc-env VAR)
 """
 import os, json, sys, re, argparse, base64, hashlib
 sys.stdout.reconfigure(encoding="utf-8")
@@ -23,13 +28,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ap = argparse.ArgumentParser()
 ap.add_argument("--config", default=os.path.join(HERE, "..", "config", "projects.json"))
 ap.add_argument("--data", default=os.path.join(HERE, "cache", "data.json"))
-ap.add_argument("--file", default=os.path.join(HERE, "..", "history.enc"))
+ap.add_argument("--dir", default=os.path.join(HERE, "..", "history"),
+                help="folder of month files YYYY-MM.enc")
+ap.add_argument("--legacy-file", default=None,
+                help="old single history file: split into month files once, then deleted")
 ap.add_argument("--enc", default=None, help="passphrase")
 ap.add_argument("--enc-env", default=None, help="read passphrase from this env var")
 ap.add_argument("--plain-out", default=os.path.join(HERE, "cache", "history.json"),
                 help="decrypted copy for same-run consumers (gitignored dir)")
 ap.add_argument("--reset", action="store_true",
-                help="start a fresh history even if the existing file won't decrypt")
+                help="start fresh over any file that won't decrypt (instead of aborting)")
 a = ap.parse_args()
 
 PASS = a.enc or (os.environ.get(a.enc_env, "") if a.enc_env else None)
@@ -63,15 +71,52 @@ CFG = json.load(open(a.config, encoding="utf-8"))
 D = json.load(open(a.data, encoding="utf-8"))
 TODAY = D["today"]
 
-hist = {"v": 1, "days": {}}
-if os.path.exists(a.file):
-    prev = decrypt(json.load(open(a.file, encoding="utf-8")), PASS)
+def load(path):
+    """Decrypted days of one file; abort (never clobber) when it won't decrypt."""
+    prev = decrypt(json.load(open(path, encoding="utf-8")), PASS)
     if prev is None:
         if not a.reset:
-            sys.exit(f"history.py: {a.file} exists but does not decrypt with this passphrase — refusing to overwrite (use --reset to start over)")
-        print("RESET — starting a fresh history over an undecryptable file")
-    else:
-        hist = prev
+            sys.exit(f"history.py: {path} exists but does not decrypt with this passphrase — refusing to overwrite (use --reset to start over)")
+        print(f"RESET — ignoring undecryptable {path}")
+        return {}
+    return prev.get("days", {})
+
+def month_path(month):
+    return os.path.join(a.dir, f"{month}.enc")
+
+def save_month(month, days):
+    os.makedirs(a.dir, exist_ok=True)
+    json.dump(encrypt({"v": 1, "month": month, "days": days}, PASS),
+              open(month_path(month), "w", encoding="utf-8"))
+
+def read_all():
+    days = {}
+    if os.path.isdir(a.dir):
+        for f in sorted(os.listdir(a.dir)):
+            if re.fullmatch(r"\d{4}-\d{2}\.enc", f):
+                days.update(load(os.path.join(a.dir, f)))
+    return days
+
+# one-time split of the legacy single file: every month is written (merged with a
+# month file that already exists, month file wins per day) before the old file goes
+if a.legacy_file and os.path.exists(a.legacy_file):
+    legacy = load(a.legacy_file)
+    by_month = {}
+    for d, row in legacy.items():
+        by_month.setdefault(d[:7], {})[d] = row
+    for month, days in sorted(by_month.items()):
+        if os.path.exists(month_path(month)):
+            days.update(load(month_path(month)))
+        save_month(month, days)
+    for month, days in by_month.items():  # read back before deleting anything
+        if set(load(month_path(month))) != set(days):
+            sys.exit(f"history.py: read-back of {month_path(month)} does not match — legacy file kept")
+    os.remove(a.legacy_file)
+    print(f"SPLIT {a.legacy_file} → {len(by_month)} month file(s), {len(legacy)} day(s); legacy file removed")
+
+MONTH = TODAY[:7]
+cur = load(month_path(MONTH)) if os.path.exists(month_path(MONTH)) else {}
+hist = {"v": 1, "days": cur}
 
 def subber(pc):
     """Issue -> category key, replicating the template's sub() (categoryMode)."""
@@ -124,8 +169,9 @@ for pc in CFG["projects"]:
     r = day[slug]
     print(f"{slug}: open={r['open']} overdue={r['overdue']} stale30={r['stale30']} created={r['created']} closed={r['closed']} cats={len(r['cat'])}")
 
+save_month(MONTH, hist["days"])
+full = read_all()
 os.makedirs(os.path.dirname(a.plain_out) or ".", exist_ok=True)
-json.dump(hist, open(a.plain_out, "w", encoding="utf-8"), ensure_ascii=False)
-json.dump(encrypt(hist, PASS), open(a.file, "w", encoding="utf-8"))
-sz = os.path.getsize(a.file)
-print(f"WROTE {a.file} ({round(sz/1024,1)}KB, {len(hist['days'])} day(s) accumulated) + {a.plain_out} (plaintext, gitignored)")
+json.dump({"v": 1, "days": dict(sorted(full.items()))}, open(a.plain_out, "w", encoding="utf-8"), ensure_ascii=False)
+sz = os.path.getsize(month_path(MONTH))
+print(f"WROTE {month_path(MONTH)} ({round(sz/1024,1)}KB, {len(hist['days'])} day(s) this month; {len(full)} in all) + {a.plain_out} (plaintext, gitignored)")

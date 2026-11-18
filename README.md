@@ -6,7 +6,7 @@ Static, self-contained Backlog dashboards — built on a schedule, encrypted at 
 
 - `pull.py` fetches issue metadata from a Backlog space (API key via env).
 - `build.py` renders one self-contained HTML page per configured project (plus an aggregate page), encrypts the payload with AES-GCM (key derived from a passphrase via PBKDF2), and writes a static site tree.
-- `history.py` upserts a small per-day aggregate (counts only) into the encrypted `history.enc`, which CI commits back — the accumulating data behind trend views.
+- `history.py` upserts a small per-day aggregate (counts only) into encrypted month files `history/YYYY-MM.enc` (only the current month is rewritten), which CI commits back — the accumulating data behind trend views.
 - GitHub Actions runs this daily (and on manual dispatch) and deploys to GitHub Pages.
 - Viewers open the page, enter the shared passphrase, and everything — decryption, filtering, language, charts — runs client-side. No backend, no plaintext at rest.
 
